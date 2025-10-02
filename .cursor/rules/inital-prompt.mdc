@@ -1,0 +1,24 @@
+---
+description: New fullstack system or feature in fresh codebase
+globs:
+  - "**/*"
+alwaysApply: false
+---
+- Scaffold a fullstack app with clear separation of concerns:
+  - `/frontend` for UI and client logic
+  - `/backend` for APIs, services, middleware, DB, business logic
+  - `/shared` for types, constants, utilities
+  - `/tests` for all automated testing
+- Place reusable middleware in `/backend/middleware` (auth, logging, validation, error handling).
+- Write modular, industry-standard documented code (docstrings, meaningful comments only for intent).
+- Create automated tests:
+  - Unit + integration tests for backend services, routes, middleware.
+  - Unit + component tests for frontend.
+  - E2E tests for all features (placed under `/tests/e2e`), modular and executable by an agent.
+- Documentation requirements:
+  - User docs (`README.md`) in root, frontend, backend, and tests.
+  - Agent docs (`DEVELOPER.md`) in root, frontend, backend, and tests. Agent docs must prevent duplicate code and ensure integration with existing system.
+  - Style guides (`STYLE_GUIDE.md`) in root, frontend, backend, and tests.
+- Ensure style guides are followed for both code and documentation.
+- Before completion, run all created tests and verify features integrate correctly.
+- End with a summary of what was built, tests executed, and docs created.

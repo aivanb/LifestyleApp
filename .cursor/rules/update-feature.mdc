@@ -1,0 +1,23 @@
+---
+description: Updating or fixing existing fullstack feature
+globs:
+  - "**/*"
+alwaysApply: false
+---
+- Apply fixes or updates in backend, frontend, middleware, or shared with minimal disruption.
+- Backend:
+  - Update service/route/middleware as needed.
+  - Write or extend unit + integration tests.
+- Frontend:
+  - Update UI components or logic, ensuring design and state consistency.
+  - Extend unit/component tests.
+- Tests:
+  - Add or update E2E tests under `/tests/e2e` for all fixes.
+  - Confirm tests are modular and runnable by an agent.
+- Documentation:
+  - Update `README.md` in root and relevant dirs (user-facing).
+  - Update `DEVELOPER.md` in root and relevant dirs (agent-facing, optimized for AI, no duplication).
+  - Update style guides if new patterns are introduced.
+- Document code with industry-standard practices (docstrings + minimal inline comments).
+- Run all updated and existing tests to ensure the feature works correctly.
+- End with a summary of fixes, tests executed, and docs updated.

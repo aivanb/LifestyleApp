@@ -1,0 +1,49 @@
+Food inside the database alongside any, matching metadata
+Food inside the database alongside full, non-matching metadata
+Food inside the database alongside particle, non-matching metadata
+Food inside the database alongside no metadata
+Food not inside the database alongside full metadata
+Food not inside the database alongside partial metadata
+Food is not inside the database, alongside no metadata
+Meal inside the database
+Meal not inside the database 
+
+
+Flow of the program
+( Database concerns both the food log and meal log sql databases )
+Break the input up into separate foods, how much is being eaten at the moment, and what metadata is assigned to each food
+For each food
+Search the database for a matching input
+If input matches exactly, along with matching metadata
+Queue input to be logged
+If the food name matches, but the metadata does not match
+Tag the food name with a duplicate tag and a number if multiple duplicates
+Queue input to be logged
+If the food name is contained in a database entry but does not exactly match
+Ask the user if they meant the other food name
+If yes: Queue input to be logged
+If no: Queue input to be calculated (tag any matching metadata alongside it)
+If the food name is not contained in the database
+Queue the input to be calculated (tag any matching metadata alongside it)
+For each in the queue to be calculated
+Generate any macros to fully fill in the food log database. Any macros that were given, use those
+Add generated macros to the logging queue
+For each in the queue to be logged
+	Add to the macro log database alongside the portions that were eaten
+If the input is requested to be made into a meal
+Generate a meal name if not given
+Create the meal with appropriate food foreign keys and a generated or given name
+
+
+
+Example inputs
+I am eating a MetRx chocolate protein bar with 30g of protein and 30g of carbs
+I am eating 3 brown eggs from Trader Joe's, each with 6 grams of protein
+I am eating 4 eggs
+I am eating 3 scoops of protein powder with some water
+I am eating Kodiak pancakes. For each cup or dry mix, there is 15 g of protein. For each half cup of 1% milk, there are 8 grams of protein. The entire box has 4 cups of dry mix, 2 cups of milk, and 4 eggs. Right now, I am eating about one-fourth of the box. Make this request a meal named chocolate Kodiak pancakes
+I am eating my chocolate banana protein shake. 
+I am eating my homemade chocolate banana protein shake. It contains 2 scoops of Orgain plant protein powder, each scoop having 10 g of protein, 1 cup of 1% Harris Teeter milk, 1 cup of Chobani low-fat Greek yogurt, and one Trader Joe's medium banana. Make this a meal. 
+I am eating a Chick-fil-A grilled sandwich and some nuggets. 
+
+

@@ -1,0 +1,25 @@
+---
+description: New fullstack feature in existing codebase
+globs:
+  - "**/*"
+alwaysApply: false
+---
+- Add the feature with minimal coupling across backend, frontend, shared, and middleware.
+- Backend:
+  - Add or extend routes, services, or middleware with validation and error handling.
+  - Follow backend `STYLE_GUIDE.md`.
+  - Write unit + integration tests.
+- Frontend:
+  - Add reusable components/pages/hooks.
+  - Follow frontend `STYLE_GUIDE.md`.
+  - Write unit + component tests.
+- Tests:
+  - Add or extend E2E tests for the new feature in `/tests/e2e`.
+  - Ensure tests are modular and agent-executable.
+- Documentation:
+  - Update user-facing `README.md` in affected directories.
+  - Update agent-facing `DEVELOPER.md` in affected directories with integration notes to prevent duplication.
+  - Update or enforce relevant style guides.
+- Ensure industry-standard commenting (docstrings, intent-focused inline notes).
+- Before completion, run all new and existing tests to confirm integration.
+- End with a summary of what was added, tests executed, and docs updated.

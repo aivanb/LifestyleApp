@@ -1,0 +1,16 @@
+Macro Tracking
+Stores foods along with their associated macros. Foods can be related to create meals. Meals and foods can be logged in a macro logger. 
+Each food has the following structure:
+serving_size, unit, calories, protein, fat, carbohydrates, fiber, sodium, sugar, saturated_fat, trans_fat, calcium, iron, magnesium, cholesterol, vitamin_a, vitamin_c, vitamin_d, caffeine, food_group, brand, cost
+
+Food can be logged through a chatbot. 
+A chatbot can be talked to through a text input or a voice input (voice input is converted into text by Vosk)
+The chatbot will log the foods/meals. If the food or meal does not exist, one will be created along with appropriate macros. 
+Food can be logged by searching for the food name within a list
+
+Only food that the current user has created can be seen and logged
+
+
+Workout Tracking
+
+
