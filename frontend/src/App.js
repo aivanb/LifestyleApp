@@ -7,6 +7,7 @@ import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import OpenAI from './pages/OpenAI';
 import Profile from './pages/Profile';
+import DataViewer from './pages/DataViewer';
 import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
@@ -41,6 +42,14 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <Profile />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/data-viewer" 
+                element={
+                  <ProtectedRoute>
+                    <DataViewer />
                   </ProtectedRoute>
                 } 
               />

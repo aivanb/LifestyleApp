@@ -491,6 +491,64 @@ JWT_SECRET_KEY=your-jwt-secret
 - API usage monitoring
 - Error rate tracking
 
+## Data Viewer System - Standard for Database Access
+
+### Overview
+**IMPORTANT**: The Data Viewer system (`apps.data_viewer`) is the **STANDARD FOUNDATION** for all database access in this application. All future systems requiring data retrieval MUST use this module.
+
+### Why It's Required
+- **Security**: Built-in SQL injection prevention, XSS protection, access control
+- **Consistency**: Single pattern for all data access
+- **Auditability**: Automatic logging of all data access
+- **Maintainability**: Centralized logic easier to update
+- **Performance**: Optimized queries with pagination
+
+### When to Use
+✅ **ALWAYS** use for:
+- Viewing database tables
+- User data retrieval
+- Admin panels
+- Analytics dashboards
+- Reports and exports
+- API endpoints returning database data
+
+❌ **NEVER** bypass for:
+- Direct database queries in views
+- Custom data access without authorization
+- Unlogged data access
+
+### Quick Start
+```python
+from apps.data_viewer.services import DataAccessService
+
+# In any view or service
+service = DataAccessService(user=request.user)
+
+# Get filtered data
+data = service.get_table_data(
+    table_name='foods',
+    filters={'food_group': 'protein'},
+    sort_by='food_name',
+    page=1,
+    page_size=20
+)
+```
+
+### Access Control
+The system automatically enforces role-based access:
+- **admin**: All tables, all data
+- **user**: User-accessible tables, own data + public data
+- **guest**: Limited access, own data + reference tables
+
+### Integration Guide
+See `apps/data_viewer/README.md` for complete documentation including:
+- API endpoints
+- Frontend integration
+- Security features
+- Error handling
+- Performance tips
+- Best practices
+
 ## Common Development Tasks
 
 ### Adding New Models
@@ -498,12 +556,14 @@ JWT_SECRET_KEY=your-jwt-secret
 2. Run `python manage.py makemigrations`
 3. Run `python manage.py migrate`
 4. Update admin interface if needed
+5. **NEW**: Test access through Data Viewer system
 
 ### Adding New API Endpoints
 1. Create serializer in app's `serializers.py`
 2. Create view in app's `views.py`
 3. Add URL pattern in app's `urls.py`
 4. Include app URLs in main `urls.py`
+5. **NEW**: Consider using DataAccessService instead of custom queries
 
 ### Database Schema Changes
 1. Modify model definitions
@@ -511,6 +571,7 @@ JWT_SECRET_KEY=your-jwt-secret
 3. Review migration file
 4. Apply migration: `python manage.py migrate`
 5. Test changes thoroughly
+6. **NEW**: Update Data Viewer table mappings if needed
 
 ## Integration Points
 

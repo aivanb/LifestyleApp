@@ -47,6 +47,7 @@ LOCAL_APPS = [
     'apps.analytics',
     'apps.openai_service',
     'apps.database_setup',
+    'apps.data_viewer',
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS

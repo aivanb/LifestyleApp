@@ -18,6 +18,7 @@ urlpatterns = [
     path('api/health/', include('apps.health.urls')),
     path('api/analytics/', include('apps.analytics.urls')),
     path('api/openai/', include('apps.openai_service.urls')),
+    path('api/data-viewer/', include('apps.data_viewer.urls')),
 ]
 
 if settings.DEBUG:

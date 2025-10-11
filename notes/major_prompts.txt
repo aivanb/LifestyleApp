@@ -100,3 +100,21 @@ These tables are not required to be prefilled. They should not be given dummy da
 Create a clear separation between required data and non required dummy data. At any point it should be possible to easily reset the database, resetting 
 the required tables to inital data, and removing all non required data. 
 Add useful functions within database setup files that can: reset the database and prefill the database with dummy data
+
+---- Database viewer ----
+Repeat your rules back to me so I can make sure you are following them correctly. 
+Create an interface for viewing the database data from the frontend. Include filtering, sorting, and searching capabilites. 
+Scripts fetching data from the database through the backend should become a standard foundation for all future systems. 
+Methods created to access data should be comprehensive, abstract, and modular enough to be viable for many different use cases across many different systems. 
+The docuementation should written up so it is clear that future systems will use these scripts for accessing the database. 
+The following features should be enforced in your implementation
+- authentication should be handled at the beginning of this process. 
+- authenticate different access levels accessing the different information. Find the access levels from the currently logged in user. 
+-- admin: able to view all tables and every users information
+-- user: cannot see internal tables (auth permissions, django, ect)
+-- user: only able to view data marked with their users id or make_public=true (not all tables have users_id and/or make_public fields)
+-- guests can see what users can see except cannot view tables marked with make_public=true
+- proper type checking for all data
+- handle empty, null, and corrupt data with exepction checking
+- proper logging for access events and issues. 
+- security against attacks including parameterization, sanitization, enforced authentication, ect
