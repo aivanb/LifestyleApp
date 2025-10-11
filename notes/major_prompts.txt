@@ -1,0 +1,102 @@
+---- Inital Prompt ----
+Create the initial guidelines and project skeleton for a fullstack application using Django, Node.js, React, MySQL, and the OpenAI API.
+These are the things that should be initially added:
+- Initialize a database using MySQL. You can find the schema in notes/database_structure.md. Match this schema exactly. 
+- JWT login and authentication requests for current users. Provide endpoints for user registration, login, and token validation.
+- Add simple OpenAI API request handling (basic endpoint to send a prompt and return a response).
+
+Constraints:
+- Build a foundation/skeleton, not a polished app.
+- The codebase should be structured for future expansion by other developers or agents.
+- Focus on clean separation of concerns (frontend, backend, database, integrations).
+- Follow your own style and structural rules.
+
+
+---- Update MySQL tables ----
+Repeat your rules back to me so I can make sure you are following them correctly. 
+
+Do the following in the specificed order. 
+- 1. update the database setup scripts to include these updates:
+-- add a rest_time field to the workout_log
+-- add a make_public field to the foods and workouts tables
+-- remove the day_worked fields in the muscle_log tables
+-- add the created_at field to the muscle_log table
+-- change the field id to muscle_log_id in muscle_log table
+- 2. Add the following tables to the database setup scripts
+--
+#### **splits**
+The different splits that a user has
+```sql
+- splits_id (PK): Auto-incrementing ID
+- user_id (FK): users.user_id
+- split_name: The name of the split
+- start_date: When the user is starting the split
+- created_at: Timestamp when created
+```
+#### **split_days**
+```sql
+- split_days_id (PK): Auto-incrementing ID
+- splits_id (FK): splits.splits_id
+- day_name: the name of the split day
+- day_order: the local order of this split day, stored as a number
+```
+#### **split_day_targets**
+```sql
+- split_day_id (FK): split_days.split_days_id
+- muscle_id (FK): muscles.muscles_id
+- target_activation: the target activation
+```
+--
+- 3. Update the database_structure.md so that it matches the database structure exactly. Maintain the current formatting of database_structure.md
+- 4. Provide me clear instructions on how I can update the database to reflect the changes made
+
+
+---- Database Fill ----
+Repeat your rules back to me so I can make sure you are following them correctly. 
+Create scripts to fill in the database with the following rules. Many tables already have prefilled data. Do not rewrite code for these tables. 
+These tables should be prefilled whenever the database it setup. It is neccesary data for the website to run properly. 
+- access_levels
+- activity_levels
+- auth_permission
+- django_content_type
+- muscles
+- units
+
+These tables are not required to be prefilled in order to run the website. However you should create dummy data for verification and testing purposes
+This dummy data should be portraying two differnt users, each with about 6 months of recorded data. Make the data realistic based on the field names. 
+Provide the credintials for the two users. 
+- api_usage_log
+- auth_group
+- auth_group_permissions
+- body_measurement_log
+- cardio_log
+- error_log
+- food_log
+- foods
+- health_metrics_log
+- meals
+- meals_foods
+- muscles_log
+- sleep_log
+- steps_log
+- user_goal
+- users
+- users_groups
+- user_user_permissions
+- water_log
+- weight_log
+- workout_log
+- workout_muscle
+- workouts
+- splits
+- split_days
+- split_day_targets
+
+These tables are not required to be prefilled. They should not be given dummy data. 
+- django_admin_log
+- django_migrations
+- django_session
+
+Create a clear separation between required data and non required dummy data. At any point it should be possible to easily reset the database, resetting 
+the required tables to inital data, and removing all non required data. 
+Add useful functions within database setup files that can: reset the database and prefill the database with dummy data

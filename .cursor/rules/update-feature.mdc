@@ -5,6 +5,7 @@ globs:
 alwaysApply: false
 ---
 - Apply fixes or updates in backend, frontend, middleware, or shared with minimal disruption.
+- Find enviroment variable formatting in .env.example, found in the root directory
 - Backend:
   - Update service/route/middleware as needed.
   - Write or extend unit + integration tests.

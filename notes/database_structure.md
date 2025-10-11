@@ -101,6 +101,7 @@ Nutritional information for food items (master food database).
 - food_group: food group. ENUM [fruit, vegetable, grain, protein, dairy, other]
 - brand: Brand name
 - cost: Cost of food
+- make_public: if this food is viewable to all users
 - created_at: Timestamp when created
 - updated_at: Timestamp when last updated
 ```
@@ -188,6 +189,7 @@ The specific workouts that a user has performed
 - type: Workout type. ENUM [barbell, dumbbell, plate_machine, cable_machine, bodyweight]
 - location: Gym where workout is performed
 - notes: Any notes for this workout
+- make_public: if this workout is viewable to all users
 - created_at: Timestamp when created
 - updated_at: Timestamp when last updated
 ```
@@ -210,6 +212,7 @@ The log of workouts a user does
 - reps: Number of reps
 - rir: Reps in reserve
 - attributes: JSON column for optional details (e.g., { "dropset": true, "dropset_reps": 8, "assisted": false })
+- rest_time: Amount of rest done before this workout
 - date_time: Timestamp when performed
 - created_at: Timestamp when created
 ```
@@ -217,11 +220,11 @@ The log of workouts a user does
 #### **muscle_log**
 List of all the muscles in the human body
 ```sql
-- id (PK): Auto-incrementing ID
+- muscle_log_id (PK): Auto-incrementing ID
 - user_id (FK): users.user_id
 - muscle_name (FK): muscles.muscle_name
 - importance: User-determined importance. INT [1–100]
-- day_worked: Weekday worked. INT
+- created_at: Timestamp when created
 ```
 
 #### **workout_muscle**
@@ -231,6 +234,31 @@ Gives each workout a list of activation ratings for each muscle
 - muscle_id (FK): muscles.muscle_id
 - activation_rating: Activation rating. INT [1–100]
 - PRIMARY KEY (workout_id, muscle_id)
+```
+
+#### **splits**
+The different splits that a user has
+```sql
+- splits_id (PK): Auto-incrementing ID
+- user_id (FK): users.user_id
+- split_name: The name of the split
+- start_date: When the user is starting the split
+- created_at: Timestamp when created
+```
+
+#### **split_days**
+```sql
+- split_days_id (PK): Auto-incrementing ID
+- splits_id (FK): splits.splits_id
+- day_name: The name of the split day
+- day_order: The local order of this split day, stored as a number
+```
+
+#### **split_day_targets**
+```sql
+- split_day_id (FK): split_days.split_days_id
+- muscle_id (FK): muscles.muscles_id
+- target_activation: The target activation
 ```
 
 #### **steps_log**

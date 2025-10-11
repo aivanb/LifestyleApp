@@ -5,6 +5,7 @@ globs:
 alwaysApply: false
 ---
 - Add the feature with minimal coupling across backend, frontend, shared, and middleware.
+- Find enviroment variable formatting in .env.example, found in the root directory
 - Backend:
   - Add or extend routes, services, or middleware with validation and error handling.
   - Follow backend `STYLE_GUIDE.md`.

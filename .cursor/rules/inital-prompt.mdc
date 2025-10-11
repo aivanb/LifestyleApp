@@ -4,6 +4,7 @@ globs:
   - "**/*"
 alwaysApply: false
 ---
+- Find enviroment variable formatting in .env.example, found in the root directory
 - Scaffold a fullstack app with clear separation of concerns:
   - `/frontend` for UI and client logic
   - `/backend` for APIs, services, middleware, DB, business logic

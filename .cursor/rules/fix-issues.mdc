@@ -1,0 +1,20 @@
+---
+description: Fix issues in existing fullstack system
+alwaysApply: false
+---
+- Only address the reported issue or error. Do not refactor unrelated code.
+- Investigate logs, console output, or user-described malfunction.
+- Before making changes:
+  - Review related DEVELOPER.md docs for context.
+  - Check for overlapping code to avoid duplication.
+- Apply minimal, scoped fixes in the appropriate module (frontend, backend, middleware, or tests).
+- Update or create tests (unit, integration, e2e) that reproduce the issue.
+- Ensure all existing tests still pass.
+- Run full test suite before completing the fix.
+- Update agent-facing DEVELOPER.md with:
+  - Cause of the bug.
+  - How it was fixed.
+  - How future agents should avoid similar issues.
+- Update user-facing README.md if behavior or usage changed.
+- Follow relevant STYLE_GUIDE.md for code, docs, and testing conventions.
+- Never modify `.env` or environment configs unless the issue directly relates to configuration, and document such changes in /docs/ENVIRONMENT.md.
