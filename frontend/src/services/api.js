@@ -122,6 +122,55 @@ class ApiService {
   getUsageStats() {
     return this.get('/openai/usage/');
   }
+
+  // Food methods
+  getFoods(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    return this.get(`/foods/?${queryString}`);
+  }
+
+  createFood(foodData) {
+    return this.post('/foods/', foodData);
+  }
+
+  updateFood(foodId, foodData) {
+    return this.put(`/foods/${foodId}/`, foodData);
+  }
+
+  deleteFood(foodId) {
+    return this.delete(`/foods/${foodId}/`);
+  }
+
+  getRecentlyLoggedFoods(days = 30) {
+    return this.get(`/foods/logs/recent-foods/?days=${days}`);
+  }
+
+  // Meal methods
+  getMeals() {
+    return this.get('/foods/meals/');
+  }
+
+  createMeal(mealData) {
+    return this.post('/foods/meals/', mealData);
+  }
+
+  deleteMeal(mealId) {
+    return this.delete(`/foods/meals/${mealId}/`);
+  }
+
+  // Food log methods
+  getFoodLogs(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    return this.get(`/foods/logs/?${queryString}`);
+  }
+
+  createFoodLog(logData) {
+    return this.post('/foods/logs/', logData);
+  }
+
+  deleteFoodLog(logId) {
+    return this.delete(`/foods/logs/${logId}/`);
+  }
 }
 
 const api = new ApiService();

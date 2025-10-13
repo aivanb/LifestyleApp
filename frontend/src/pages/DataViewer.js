@@ -44,6 +44,7 @@ const DataViewer = () => {
     if (selectedTable) {
       loadTableData();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedTable, currentPage]);
 
   const loadTables = async () => {
@@ -165,26 +166,47 @@ const DataViewer = () => {
   };
 
   return (
-    <div className="data-viewer">
-      <h1>Database Viewer</h1>
+    <div className="data-viewer animate-fade-in">
+      <div className="flex items-center gap-4 mb-6">
+        <svg className="icon icon-xl" viewBox="0 0 20 20" fill="var(--accent-primary)">
+          <path d="M3 12v3c0 1.657 3.134 3 7 3s7-1.343 7-3v-3c0 1.657-3.134 3-7 3s-7-1.343-7-3z" />
+          <path d="M3 7v3c0 1.657 3.134 3 7 3s7-1.343 7-3V7c0 1.657-3.134 3-7 3S3 8.657 3 7z" />
+          <path d="M17 5c0 1.657-3.134 3-7 3S3 6.657 3 5s3.134-3 7-3 7 1.343 7 3z" />
+        </svg>
+        <h1 style={{ margin: 0 }}>Database Viewer</h1>
+      </div>
       
-      <div className="card" style={{ marginBottom: '20px', backgroundColor: '#e7f3ff' }}>
-        <h3 style={{ marginTop: 0 }}>👤 Access Level: {user?.access_level || 'guest'}</h3>
-        <p style={{ marginBottom: 0 }}>
-          {user?.access_level === 'admin' && 
-            'You have full access to all tables and all user data.'}
-          {user?.access_level === 'user' && 
-            'You can view your own data and public data. Internal tables are hidden.'}
-          {(!user?.access_level || user?.access_level === 'guest') && 
-            'You can only view public data. User-specific data is hidden.'}
-        </p>
+      <div className="card" style={{ background: 'var(--accent-primary-alpha)', borderColor: 'var(--accent-primary)' }}>
+        <div className="flex items-center gap-3">
+          <svg className="icon icon-lg" viewBox="0 0 20 20" fill="var(--accent-primary)">
+            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-6-3a2 2 0 11-4 0 2 2 0 014 0zm-2 4a5 5 0 00-4.546 2.916A5.986 5.986 0 0010 16a5.986 5.986 0 004.546-2.084A5 5 0 0010 11z" clipRule="evenodd" />
+          </svg>
+          <div>
+            <h3 style={{ marginTop: 0, marginBottom: 'var(--space-2)' }}>
+              Access Level: {user?.access_level || 'guest'}
+            </h3>
+            <p style={{ marginBottom: 0, fontSize: 'var(--text-sm)', color: 'var(--text-secondary)' }}>
+              {user?.access_level === 'admin' && 
+                'Full access to all tables and all user data.'}
+              {user?.access_level === 'user' && 
+                'View your own data and public data. Internal tables are hidden.'}
+              {(!user?.access_level || user?.access_level === 'guest') && 
+                'View public data only. User-specific data is hidden.'}
+            </p>
+          </div>
+        </div>
       </div>
 
       {error && (
-        <div className="card" style={{ backgroundColor: '#f8d7da', marginBottom: '20px' }}>
-          <p style={{ color: '#721c24', margin: 0 }}>
-            <strong>Error:</strong> {error}
-          </p>
+        <div className="card animate-slide-in-up" style={{ background: 'rgba(239, 68, 68, 0.1)', borderColor: 'var(--accent-danger)' }}>
+          <div className="flex items-center gap-3">
+            <svg className="icon icon-lg" viewBox="0 0 20 20" fill="var(--accent-danger)">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+            </svg>
+            <p style={{ color: 'var(--accent-danger)', margin: 0 }}>
+              <strong>Error:</strong> {error}
+            </p>
+          </div>
         </div>
       )}
 
@@ -192,7 +214,12 @@ const DataViewer = () => {
         {/* Tables List Sidebar */}
         <div>
           <div className="card">
-            <h3 style={{ marginTop: 0 }}>Available Tables</h3>
+            <div className="flex items-center gap-3 mb-4">
+              <svg className="icon icon-lg" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M7 3a1 1 0 000 2h6a1 1 0 100-2H7zM4 7a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1zM2 11a2 2 0 012-2h12a2 2 0 012 2v4a2 2 0 01-2 2H4a2 2 0 01-2-2v-4z" />
+              </svg>
+              <h3 style={{ margin: 0 }}>Available Tables</h3>
+            </div>
             
             {loadingTables ? (
               <div className="loading">
@@ -228,37 +255,58 @@ const DataViewer = () => {
         {/* Main Content */}
         <div>
           {!selectedTable ? (
-            <div className="card">
-              <p style={{ textAlign: 'center', color: '#666' }}>
+            <div className="card text-center">
+              <svg className="icon icon-xl" viewBox="0 0 20 20" fill="var(--text-tertiary)" style={{ margin: '0 auto var(--space-4)' }}>
+                <path fillRule="evenodd" d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11.707 4.707a1 1 0 00-1.414-1.414L10 9.586 8.707 8.293a1 1 0 00-1.414 0l-2 2a1 1 0 101.414 1.414L8 10.414l1.293 1.293a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+              <p style={{ color: 'var(--text-tertiary)', margin: 0 }}>
                 Select a table from the sidebar to view its data
               </p>
             </div>
           ) : (
             <>
               {/* Table Info */}
-              <div className="card" style={{ marginBottom: '20px' }}>
-                <h2 style={{ marginTop: 0 }}>{selectedTable}</h2>
+              <div className="card animate-slide-in-right">
+                <div className="flex items-center gap-3 mb-4">
+                  <svg className="icon icon-lg" viewBox="0 0 20 20" fill="var(--accent-primary)">
+                    <path fillRule="evenodd" d="M5 3a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2V5a2 2 0 00-2-2H5zm0 2h10v7h-2l-1 2H8l-1-2H5V5z" clipRule="evenodd" />
+                  </svg>
+                  <h2 style={{ margin: 0 }}>{selectedTable}</h2>
+                </div>
                 {schema.description && (
-                  <p style={{ color: '#666', marginBottom: '10px' }}>
+                  <p style={{ color: 'var(--text-secondary)', marginBottom: 'var(--space-4)' }}>
                     {schema.description}
                   </p>
                 )}
-                <div style={{ display: 'flex', gap: '20px', fontSize: '14px' }}>
-                  <span>
+                <div className="flex gap-6 text-sm" style={{ flexWrap: 'wrap' }}>
+                  <div className="flex items-center gap-2">
+                    <svg className="icon icon-sm" viewBox="0 0 20 20" fill="var(--text-tertiary)">
+                      <path fillRule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V7.414A2 2 0 0015.414 6L12 2.586A2 2 0 0010.586 2H6zm5 6a1 1 0 10-2 0v3.586l-1.293-1.293a1 1 0 10-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 11.586V8z" clipRule="evenodd" />
+                    </svg>
                     <strong>Fields:</strong> {schema.fields?.length || 0}
-                  </span>
-                  <span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <svg className="icon icon-sm" viewBox="0 0 20 20" fill="var(--text-tertiary)">
+                      <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
+                      <path fillRule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clipRule="evenodd" />
+                    </svg>
                     <strong>Rows:</strong> {pagination.total || 0}
-                  </span>
+                  </div>
                   {schema.has_user_field && (
-                    <span style={{ color: '#007bff' }}>
-                      🔒 User-specific data
-                    </span>
+                    <div className="badge badge-primary flex items-center gap-2">
+                      <svg className="icon icon-sm" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                      </svg>
+                      User-specific
+                    </div>
                   )}
                   {schema.has_public_field && (
-                    <span style={{ color: '#28a745' }}>
-                      🌐 Public data available
-                    </span>
+                    <div className="badge badge-success flex items-center gap-2">
+                      <svg className="icon icon-sm" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM4.332 8.027a6.012 6.012 0 011.912-2.706C6.512 5.73 6.974 6 7.5 6A1.5 1.5 0 019 7.5V8a2 2 0 004 0 2 2 0 011.523-1.943A5.977 5.977 0 0116 10c0 .34-.028.675-.083 1H15a2 2 0 00-2 2v2.197A5.973 5.973 0 0110 16v-2a2 2 0 00-2-2 2 2 0 01-2-2 2 2 0 00-1.668-1.973z" clipRule="evenodd" />
+                      </svg>
+                      Public data
+                    </div>
                   )}
                 </div>
               </div>
@@ -290,7 +338,7 @@ const DataViewer = () => {
 
       <style jsx>{`
         .data-viewer {
-          padding: 20px 0;
+          padding: var(--space-6) 0;
         }
 
         .tables-list {
@@ -299,43 +347,51 @@ const DataViewer = () => {
         }
 
         .table-group {
-          margin-bottom: 20px;
+          margin-bottom: var(--space-5);
         }
 
         .table-group-header {
-          font-weight: bold;
-          color: #495057;
-          padding: 8px;
-          background-color: #f8f9fa;
-          border-radius: 4px;
-          margin-bottom: 5px;
+          font-weight: var(--font-weight-medium);
+          color: var(--text-primary);
+          padding: var(--space-2) var(--space-3);
+          background: var(--bg-tertiary);
+          border-radius: var(--radius-md);
+          margin-bottom: var(--space-2);
           text-transform: capitalize;
+          font-size: var(--text-sm);
+          letter-spacing: 0.05em;
         }
 
         .table-item {
-          padding: 10px;
-          border-radius: 4px;
+          padding: var(--space-3) var(--space-4);
+          border-radius: var(--radius-md);
           cursor: pointer;
-          transition: background-color 0.2s;
-          margin-bottom: 5px;
+          transition: all 0.2s var(--ease-out-cubic);
+          margin-bottom: var(--space-2);
+          border: 1px solid transparent;
         }
 
         .table-item:hover {
-          background-color: #f8f9fa;
+          background: var(--bg-hover);
+          border-color: var(--border-primary);
+          transform: translateX(4px);
         }
 
         .table-item.active {
-          background-color: #007bff;
+          background: var(--accent-primary);
           color: white;
+          border-color: var(--accent-primary);
+          box-shadow: var(--shadow-md);
         }
 
         .table-name {
-          font-weight: 500;
-          margin-bottom: 3px;
+          font-weight: var(--font-weight-medium);
+          margin-bottom: var(--space-1);
+          font-size: var(--text-base);
         }
 
         .table-info {
-          font-size: 12px;
+          font-size: var(--text-xs);
           opacity: 0.8;
         }
 

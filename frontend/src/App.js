@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { AuthProvider } from './contexts/AuthContext';
+import { ThemeProvider } from './contexts/ThemeContext';
 import Navbar from './components/Navbar';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -8,16 +9,19 @@ import Dashboard from './pages/Dashboard';
 import OpenAI from './pages/OpenAI';
 import Profile from './pages/Profile';
 import DataViewer from './pages/DataViewer';
+import FoodLog from './pages/FoodLog';
 import ProtectedRoute from './components/ProtectedRoute';
+import ThemeSwitcher from './components/ThemeSwitcher';
 
 function App() {
   return (
-    <AuthProvider>
-      <Router>
-        <div className="App">
-          <Navbar />
-          <main className="container">
-            <Routes>
+    <ThemeProvider>
+      <AuthProvider>
+        <Router>
+          <div className="App">
+            <Navbar />
+            <main className="container">
+              <Routes>
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
               <Route path="/" element={<Navigate to="/dashboard" replace />} />
@@ -53,11 +57,21 @@ function App() {
                   </ProtectedRoute>
                 } 
               />
-            </Routes>
-          </main>
-        </div>
-      </Router>
-    </AuthProvider>
+              <Route 
+                path="/food-log" 
+                element={
+                  <ProtectedRoute>
+                    <FoodLog />
+                  </ProtectedRoute>
+                } 
+              />
+              </Routes>
+            </main>
+            <ThemeSwitcher />
+          </div>
+        </Router>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
 

@@ -52,17 +52,28 @@ class OpenAIService:
         
         try:
             # Use the old OpenAI 0.28.x API
+            # For reasoning models (gpt-5-*), use higher token limit as they use tokens for internal reasoning
+            max_tokens = 5000 if 'gpt-5' in self.model or 'o1' in self.model or 'o3' in self.model else 1000
+            
             response = self.client.ChatCompletion.create(
                 model=self.model,
                 messages=[
                     {"role": "user", "content": prompt}
                 ],
-                max_completion_tokens=1000
+                max_completion_tokens=max_tokens
             )
             
             response_time = time.time() - start_time
             ai_response = response.choices[0].message.content
             tokens_used = response.usage.total_tokens
+            
+            # Debug logging
+            if not ai_response or ai_response.strip() == '':
+                print(f"WARNING: OpenAI returned empty response!")
+                print(f"Model: {self.model}")
+                print(f"Prompt length: {len(prompt)}")
+                print(f"Tokens used: {tokens_used}")
+                print(f"Full response object: {response}")
             
             # Calculate cost (approximate for gpt-3.5-turbo)
             cost = self._calculate_cost(tokens_used)

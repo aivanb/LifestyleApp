@@ -85,7 +85,7 @@ const DataTable = ({
   }
 
   return (
-    <div className="data-table-container">
+    <div className="data-table-container card">
       <div style={{ overflowX: 'auto' }}>
         <table className="data-table">
           <thead>
@@ -95,13 +95,16 @@ const DataTable = ({
                   <div 
                     className="table-header"
                     onClick={() => handleSort(field.name)}
-                    style={{ cursor: 'pointer', userSelect: 'none' }}
                   >
                     {field.name}
                     {sortBy === field.name && (
-                      <span style={{ marginLeft: '5px' }}>
-                        {sortOrder === 'asc' ? '▲' : '▼'}
-                      </span>
+                      <svg className="icon icon-sm" viewBox="0 0 20 20" fill="currentColor">
+                        {sortOrder === 'asc' ? (
+                          <path fillRule="evenodd" d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z" clipRule="evenodd" />
+                        ) : (
+                          <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                        )}
+                      </svg>
                     )}
                   </div>
                 </th>
@@ -129,12 +132,15 @@ const DataTable = ({
             onClick={() => onPageChange(pagination.current_page - 1)}
             disabled={!pagination.has_previous}
           >
-            Previous
+            <svg className="icon icon-md" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
+            </svg>
+            <span className="hide-mobile">Previous</span>
           </button>
 
-          <span style={{ margin: '0 15px' }}>
+          <span className="pagination-info">
             Page {pagination.current_page} of {pagination.pages}
-            {' '}({pagination.total} total rows)
+            <span className="hide-mobile"> ({pagination.total} total rows)</span>
           </span>
 
           <button
@@ -142,57 +148,32 @@ const DataTable = ({
             onClick={() => onPageChange(pagination.current_page + 1)}
             disabled={!pagination.has_next}
           >
-            Next
+            <span className="hide-mobile">Next</span>
+            <svg className="icon icon-md" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+            </svg>
           </button>
         </div>
       )}
 
       <style jsx>{`
         .data-table-container {
-          margin-top: 20px;
-        }
-
-        .data-table {
-          width: 100%;
-          border-collapse: collapse;
-          background: white;
-        }
-
-        .data-table th,
-        .data-table td {
-          padding: 12px;
-          text-align: left;
-          border-bottom: 1px solid #ddd;
-        }
-
-        .data-table th {
-          background-color: #f8f9fa;
-          font-weight: bold;
-          position: sticky;
-          top: 0;
-        }
-
-        .data-table tbody tr:hover {
-          background-color: #f5f5f5;
+          margin-top: var(--space-6);
         }
 
         .table-header {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
+          cursor: pointer;
+          user-select: none;
+          transition: color 0.2s var(--ease-out-cubic);
         }
 
-        .pagination {
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          margin-top: 20px;
-          padding: 20px 0;
+        .table-header:hover {
+          color: var(--accent-primary);
         }
 
-        .pagination button:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
+        .pagination-info {
+          color: var(--text-secondary);
+          font-size: var(--text-sm);
         }
       `}</style>
     </div>

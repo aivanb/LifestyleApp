@@ -76,6 +76,27 @@ backend/
   - `urls.py` - OpenAI URL patterns
 - **Features**: Prompt processing, usage tracking, cost calculation
 
+### Foods App - Food Logging System (`apps/foods/`)
+- **Purpose**: Food database, meals, and food logging
+- **Key Files**:
+  - `models.py` - Food, Meal, MealFood models
+  - `serializers.py` - Food/Meal creation with macro calculations
+  - `views.py` - Food CRUD, meal creation, food logging endpoints
+  - `urls.py` - Food logging URL patterns
+- **Features**:
+  - **Food Creation**: Create foods with complete nutritional data
+  - **Meal Creation**: Combine multiple foods into meals with custom servings
+  - **Food Logging**: Track food consumption with automatic macro calculations
+  - **Public Sharing**: Mark foods/meals as public for community access
+  - **Macro Previews**: Real-time macro calculations for foods and meals
+  - **Create & Log**: Option to log food/meal immediately after creation
+  - **Search & Filter**: Find foods by keyword, macro ranges, food group
+  - **Recently Logged**: Quick access to frequently logged foods
+- **Access Control**:
+  - Users can only edit/delete their own foods
+  - Users can view own foods + public foods
+  - Public flag enables sharing across users
+
 ## Middleware Architecture
 
 ### AuthMiddleware (`middleware/auth.py`)
@@ -548,6 +569,138 @@ See `apps/data_viewer/README.md` for complete documentation including:
 - Error handling
 - Performance tips
 - Best practices
+
+## Known Issues and Fixes
+
+### Issue: OpenAI Food Parser Invalid Fields & JSON Serialization (Fixed: October 2025)
+**Cause**: The OpenAI food parser had two related issues:
+1. **Invalid Fields**: AI responses included fields like `quantity`, `protein_per_item`, `servings`, `protein_per_serving` that don't exist in the `Food` model
+2. **JSON Serialization**: The parser was returning Django model objects (`Food`, `Meal`) directly in the API response, which can't be serialized to JSON
+
+**Error Symptoms**:
+```
+TypeError: Food() got unexpected keyword arguments: 'quantity', 'protein_per_item'
+TypeError: Object of type Food is not JSON serializable
+```
+- Food parsing fails when using the voice input/chatbot feature
+- Food logs are not created  
+- UI shows "0 food(s) logged" with error message
+- Internal Server Error when returning parsed food data
+
+**Fix**: 
+1. Updated `_ensure_complete_metadata()`, `_generate_metadata()`, and `_get_default_metadata()` methods to filter invalid fields at ALL entry points
+2. Modified `parse_food_input()` to convert Food/Meal objects to serializable dicts before adding to result
+3. Added field filtering BEFORE merging with existing metadata to catch invalid fields early
+
+**How to avoid**:
+- Always validate and filter external data (especially AI responses) before passing to model constructors
+- Never return Django model objects directly in API responses - always serialize them
+- Use a whitelist of valid field names when dealing with dynamic metadata
+- Filter invalid fields at multiple points in the pipeline for robustness
+- Add comprehensive E2E tests that call actual API endpoints
+- Consider using Django's `get_fields()` method to dynamically get valid model fields
+
+### Issue: FoodLog Serializer Field Mismatch (Fixed: October 2025)
+**Cause**: The `FoodLogSerializer` in `apps/foods/serializers.py` was trying to access a `created_at` field that doesn't exist in the `FoodLog` model (located in `apps/logging/models.py`). The `FoodLog` model only has a `date_time` field for temporal tracking, not `created_at`.
+
+**Error Symptoms**:
+```
+django.core.exceptions.ImproperlyConfigured: Field name `created_at` is not valid for model `FoodLog`.
+```
+- Food logs API endpoint returns 500 error
+- Frontend unable to fetch food logs
+
+**Fix**: Removed `created_at` from the `FoodLogSerializer` fields list and read_only_fields.
+
+**How to avoid**:
+- Always verify that serializer fields match the actual model fields
+- When models are in different apps (e.g., serializer in `foods` but model in `logging`), double-check field names
+- Run comprehensive tests after adding new serializer fields
+- Consider using `fields = '__all__'` during development and explicitly list fields in production
+
+### Issue: OpenAI Empty Responses - Reasoning Model Token Limits (Fixed: October 2025)
+**Cause**: The application uses `gpt-5-mini`, a reasoning model that uses "reasoning tokens" for internal thought processing. With `max_completion_tokens=1000`, the model was using all 1000 tokens for reasoning and had no tokens left for the actual response content.
+
+**Error Symptoms**:
+```python
+{
+  "choices": [{"message": {"content": ""}, "finish_reason": "length"}],
+  "usage": {
+    "completion_tokens": 1000,
+    "completion_tokens_details": {"reasoning_tokens": 1000}
+  }
+}
+```
+- Metadata generation returns all zeros
+- Brand names not captured
+- Food logs created with empty nutritional data
+- Response content is empty string
+
+**Fix**: Updated `apps/openai_service/services.py` to detect reasoning models (gpt-5-*, o1-*, o3-*) and increase `max_completion_tokens` to 5000, ensuring enough tokens for both reasoning and response content.
+
+**How to avoid**:
+- When using reasoning models, allocate 3-5x more tokens than standard models
+- Monitor `finish_reason` in responses - "length" indicates truncation
+- Check `completion_tokens_details.reasoning_tokens` to see internal token usage
+- Add debug logging to detect empty responses immediately
+- Test with actual API calls, not just mocked responses
+
+### Issue: OpenAI Prompt Clarity - JSON Parsing Failures (Fixed: October 2025)
+**Cause**: The AI prompts were not explicit enough about output format requirements. The OpenAI API was sometimes returning responses wrapped in markdown code blocks (```json ... ```) or with extra explanatory text, causing JSON parsing to fail.
+
+**Error Symptoms**:
+```
+ERROR Failed to parse metadata JSON: Expecting value: line 1 column 1 (char 0)
+ERROR Response was: ```json\n{...}\n```
+```
+- Metadata generation fails silently
+- Falls back to default metadata (all zeros)
+- No error visible to user
+
+**Fix**: 
+1. Rewrote prompts with explicit "CRITICAL INSTRUCTIONS" sections
+2. Added "Return ONLY valid JSON" emphasis repeated multiple times
+3. Provided concrete examples of expected output
+4. Listed valid enum values explicitly
+5. Implemented markdown code block detection and removal
+6. Enhanced error logging to show first 200-500 chars of failed responses
+
+**How to avoid**:
+- Be extremely explicit with LLM formatting requirements
+- Repeat critical instructions multiple times in prompts
+- Always provide concrete examples of expected output
+- Implement robust parsing that handles common variations (markdown, whitespace)
+- Log raw responses when parsing fails for debugging
+- Test prompts with actual API calls to verify behavior
+
+### Issue: Data Viewer Table Mapping - Model Name Resolution (Fixed: October 2025)
+**Cause**: The `_get_model_name()` function was using generic pluralization logic (e.g., `foods` → `Foods`) instead of actual Django model names (`Food`). Django models are typically singular, but the function was making them plural.
+
+**Error Symptoms**:
+```
+ERROR Table 'foods' does not exist
+```
+- Data Viewer shows table list but can't access tables
+- Schema requests fail with 400 errors
+- Data requests fail even though tables exist in database
+- Inconsistent behavior across different tables
+
+**Fix**: Replaced generic conversion logic with comprehensive direct mapping dictionary:
+```python
+direct_mapping = {
+    'foods': 'Food',
+    'meals': 'Meal',
+    'users': 'User',
+    ...  # All 26 tables mapped explicitly
+}
+```
+
+**How to avoid**:
+- Never rely on naming conventions when mapping between layers
+- Use explicit mappings that can be verified
+- Test with actual data, not just mocked responses
+- Create integration tests that verify all tables are accessible
+- Document the mapping in code comments
 
 ## Common Development Tasks
 

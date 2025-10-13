@@ -254,18 +254,44 @@ class DataAccessService:
         Returns:
             Django model class name
         """
-        # Convert snake_case to PascalCase
+        # Direct mapping for tables where the model name doesn't match the pluralized table name
+        direct_mapping = {
+            'foods': 'Food',
+            'meals': 'Meal',
+            'meals_foods': 'MealFood',
+            'muscles': 'Muscle',
+            'workouts': 'Workout',
+            'splits': 'Split',
+            'users': 'User',
+            'access_levels': 'AccessLevel',
+            'units': 'Unit',
+            'activity_levels': 'ActivityLevel',
+            'food_log': 'FoodLog',
+            'weight_log': 'WeightLog',
+            'body_measurement_log': 'BodyMeasurementLog',
+            'water_log': 'WaterLog',
+            'steps_log': 'StepsLog',
+            'cardio_log': 'CardioLog',
+            'muscle_log': 'MuscleLog',
+            'workout_log': 'WorkoutLog',
+            'workout_muscle': 'WorkoutMuscle',
+            'sleep_log': 'SleepLog',
+            'health_metrics_log': 'HealthMetricsLog',
+            'user_goal': 'UserGoal',
+            'api_usage_log': 'ApiUsageLog',
+            'error_log': 'ErrorLog',
+            'split_days': 'SplitDay',
+            'split_day_targets': 'SplitDayTarget',
+        }
+        
+        if table_name in direct_mapping:
+            return direct_mapping[table_name]
+        
+        # Fallback: Convert snake_case to PascalCase
         parts = table_name.split('_')
         model_name = ''.join(word.capitalize() for word in parts)
         
-        # Handle special cases
-        special_cases = {
-            'MealsFood': 'MealFood',
-            'SplitDays': 'SplitDay',
-            'SplitDayTargets': 'SplitDayTarget',
-        }
-        
-        return special_cases.get(model_name, model_name)
+        return model_name
     
     def _apply_access_control(self, queryset: models.QuerySet, table_name: str) -> models.QuerySet:
         """

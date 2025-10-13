@@ -8,33 +8,27 @@ Food is not inside the database, alongside no metadata
 Meal inside the database
 Meal not inside the database 
 
-
-Flow of the program
-( Database concerns both the food log and meal log sql databases )
-Break the input up into separate foods, how much is being eaten at the moment, and what metadata is assigned to each food
-For each food
-Search the database for a matching input
-If input matches exactly, along with matching metadata
-Queue input to be logged
-If the food name matches, but the metadata does not match
-Tag the food name with a duplicate tag and a number if multiple duplicates
-Queue input to be logged
-If the food name is contained in a database entry but does not exactly match
-Ask the user if they meant the other food name
-If yes: Queue input to be logged
-If no: Queue input to be calculated (tag any matching metadata alongside it)
-If the food name is not contained in the database
-Queue the input to be calculated (tag any matching metadata alongside it)
-For each in the queue to be calculated
-Generate any macros to fully fill in the food log database. Any macros that were given, use those
-Add generated macros to the logging queue
-For each in the queue to be logged
-	Add to the macro log database alongside the portions that were eaten
-If the input is requested to be made into a meal
-Generate a meal name if not given
-Create the meal with appropriate food foreign keys and a generated or given name
-
-
+FOOD PARSING SYSTEM:
+1. Input: a string containing one or more foods.
+2. Send the string to the OpenAI API to identify all foods and provide metadata.
+   - The API must return a JSON list of dictionaries.
+   - Each dictionary contains a "name" and associated "metadata”
+3. For each food returned:
+   a. Check if it exists in the user's meals table.
+      - If found, ignore metadata and log the meal.
+   b. If not found in meals, check the foods table.
+      - If found and no metadata provided: log the food.
+      - If found and metadata provided do not match: log it and create a duplicate entry with a duplicate flag.
+      - If found and metadata match: log it normally.
+   c. If the food is not found in either table:
+      - Use the OpenAI API to generate missing metadata.
+      - If no metadata provided: generate all metadata.
+      - If partial metadata provided: keep existing and generate missing metadata.
+      - If all metadata provided: skip generation.
+      - Insert the new food into the foods table and log it.
+4. If the Create a Meal button is selected:
+      - Create a new meal entry containing all foods from the current input.
+      - If existing meals are referenced, include their foods in the new meal.
 
 Example inputs
 I am eating a MetRx chocolate protein bar with 30g of protein and 30g of carbs

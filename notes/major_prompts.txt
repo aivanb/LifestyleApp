@@ -1,4 +1,4 @@
----- Inital Prompt ----
+==== Inital Prompt ====
 Create the initial guidelines and project skeleton for a fullstack application using Django, Node.js, React, MySQL, and the OpenAI API.
 These are the things that should be initially added:
 - Initialize a database using MySQL. You can find the schema in notes/database_structure.md. Match this schema exactly. 
@@ -12,7 +12,7 @@ Constraints:
 - Follow your own style and structural rules.
 
 
----- Update MySQL tables ----
+==== Update MySQL tables ====
 Repeat your rules back to me so I can make sure you are following them correctly. 
 
 Do the following in the specificed order. 
@@ -51,7 +51,7 @@ The different splits that a user has
 - 4. Provide me clear instructions on how I can update the database to reflect the changes made
 
 
----- Database Fill ----
+==== Database Fill ====
 Repeat your rules back to me so I can make sure you are following them correctly. 
 Create scripts to fill in the database with the following rules. Many tables already have prefilled data. Do not rewrite code for these tables. 
 These tables should be prefilled whenever the database it setup. It is neccesary data for the website to run properly. 
@@ -101,7 +101,8 @@ Create a clear separation between required data and non required dummy data. At 
 the required tables to inital data, and removing all non required data. 
 Add useful functions within database setup files that can: reset the database and prefill the database with dummy data
 
----- Database viewer ----
+
+==== Database viewer ====
 Repeat your rules back to me so I can make sure you are following them correctly. 
 Create an interface for viewing the database data from the frontend. Include filtering, sorting, and searching capabilites. 
 Scripts fetching data from the database through the backend should become a standard foundation for all future systems. 
@@ -118,3 +119,105 @@ The following features should be enforced in your implementation
 - handle empty, null, and corrupt data with exepction checking
 - proper logging for access events and issues. 
 - security against attacks including parameterization, sanitization, enforced authentication, ect
+
+==== Visual Improvement ====
+Repeat your rules back to me so I can make sure you are following them correctly. 
+Create a VISUAL_FORMATTING.md that can be referenced by future developers to maintain a consistent visual design. 
+Update the developer documentation to reference the VISUAL_FORMATTING.md
+Create both a pc and mobile view for the app. Provide multiple color themes for the app.
+Change the formatting, color scheme, text style, typography, quality, UI elements, and layout to match a more minimalistic and modern design.
+Visual design rules
+- Monotone colors for general purposes UI elements with colorful highlightst for important elements
+- High contrast between background and foreground elements
+- Wide variety of shapes used for UI elements
+- Layering of visual UI elements while maintaining clarity.
+- Wide variety of user feedback on almost all interactable UI elements
+Specific UI element rules
+- Monotone icons for buttons and labels. Use both icons paried with text and only icons
+- Rounded edges for tabs, buttons, and input areas
+- Smooth transitioning (slides, tab openings, pop-ups, ect). Create spline curves rather than linear openings
+- Use Roboto Mono as the main font
+
+Create a new file for any desired images. This file will contain the image path along with copyright information. 
+If you add an image to the UI fill in the image file with the filepath, description, size, color scheme, ect, for all images.
+Prioritize functionality and clarity override decorative or unique design. and maintain accessibility and readability at all times.
+
+
+==== Food Tracker | No Generative Model ===
+Repeat your rules back to me so I can make sure you are following them correctly. 
+Implement a food logging system in the existing codebase. Maintain modular, abstract, and reusable design. Do not add features beyond what is described.
+Requirements:
+Food Creator
+- Users can create a new food entry with all relevant data.
+- Users can mark a food as public, allowing all users to view it.
+- Users can customize servings.
+- Provide a preview of the basic macros (calories, protein, carbs, fats).
+- Users can optionally create and log the food simultaneously.
+Meal Creator
+- Users can create a meal consisting of multiple foods.
+- Servings for each food can be customized.
+- Provide a preview of the meal’s basic macros.
+- Users can optionally create and log the meal simultaneously.
+Food Log
+- Users can view and search foods they own or public foods.
+- Filtering options: keyword search, macro range, or by default, most recently logged foods.
+- Display a list of recently logged foods with basic macros.
+- Users can delete foods from the log.
+
+
+=== Food Logger | With OpenAI ===
+Repeat your rules so that it can be ensured you are following them correctly. 
+Create a chatbot that logs foods using the OpenAI API and integrates with the existing database tables and logic. The chatbot must accept both text and voice input.
+
+VOICE INPUT:
+- Use Vosk offline speech recognition (vosk-model-small-en-us-0.15).
+- Implement a record button to start recording and display a live timer (in seconds).
+- Automatically stop recording after one minute or when the stop button is pressed.
+- Display the transcribed text in an editable input field.
+- Users can edit this text before manually submitting it to the food parsing system.
+
+TEXT INPUT:
+- Allow users to type text directly.
+- Include a Send button to submit text to the food parsing system.
+- Include a Create a Meal button to group multiple foods into one meal.
+- Display recent chatbot interactions in a small window showing user inputs and system responses.
+
+DATABASE VALIDATION:
+- Before writing queries, check the database setup scripts to confirm the schema for each table.
+- Use the correct table names, fields, and relations as defined in the setup scripts.
+
+FOOD PARSING SYSTEM:
+1. Input: a string containing one or more foods.
+2. Send the string to the OpenAI API to identify all foods and provide metadata.
+   - The API must return a JSON list of dictionaries.
+   - Each dictionary contains a "name" and associated "metadata”
+3. For each food returned:
+   a. Check if it exists in the user's meals table.
+      - If found, ignore metadata and log the meal.
+   b. If not found in meals, check the foods table.
+      - If found and no metadata provided: log the food.
+      - If found and metadata provided do not match: log it and create a duplicate entry with a duplicate flag.
+      - If found and metadata match: log it normally.
+   c. If the food is not found in either table:
+      - Use the OpenAI API to generate missing metadata.
+      - If no metadata provided: generate all metadata.
+      - If partial metadata provided: keep existing and generate missing metadata.
+      - If all metadata provided: skip generation.
+      - Insert the new food into the foods table and log it.
+4. If the Create a Meal button is selected:
+      - Create a new meal entry containing all foods from the current input.
+      - If existing meals are referenced, include their foods in the new meal.
+
+MANUAL SYSTEM
+- Reuse the missing metadata generation logic on the existing manual food creation system
+- Users can be prompted with a button to generate all of the missing metadata not already filled in
+
+GENERAL REQUIREMENTS:
+- Ensure the entire system functions end-to-end.
+- Prioritize working and tested code over literal adherence to this prompt.
+- Ensure testing covers all use cases. Do not limit testing to reduce API costs
+
+
+==== Profile improvement ====
+Repeat your rules back to me so I can make sure you are following them correctly. 
+Improve the profile section of the app.

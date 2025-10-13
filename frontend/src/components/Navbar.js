@@ -24,6 +24,9 @@ const Navbar = () => {
                   <Link to="/dashboard">Dashboard</Link>
                 </li>
                 <li>
+                  <Link to="/food-log">Food Log</Link>
+                </li>
+                <li>
                   <Link to="/data-viewer">Data Viewer</Link>
                 </li>
                 <li>

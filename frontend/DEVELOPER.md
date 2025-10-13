@@ -51,8 +51,22 @@ App
 #### Main Components
 - **Navbar** (`components/Navbar.js`): Navigation with user menu
 - **Dashboard** (`pages/Dashboard.js`): User dashboard with stats
+- **FoodLog** (`pages/FoodLog.js`): Food logging system (NEW)
+- **DataViewer** (`pages/DataViewer.js`): Database viewer interface (NEW)
 - **OpenAI** (`pages/OpenAI.js`): AI prompt interface
 - **Profile** (`pages/Profile.js`): User profile management
+
+### Food Logging Components (NEW)
+- **FoodCreator** (`components/FoodCreator.js`): Create new foods with macro preview
+- **MealCreator** (`components/MealCreator.js`): Create meals with multiple foods
+- **FoodLogViewer** (`components/FoodLogViewer.js`): View and filter food logs
+- **Features**:
+  - Real-time macro calculations
+  - Search and filter foods
+  - Public/private food sharing
+  - Create and log simultaneously
+  - Delete log entries
+  - Recently logged foods
 
 ## State Management
 
@@ -237,41 +251,112 @@ class ErrorBoundary extends React.Component {
 }
 ```
 
-## Styling Architecture
+## Visual Design System
+
+### Design Philosophy
+The application follows a **modern minimalistic design** with emphasis on:
+- **Functionality over decoration**
+- **High contrast for readability**
+- **Monotone colors with colorful accents**
+- **Smooth animations and transitions**
+- **Responsive mobile and desktop layouts**
+
+### Documentation Reference
+**📚 COMPLETE DESIGN GUIDE**: See `VISUAL_FORMATTING.md` in the root directory for comprehensive visual design guidelines including:
+- Complete color theme system (4 themes)
+- Typography scale and font usage
+- Spacing system (4px base unit)
+- Border radius standards
+- Shadow and layering system
+- UI component specifications
+- Animation guidelines
+- Accessibility requirements
+- Icon usage
+- Responsive breakpoints
+
+**IMPORTANT**: All frontend development MUST reference `VISUAL_FORMATTING.md` to maintain design consistency.
+
+### Quick Reference
+
+#### Color Themes
+The app supports 4 color themes:
+1. **Dark Mode** (default) - Dark blue-gray backgrounds
+2. **Light Mode** - Clean white backgrounds
+3. **High Contrast** - Black/white with bright accents
+4. **Warm Minimal** - Warm beige tones
+
+Switch themes using the theme switcher (bottom-right floating button).
+
+#### Typography
+- **Primary Font**: Roboto Mono (monospace)
+- **Scale**: xs, sm, base, lg, xl, 2xl, 3xl, 4xl
+- **Weights**: light (300), regular (400), medium (500), bold (700)
+
+#### Spacing
+All spacing uses 4px base unit:
+- Micro: 4-8px (related elements)
+- Small: 12-16px (component groups)
+- Medium: 20-24px (sections in cards)
+- Large: 32-48px (major sections)
+
+#### Components
+- **Buttons**: Rounded (8px), shadow on hover, lift effect
+- **Cards**: Rounded (12px), subtle shadow, hover elevation
+- **Inputs**: Rounded (8px), focus state with accent glow
+- **Tables**: Rounded container, sticky headers, hover rows
 
 ### CSS Organization
-- **Global Styles**: `index.css` for base styles
-- **Component Styles**: Inline styles or CSS modules
-- **Utility Classes**: Reusable CSS classes
-- **Responsive Design**: Mobile-first approach
+- **Global Styles**: `index.css` - design system and base styles
+- **Component Styles**: Scoped `<style jsx>` tags in components
+- **Utility Classes**: CSS variables for theming
+- **Responsive Design**: Mobile-first with breakpoints
 
-### Design System
-- **Color Palette**: Consistent color scheme
-- **Typography**: Font hierarchy and sizing
-- **Spacing**: Consistent margin and padding
-- **Components**: Button, form, card styles
+### Icons
+- **Library**: Heroicons (MIT License)
+- **Style**: Monotone, uses `currentColor`
+- **Sizes**: sm (16px), md (20px), lg (24px), xl (32px)
+- **Usage**: Paired with text or icon-only with tooltips
+
+See `IMAGE_REGISTRY.md` for complete icon documentation.
 
 ### Responsive Patterns
 ```css
 /* Mobile-first responsive design */
 .container {
-  max-width: 1200px;
+  max-width: 1280px;
   margin: 0 auto;
-  padding: 0 20px;
-}
-
-.card {
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  padding: 20px;
-  margin-bottom: 20px;
+  padding: var(--space-4);
 }
 
 @media (min-width: 768px) {
-  .card {
-    padding: 30px;
+  .container {
+    padding: var(--space-6);
   }
+}
+
+@media (min-width: 1024px) {
+  .container {
+    padding: var(--space-8);
+  }
+}
+```
+
+### Animation Guidelines
+- **Use spline curves**: `cubic-bezier()` for smooth, natural motion
+- **Duration**: 150-300ms for interactions, 500ms for page transitions
+- **Effects**: Slide, fade, scale animations for visual feedback
+- **Hover states**: Lift, scale, or color changes
+- **Click feedback**: Subtle press animation
+
+Example:
+```css
+.btn {
+  transition: all 0.2s cubic-bezier(0.33, 1, 0.68, 1);
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
 }
 ```
 
