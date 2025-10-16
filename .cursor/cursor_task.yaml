@@ -1,0 +1,99 @@
+name: "Workout & Macro App Full Codebase Refactor"
+description: >
+  A structured, verifiable cleanup, documentation, and testing overhaul of the entire codebase. 
+  The agent must never fabricate, omit, or prematurely conclude work. Each step must produce 
+  verifiable, file-level evidence recorded in agent-log.md.
+
+phases:
+  - name: "Phase 1 — Environment Integrity Check"
+    tasks:
+      - Verify project loads, installs, and builds without modification.
+      - List all directories and files in tree view; store output in `agent-log.md`.
+      - Run existing tests; store raw test results in `agent-log.md`.
+      - Create `agent-log.md` if missing, initialized with environment details.
+
+  - name: "Phase 2 — Code Cleanup and Static Analysis"
+    tasks:
+      - Run static analyzers (ESLint, Flake8, or project equivalent).
+      - Fix every warning/error, do not silence.
+      - Remove dead code, commented-out blocks, duplicate logic.
+      - Enforce consistent structure and modular separation.
+      - Re-run analysis until zero issues remain.
+      - Log all changes with file paths and diff summaries in `agent-log.md`.
+
+  - name: "Phase 3 — Documentation Alignment"
+    tasks:
+      - `README.md`: rewrite for **end users**. Include purpose, install/run instructions, 
+        feature overview, troubleshooting basics.
+      - `STYLE_GUIDE.md`: rewrite for **developers and agents**. Include enforced code style, 
+        lint rules, structure, formatting, naming, and examples.
+      - `DEVELOPER.md`: rewrite for **agents**. Include how to debug, expand, test, secure, 
+        and maintain the system.
+      - Validate every command and file reference.
+      - Cross-check docs against actual code.
+      - Log file updates in `agent-log.md`.
+
+  - name: "Phase 4 — Test Overhaul"
+    tasks:
+      - Identify and delete dummy or redundant tests.
+      - Add true **integration tests** simulating user flows:
+        * User signup/login
+        * Workout log creation
+        * Macro target update
+        * Dashboard retrieval
+      - Ensure each test interacts with a test DB and verifies functionality.
+      - Tests must be modular and runnable individually.
+      - Generate test coverage report (>90%) and attach summary to `agent-log.md`.
+      - Commit only verified tests.
+
+  - name: "Phase 5 — Summaries Cleanup"
+    tasks:
+      - Inspect all root-level summary files.
+      - Merge valid content into appropriate docs or delete useless files.
+      - Create `SYSTEM_OVERVIEW.md` covering:
+        * Major features
+        * Data flow
+        * Core modules
+        * Integration pattern
+        * Expansion steps
+      - Record each removed or merged file in `agent-log.md`.
+
+  - name: "Phase 6 — AI-Facing Documentation"
+    tasks:
+      - Create `/docs/ai_reference/` with the following verified, code-accurate files:
+        * `architecture.md` — module map and dependencies
+        * `debugging.md` — known issues, logging, common failure points
+        * `feature_expansion.md` — extending app safely
+        * `security.md` — authentication, authorization, secrets management
+        * `testing_guide.md` — writing and validating new tests
+        * `code_style.md` — consistent format rules
+        * `agent_guidelines.md` — explicit do’s and don’ts for autonomous work
+      - Confirm all files reference real modules and code paths.
+      - Add verification log entries.
+
+  - name: "Phase 7 — Final Verification"
+    tasks:
+      - Re-run static analysis and tests; ensure all pass.
+      - Rebuild documentation index if applicable.
+      - Create `FINAL_VERIFICATION.md` summarizing:
+        * Number of modified files
+        * Test coverage
+        * Build success confirmation
+        * Documentation summary
+      - Append final proof-of-completion to `agent-log.md`.
+
+guardrails:
+  - Never mark a phase complete without logged, file-level proof.
+  - Never fabricate test results or documentation content.
+  - Always re-run builds and tests after code modification.
+  - Resume from last verified phase on timeout or interruption.
+  - All outputs must be reproducible by human or agent rerun.
+
+output_files:
+  - agent-log.md
+  - FINAL_VERIFICATION.md
+  - SYSTEM_OVERVIEW.md
+  - docs/ai_reference/*
+  - README.md
+  - STYLE_GUIDE.md
+  - DEVELOPER.md
