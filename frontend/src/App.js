@@ -5,11 +5,11 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import Navbar from './components/Navbar';
 import Login from './pages/Login';
 import Register from './pages/Register';
-import Dashboard from './pages/Dashboard';
-import OpenAI from './pages/OpenAI';
 import Profile from './pages/Profile';
 import DataViewer from './pages/DataViewer';
 import FoodLog from './pages/FoodLog';
+import WorkoutTracker from './pages/WorkoutTracker';
+import AdditionalTrackers from './pages/AdditionalTrackers';
 import ProtectedRoute from './components/ProtectedRoute';
 import ThemeSwitcher from './components/ThemeSwitcher';
 
@@ -24,23 +24,7 @@ function App() {
               <Routes>
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
-              <Route path="/" element={<Navigate to="/dashboard" replace />} />
-              <Route 
-                path="/dashboard" 
-                element={
-                  <ProtectedRoute>
-                    <Dashboard />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/openai" 
-                element={
-                  <ProtectedRoute>
-                    <OpenAI />
-                  </ProtectedRoute>
-                } 
-              />
+              <Route path="/" element={<Navigate to="/profile" replace />} />
               <Route 
                 path="/profile" 
                 element={
@@ -57,15 +41,33 @@ function App() {
                   </ProtectedRoute>
                 } 
               />
-              <Route 
-                path="/food-log" 
-                element={
-                  <ProtectedRoute>
-                    <FoodLog />
-                  </ProtectedRoute>
-                } 
-              />
-              </Routes>
+                  <Route
+                    path="/food-log"
+                    element={
+                      <ProtectedRoute>
+                        <div className="food-log-page">
+                          <FoodLog />
+                        </div>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/workout-tracker"
+                    element={
+                      <ProtectedRoute>
+                        <WorkoutTracker />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/additional-trackers/*"
+                    element={
+                      <ProtectedRoute>
+                        <AdditionalTrackers />
+                      </ProtectedRoute>
+                    }
+                  />
+                </Routes>
             </main>
             <ThemeSwitcher />
           </div>

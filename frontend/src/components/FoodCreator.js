@@ -76,10 +76,10 @@ const FoodCreator = ({ onFoodCreated, onClose }) => {
       const existingMetadata = {};
       const fields = ['calories', 'protein', 'fat', 'carbohydrates', 'fiber', 'sodium', 'sugar', 
                      'saturated_fat', 'trans_fat', 'calcium', 'iron', 'magnesium', 'cholesterol',
-                     'vitamin_a', 'vitamin_c', 'vitamin_d', 'caffeine'];
+                     'vitamin_a', 'vitamin_c', 'vitamin_d', 'caffeine', 'brand', 'serving_size', 'unit', 'food_group', 'cost'];
       
       fields.forEach(field => {
-        if (formData[field]) {
+        if (formData[field] && formData[field] !== '') {
           existingMetadata[field] = formData[field];
         }
       });
@@ -92,11 +92,17 @@ const FoodCreator = ({ onFoodCreated, onClose }) => {
       if (response.data.data && response.data.data.metadata) {
         const metadata = response.data.data.metadata;
         
-        // Update form with generated metadata
-        setFormData(prev => ({
-          ...prev,
-          ...metadata
-        }));
+        // Update form with generated metadata, but preserve user input
+        setFormData(prev => {
+          const updated = { ...prev };
+          // Only update fields that are empty or missing
+          Object.keys(metadata).forEach(key => {
+            if (!prev[key] || prev[key] === '' || prev[key] === 0) {
+              updated[key] = metadata[key];
+            }
+          });
+          return updated;
+        });
       }
     } catch (err) {
       setError(err.response?.data?.error?.message || 'Failed to generate metadata');
@@ -110,6 +116,16 @@ const FoodCreator = ({ onFoodCreated, onClose }) => {
     setLoading(true);
     setError('');
 
+    // Validate required fields
+    const requiredFields = ['calories', 'protein', 'carbohydrates', 'fat'];
+    const missingFields = requiredFields.filter(field => !formData[field] || formData[field] === '');
+    
+    if (missingFields.length > 0) {
+      setError(`Please fill in all required macros: ${missingFields.join(', ')}`);
+      setLoading(false);
+      return;
+    }
+
     try {
       const response = await api.createFood(formData);
       
@@ -118,17 +134,46 @@ const FoodCreator = ({ onFoodCreated, onClose }) => {
           onFoodCreated(response.data.data);
         }
         
+        // If create_and_log is true, log the food immediately
+        if (formData.create_and_log) {
+          const logData = {
+            food: response.data.data.food_id,
+            servings: formData.servings,
+            measurement: formData.unit,
+            date_time: new Date().toISOString()
+          };
+          
+          await api.createFoodLog(logData);
+        }
+        
         // Reset form
         setFormData({
-          ...formData,
           food_name: '',
           serving_size: '',
+          unit: 'g',
           calories: '',
           protein: '',
           fat: '',
           carbohydrates: '',
+          fiber: '',
+          sodium: '',
+          sugar: '',
+          saturated_fat: '',
+          trans_fat: '',
+          calcium: '',
+          iron: '',
+          magnesium: '',
+          cholesterol: '',
+          vitamin_a: '',
+          vitamin_c: '',
+          vitamin_d: '',
+          caffeine: '',
+          food_group: 'other',
           brand: '',
           cost: '',
+          make_public: false,
+          create_and_log: false,
+          servings: '1'
         });
       }
     } catch (err) {
@@ -150,13 +195,6 @@ const FoodCreator = ({ onFoodCreated, onClose }) => {
             </svg>
             <h2 className="card-title">Create New Food</h2>
           </div>
-          {onClose && (
-            <button className="btn-icon" onClick={onClose} aria-label="Close">
-              <svg className="icon icon-md" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L9.586 10 5.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-              </svg>
-            </button>
-          )}
         </div>
       </div>
 
@@ -169,107 +207,132 @@ const FoodCreator = ({ onFoodCreated, onClose }) => {
         </div>
       )}
 
-      {/* Macro Preview */}
-      <div className="macro-preview card" style={{ background: 'var(--accent-primary-alpha)', marginBottom: 'var(--space-6)' }}>
-        <h3 className="text-sm font-medium mb-4" style={{ color: 'var(--accent-primary)' }}>MACRO PREVIEW</h3>
-        <div className="grid grid-cols-4 gap-4">
-          <div className="macro-item">
-            <div className="macro-label">Calories</div>
-            <div className="macro-value">{macros.calories}</div>
-          </div>
-          <div className="macro-item">
-            <div className="macro-label">Protein</div>
-            <div className="macro-value">{macros.protein}g</div>
-          </div>
-          <div className="macro-item">
-            <div className="macro-label">Carbs</div>
-            <div className="macro-value">{macros.carbs}g</div>
-          </div>
-          <div className="macro-item">
-            <div className="macro-label">Fat</div>
-            <div className="macro-value">{macros.fat}g</div>
-          </div>
-        </div>
-      </div>
+      {/* Macro Requirements Message */}
 
       <form onSubmit={handleSubmit}>
-        {/* Basic Information */}
-        <div className="grid grid-cols-2 gap-4">
-          <div className="form-group">
-            <label className="form-label">Food Name *</label>
-            <input
-              type="text"
-              name="food_name"
-              className="form-input"
-              value={formData.food_name}
-              onChange={handleChange}
-              required
-            />
+        {/* Top Options */}
+        <div className="form-options-top">
+          <div className="form-actions">
+            <button type="submit" className="btn btn-primary" disabled={loading}>
+              <svg className="icon icon-md" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+              </svg>
+              {loading ? 'Creating...' : 'Create Food'}
+            </button>
+            
+            {onClose && (
+              <button type="button" className="btn btn-secondary" onClick={onClose}>
+                Cancel
+              </button>
+            )}
           </div>
 
-          <div className="form-group">
-            <label className="form-label">Brand</label>
-            <input
-              type="text"
-              name="brand"
-              className="form-input"
-              value={formData.brand}
-              onChange={handleChange}
-            />
+          <div className="form-options">
+            <label className="checkbox-container">
+              <input
+                type="checkbox"
+                name="make_public"
+                checked={formData.make_public}
+                onChange={handleChange}
+                className="checkbox-input"
+              />
+              <span className="checkbox-custom"></span>
+              <span className="checkbox-label">Make Public</span>
+            </label>
+
+            <label className="checkbox-container">
+              <input
+                type="checkbox"
+                name="create_and_log"
+                checked={formData.create_and_log}
+                onChange={handleChange}
+                className="checkbox-input"
+              />
+              <span className="checkbox-custom"></span>
+              <span className="checkbox-label">Log Immediately</span>
+            </label>
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-4">
-          <div className="form-group">
-            <label className="form-label">Serving Size *</label>
-            <input
-              type="number"
-              name="serving_size"
-              className="form-input"
-              value={formData.serving_size}
-              onChange={handleChange}
-              step="0.01"
-              required
-            />
+        {/* Basic Information */}
+        <div className="form-section">
+          <h3 className="section-title">Basic Information</h3>
+          <div className="form-grid-2">
+            <div className="form-group">
+              <label className="form-label">Food Name</label>
+              <input
+                type="text"
+                name="food_name"
+                className="form-input"
+                value={formData.food_name}
+                onChange={handleChange}
+                required
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Brand</label>
+              <input
+                type="text"
+                name="brand"
+                className="form-input"
+                value={formData.brand}
+                onChange={handleChange}
+              />
+            </div>
           </div>
 
-          <div className="form-group">
-            <label className="form-label">Unit *</label>
-            <select name="unit" className="form-input" value={formData.unit} onChange={handleChange}>
-              <option value="g">Grams (g)</option>
-              <option value="oz">Ounces (oz)</option>
-              <option value="ml">Milliliters (ml)</option>
-              <option value="cup">Cup</option>
-              <option value="tbsp">Tablespoon</option>
-              <option value="tsp">Teaspoon</option>
-              <option value="piece">Piece</option>
-              <option value="serving">Serving</option>
-            </select>
-          </div>
+          <div className="form-grid-3">
+            <div className="form-group">
+              <label className="form-label">Serving Size</label>
+              <input
+                type="number"
+                name="serving_size"
+                className="form-input"
+                value={formData.serving_size}
+                onChange={handleChange}
+                step="0.01"
+                required
+              />
+            </div>
 
-          <div className="form-group">
-            <label className="form-label">Food Group *</label>
-            <select name="food_group" className="form-input" value={formData.food_group} onChange={handleChange}>
-              <option value="protein">Protein</option>
-              <option value="fruit">Fruit</option>
-              <option value="vegetable">Vegetable</option>
-              <option value="grain">Grain</option>
-              <option value="dairy">Dairy</option>
-              <option value="other">Other</option>
-            </select>
+            <div className="form-group">
+              <label className="form-label">Unit</label>
+              <select name="unit" className="form-input" value={formData.unit} onChange={handleChange}>
+                <option value="g">Grams (g)</option>
+                <option value="oz">Ounces (oz)</option>
+                <option value="ml">Milliliters (ml)</option>
+                <option value="cup">Cup</option>
+                <option value="tbsp">Tablespoon</option>
+                <option value="tsp">Teaspoon</option>
+                <option value="piece">Piece</option>
+                <option value="serving">Serving</option>
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Food Group</label>
+              <select name="food_group" className="form-input" value={formData.food_group} onChange={handleChange}>
+                <option value="protein">Protein</option>
+                <option value="fruit">Fruit</option>
+                <option value="vegetable">Vegetable</option>
+                <option value="grain">Grain</option>
+                <option value="dairy">Dairy</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
           </div>
         </div>
 
         {/* Macronutrients */}
-        <div className="card" style={{ background: 'var(--bg-tertiary)', marginBottom: 'var(--space-4)' }}>
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-medium" style={{ margin: 0 }}>MACRONUTRIENTS *</h3>
+        <div className="form-section">
+          <div className="section-header">
+            <h3 className="section-title">Macronutrients</h3>
             <button
               type="button"
-              className="btn btn-secondary"
+              className="btn btn-secondary btn-sm"
               onClick={handleGenerateMetadata}
               disabled={generatingMetadata || !formData.food_name}
-              style={{ fontSize: 'var(--text-sm)' }}
             >
               <svg className="icon icon-sm" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd" />
@@ -277,8 +340,8 @@ const FoodCreator = ({ onFoodCreated, onClose }) => {
               {generatingMetadata ? 'Generating...' : 'AI Generate Missing Data'}
             </button>
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="form-group mb-4">
+          <div className="form-grid-4">
+            <div className="form-group">
               <label className="form-label">Calories</label>
               <input
                 type="number"
@@ -291,7 +354,7 @@ const FoodCreator = ({ onFoodCreated, onClose }) => {
               />
             </div>
 
-            <div className="form-group mb-4">
+            <div className="form-group">
               <label className="form-label">Protein (g)</label>
               <input
                 type="number"
@@ -304,7 +367,7 @@ const FoodCreator = ({ onFoodCreated, onClose }) => {
               />
             </div>
 
-            <div className="form-group mb-4">
+            <div className="form-group">
               <label className="form-label">Carbohydrates (g)</label>
               <input
                 type="number"
@@ -317,7 +380,7 @@ const FoodCreator = ({ onFoodCreated, onClose }) => {
               />
             </div>
 
-            <div className="form-group mb-4">
+            <div className="form-group">
               <label className="form-label">Fat (g)</label>
               <input
                 type="number"
@@ -329,81 +392,284 @@ const FoodCreator = ({ onFoodCreated, onClose }) => {
                 required
               />
             </div>
+
+            <div className="form-group">
+              <label className="form-label">Fiber (g)</label>
+              <input
+                type="number"
+                name="fiber"
+                className="form-input"
+                value={formData.fiber}
+                onChange={handleChange}
+                step="0.01"
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Sugar (g)</label>
+              <input
+                type="number"
+                name="sugar"
+                className="form-input"
+                value={formData.sugar}
+                onChange={handleChange}
+                step="0.01"
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Saturated Fat (g)</label>
+              <input
+                type="number"
+                name="saturated_fat"
+                className="form-input"
+                value={formData.saturated_fat}
+                onChange={handleChange}
+                step="0.01"
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Trans Fat (g)</label>
+              <input
+                type="number"
+                name="trans_fat"
+                className="form-input"
+                value={formData.trans_fat}
+                onChange={handleChange}
+                step="0.01"
+              />
+            </div>
           </div>
         </div>
 
-        {/* Options */}
-        <div className="grid grid-cols-2 gap-4 mb-6">
-          <div className="form-group">
-            <label className="flex items-center gap-3 cursor-pointer">
+        {/* Minerals */}
+        <div className="form-section">
+          <h3 className="section-title">Minerals</h3>
+          <div className="form-grid-4">
+            <div className="form-group">
+              <label className="form-label">Sodium (mg)</label>
               <input
-                type="checkbox"
-                name="make_public"
-                checked={formData.make_public}
+                type="number"
+                name="sodium"
+                className="form-input"
+                value={formData.sodium}
                 onChange={handleChange}
-                style={{ width: '20px', height: '20px' }}
+                step="0.01"
               />
-              <span className="text-sm">
-                <svg className="icon icon-sm" viewBox="0 0 20 20" fill="currentColor" style={{ display: 'inline', marginRight: '0.5rem' }}>
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM4.332 8.027a6.012 6.012 0 011.912-2.706C6.512 5.73 6.974 6 7.5 6A1.5 1.5 0 019 7.5V8a2 2 0 004 0 2 2 0 011.523-1.943A5.977 5.977 0 0116 10c0 .34-.028.675-.083 1H15a2 2 0 00-2 2v2.197A5.973 5.973 0 0110 16v-2a2 2 0 00-2-2 2 2 0 01-2-2 2 2 0 00-1.668-1.973z" clipRule="evenodd" />
-                </svg>
-                Make Public (visible to all users)
-              </span>
-            </label>
-          </div>
+            </div>
 
-          <div className="form-group">
-            <label className="flex items-center gap-3 cursor-pointer">
+            <div className="form-group">
+              <label className="form-label">Calcium (mg)</label>
               <input
-                type="checkbox"
-                name="create_and_log"
-                checked={formData.create_and_log}
+                type="number"
+                name="calcium"
+                className="form-input"
+                value={formData.calcium}
                 onChange={handleChange}
-                style={{ width: '20px', height: '20px' }}
+                step="0.01"
               />
-              <span className="text-sm">
-                <svg className="icon icon-sm" viewBox="0 0 20 20" fill="currentColor" style={{ display: 'inline', marginRight: '0.5rem' }}>
-                  <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
-                </svg>
-                Log immediately after creation
-              </span>
-            </label>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Iron (mg)</label>
+              <input
+                type="number"
+                name="iron"
+                className="form-input"
+                value={formData.iron}
+                onChange={handleChange}
+                step="0.01"
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Magnesium (mg)</label>
+              <input
+                type="number"
+                name="magnesium"
+                className="form-input"
+                value={formData.magnesium}
+                onChange={handleChange}
+                step="0.01"
+              />
+            </div>
           </div>
         </div>
 
+        {/* Vitamins */}
+        <div className="form-section">
+          <h3 className="section-title">Vitamins</h3>
+          <div className="form-grid-4">
+            <div className="form-group">
+              <label className="form-label">Vitamin A (mcg)</label>
+              <input
+                type="number"
+                name="vitamin_a"
+                className="form-input"
+                value={formData.vitamin_a}
+                onChange={handleChange}
+                step="0.01"
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Vitamin C (mg)</label>
+              <input
+                type="number"
+                name="vitamin_c"
+                className="form-input"
+                value={formData.vitamin_c}
+                onChange={handleChange}
+                step="0.01"
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Vitamin D (mcg)</label>
+              <input
+                type="number"
+                name="vitamin_d"
+                className="form-input"
+                value={formData.vitamin_d}
+                onChange={handleChange}
+                step="0.01"
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Cholesterol (mg)</label>
+              <input
+                type="number"
+                name="cholesterol"
+                className="form-input"
+                value={formData.cholesterol}
+                onChange={handleChange}
+                step="0.01"
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Caffeine (mg)</label>
+              <input
+                type="number"
+                name="caffeine"
+                className="form-input"
+                value={formData.caffeine}
+                onChange={handleChange}
+                step="0.01"
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Cost ($)</label>
+              <input
+                type="number"
+                name="cost"
+                className="form-input"
+                value={formData.cost}
+                onChange={handleChange}
+                step="0.01"
+                min="0"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Servings for Logging */}
         {formData.create_and_log && (
-          <div className="form-group">
-            <label className="form-label">Servings to Log</label>
-            <input
-              type="number"
-              name="servings"
-              className="form-input"
-              value={formData.servings}
-              onChange={handleChange}
-              step="0.1"
-              min="0.1"
-            />
+          <div className="form-section">
+            <h3 className="section-title">Logging Options</h3>
+            <div className="form-grid-1">
+              <div className="form-group">
+                <label className="form-label">Servings to Log</label>
+                <input
+                  type="number"
+                  name="servings"
+                  className="form-input"
+                  value={formData.servings}
+                  onChange={handleChange}
+                  step="0.1"
+                  min="0.1"
+                />
+              </div>
+            </div>
           </div>
         )}
-
-        {/* Actions */}
-        <div className="flex gap-4">
-          <button type="submit" className="btn btn-primary" disabled={loading}>
-            <svg className="icon icon-md" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-            </svg>
-            {loading ? 'Creating...' : 'Create Food'}
-          </button>
-          
-          {onClose && (
-            <button type="button" className="btn btn-secondary" onClick={onClose}>
-              Cancel
-            </button>
-          )}
-        </div>
       </form>
 
       <style jsx>{`
+        .form-options-top {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: var(--space-6);
+          padding-bottom: var(--space-4);
+          border-bottom: 1px solid var(--border-primary);
+        }
+
+        .form-actions {
+          display: flex;
+          gap: var(--space-3);
+        }
+
+        .form-options {
+          display: flex;
+          gap: var(--space-4);
+        }
+
+        .form-section {
+          margin-bottom: var(--space-6);
+          padding: var(--space-4);
+          background: var(--bg-tertiary);
+          border-radius: var(--radius-lg);
+        }
+
+        .section-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: var(--space-4);
+        }
+
+        .section-title {
+          font-size: var(--text-lg);
+          font-weight: var(--font-weight-semibold);
+          color: var(--text-primary);
+          margin: 0;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+        }
+
+        .form-grid-1 {
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: var(--space-4);
+        }
+
+        .form-grid-2 {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: var(--space-3);
+        }
+
+        .form-grid-3 {
+          display: grid;
+          grid-template-columns: 1fr 1fr 1fr;
+          gap: var(--space-3);
+        }
+
+        .form-grid-4 {
+          display: grid;
+          grid-template-columns: 1fr 1fr 1fr 1fr;
+          gap: var(--space-3);
+        }
+
+        .btn-sm {
+          padding: var(--space-2) var(--space-3);
+          font-size: var(--text-sm);
+        }
+
         .macro-preview {
           border-left: 4px solid var(--accent-primary);
         }
@@ -424,6 +690,68 @@ const FoodCreator = ({ onFoodCreated, onClose }) => {
           font-size: var(--text-2xl);
           font-weight: var(--font-weight-bold);
           color: var(--accent-primary);
+        }
+
+        @media (max-width: 768px) {
+          .form-options-top {
+            flex-direction: column;
+            gap: var(--space-4);
+            align-items: flex-start;
+          }
+
+          .form-grid-2,
+          .form-grid-3,
+          .form-grid-4 {
+            grid-template-columns: 1fr;
+          }
+        }
+
+        @media (max-width: 1024px) {
+          .form-grid-4 {
+            grid-template-columns: 1fr 1fr;
+          }
+        }
+
+        .checkbox-container {
+          display: flex;
+          align-items: center;
+          gap: var(--space-2);
+          cursor: pointer;
+        }
+
+        .checkbox-input {
+          display: none;
+        }
+
+        .checkbox-custom {
+          width: 18px;
+          height: 18px;
+          border: 2px solid var(--border-primary);
+          border-radius: var(--radius-sm);
+          background: var(--bg-tertiary);
+          position: relative;
+          transition: all 0.2s var(--ease-out-cubic);
+        }
+
+        .checkbox-input:checked + .checkbox-custom {
+          background: var(--accent-primary);
+          border-color: var(--accent-primary);
+        }
+
+        .checkbox-input:checked + .checkbox-custom::after {
+          content: '✓';
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          color: white;
+          font-size: 12px;
+          font-weight: bold;
+        }
+
+        .checkbox-label {
+          font-size: var(--text-sm);
+          color: var(--text-primary);
         }
       `}</style>
     </div>

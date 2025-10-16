@@ -9,6 +9,7 @@ coverage/
 .env.test.local
 .env.production.local
 notes/users.txt
+/backend/models/vosk-model-small-en-us-0.15
 
 /build
 /dist

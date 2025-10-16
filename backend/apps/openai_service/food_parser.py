@@ -77,11 +77,13 @@ You are a nutritional data API. Generate complete nutritional information for: "
 
 CRITICAL INSTRUCTIONS:
 1. Return ONLY a valid JSON object. No explanations, no markdown, just raw JSON.
-2. ALL fields must be included with realistic nutritional values
-3. If a field already has a value in "Existing metadata", use that exact value
-4. For missing fields, provide realistic values based on USDA nutritional data
+2. ALL fields must be included with realistic nutritional values based on USDA nutritional database
+3. If a field already has a value in "Existing metadata", use that exact value - DO NOT override it
+4. For missing fields, provide accurate values based on USDA nutritional data for similar foods
 5. The brand field should contain the actual brand name if mentioned (e.g., "Trader Joes", "Kodiak", "Chobani")
 6. Never leave fields null or empty - use 0 if truly unknown
+7. Use appropriate serving sizes (e.g., 100g for most foods, 1 cup for liquids, 1 item for whole items)
+8. Be realistic with micronutrients - don't make up excessive vitamin/mineral values
 
 Required JSON structure (include ALL these fields):
 {{
@@ -111,6 +113,12 @@ Required JSON structure (include ALL these fields):
 
 Food groups: "protein", "grain", "vegetable", "fruit", "dairy", "other"
 Units: "g", "ml", "oz", "cup", "tbsp", "tsp", "item"
+
+Examples of realistic nutritional values:
+- Chicken breast (100g): ~165 calories, 31g protein, 3.6g fat, 0g carbs
+- White rice (100g): ~130 calories, 2.7g protein, 0.3g fat, 28g carbs
+- Banana (100g): ~89 calories, 1.1g protein, 0.3g fat, 23g carbs
+- Whole milk (100ml): ~61 calories, 3.2g protein, 3.3g fat, 4.7g carbs
 
 Return ONLY the JSON object, nothing else.
 """
@@ -364,6 +372,24 @@ Return ONLY the JSON object, nothing else.
             if abs(float(food.protein) - float(metadata['protein'])) > 2:
                 return False
         
+        # Check brand field - if provided, it must match exactly
+        if 'brand' in metadata and metadata['brand']:
+            # If existing food has empty brand and only brand metadata is provided, use existing food
+            if not food.brand and len(metadata) == 1:
+                return True
+            # Otherwise, brand must match exactly
+            if food.brand != metadata['brand']:
+                return False
+        
+        # Check serving size and unit - if provided, they must match
+        if 'serving_size' in metadata:
+            if abs(float(food.serving_size) - float(metadata['serving_size'])) > 0.1:
+                return False
+        
+        if 'unit' in metadata:
+            if food.unit != metadata['unit']:
+                return False
+        
         return True
     
     def _create_food_duplicate(self, original_food: Food, metadata: Dict) -> Food:
@@ -497,6 +523,13 @@ Return ONLY the JSON object, nothing else.
             
             # Parse JSON
             generated = json.loads(response_text)
+            
+            # Ensure generated is a dict, not a list
+            if isinstance(generated, list) and len(generated) > 0:
+                generated = generated[0]  # Take first item if it's a list
+            elif not isinstance(generated, dict):
+                logger.error(f"Unexpected response format: {type(generated)}")
+                return self._get_default_metadata(existing_metadata)
             
             # Filter existing metadata to only include valid fields BEFORE merging
             valid_fields = set(self._get_default_metadata({}).keys())

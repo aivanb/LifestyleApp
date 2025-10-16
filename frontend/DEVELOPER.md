@@ -42,6 +42,7 @@ App
   - Router configuration
   - Global layout structure
 - **Key Features**: Route protection, navigation setup
+- **Routes**: Profile (default), Food Log, Workout Tracker, Additional Trackers, Data Viewer
 
 #### Authentication Components
 - **Login** (`pages/Login.js`): User authentication form
@@ -52,6 +53,8 @@ App
 - **Navbar** (`components/Navbar.js`): Navigation with user menu
 - **Dashboard** (`pages/Dashboard.js`): User dashboard with stats
 - **FoodLog** (`pages/FoodLog.js`): Food logging system (NEW)
+- **WorkoutTracker** (`pages/WorkoutTracker.js`): Workout tracking system (NEW)
+- **AdditionalTrackers** (`pages/AdditionalTrackers.js`): Health tracking system (NEW)
 - **DataViewer** (`pages/DataViewer.js`): Database viewer interface (NEW)
 - **OpenAI** (`pages/OpenAI.js`): AI prompt interface
 - **Profile** (`pages/Profile.js`): User profile management
@@ -67,6 +70,25 @@ App
   - Create and log simultaneously
   - Delete log entries
   - Recently logged foods
+
+### Additional Trackers Components (NEW)
+- **AdditionalTrackersMenu** (`components/AdditionalTrackersMenu.js`): Main menu with tracker buttons
+- **Individual Tracker Components** (`components/trackers/`):
+  - **WeightTracker**: Daily weight tracking with unit support
+  - **WaterTracker**: Hydration tracking with daily totals
+  - **BodyMeasurementTracker**: Flexible body measurement tracking
+  - **StepsTracker**: Daily step count tracking
+  - **CardioTracker**: Cardiovascular exercise tracking
+  - **SleepTracker**: Sleep pattern and quality tracking
+  - **HealthMetricsTracker**: Daily wellness metrics with rating systems
+- **Features**:
+  - Real-time streak calculations
+  - Comprehensive form validation
+  - Date filtering and historical data
+  - Responsive design for mobile and desktop
+  - Error handling and user feedback
+  - Edit and delete functionality
+  - Daily totals and analytics
 
 ## State Management
 
@@ -498,6 +520,427 @@ REACT_APP_ENV=development
 - **Performance Monitoring**: Track Core Web Vitals
 - **Error Tracking**: Implement error monitoring
 - **Caching**: Configure proper caching headers
+
+## Workout Tracker System - Comprehensive Frontend Interface
+
+### Overview
+The workout tracker system provides a comprehensive frontend interface for fitness tracking with muscle priority management, workout creation, split programs, workout logging, and progress tracking. It features a tabbed interface with modern design principles and robust error handling.
+
+### Key Components
+
+#### 1. Main Page (`pages/WorkoutTracker.js`)
+- **Purpose**: Main workout tracker page with tabbed interface
+- **Features**:
+  - Tab navigation (Muscle Priority, Workout Adder, Split Creator, Workout Logger, Workout Log)
+  - State management for active tab and selected date
+  - Integration with all workout components
+- **State Management**: Active tab state, selected date for logging
+- **Error Handling**: Graceful error handling with user feedback
+
+#### 2. Core Components
+
+##### WorkoutAdder (`components/WorkoutAdder.js`)
+- **Purpose**: Create and edit custom workouts
+- **Features**:
+  - Workout metadata (name, type, equipment, location, notes)
+  - Emoji icon selection from predefined list
+  - Muscle activation rating assignment (0-100)
+  - Public/private workout settings
+  - Form validation and error handling
+  - Edit existing workouts functionality
+- **State Management**: Form data, muscle selection, validation state
+- **API Integration**: Create/update workout endpoints
+
+##### MusclePriority (`components/MusclePriority.js`)
+- **Purpose**: Manage muscle group priorities
+- **Features**:
+  - Expandable muscle group sections
+  - Slider-based priority adjustment (0-100)
+  - Color-coded priority levels
+  - Reset to default (80) functionality
+  - Batch update capabilities
+  - Priority legend and explanations
+- **State Management**: Muscle priorities, expanded groups, update state
+- **API Integration**: Get/update muscle priorities endpoints
+
+##### SplitCreator (`components/SplitCreator.js`)
+- **Purpose**: Create and manage workout splits
+- **Features**:
+  - Split creation with multiple days
+  - Muscle target activation per day
+  - Real-time muscle analysis with optimal ranges
+  - Split activation/deactivation
+  - Edit existing splits
+  - Muscle progress visualization
+- **State Management**: Split data, muscle analysis, form state
+- **API Integration**: Split CRUD operations, activation endpoints
+
+##### WorkoutLogger (`components/WorkoutLogger.js`)
+- **Purpose**: Log individual workout sessions
+- **Features**:
+  - Workout selection with filtering and search
+  - Weight, reps, RIR logging
+  - Workout attributes (dropset, assisted, partial, pause, negatives)
+  - Working timer functionality
+  - Quick-add from previous sessions
+  - Form validation and autofill
+- **State Management**: Selected workout, form data, timer state
+- **API Integration**: Workout logging, recent workouts endpoints
+
+##### WorkoutLog (`components/WorkoutLog.js`)
+- **Purpose**: View workout history and progress
+- **Features**:
+  - Date-based workout viewing
+  - Split day information display
+  - Workout statistics (sets, weight, reps, RIR)
+  - Muscle progress tracking
+  - Previous day quick-add options
+  - Calendar integration
+- **State Management**: Selected date, split info, workout stats
+- **API Integration**: Split day info, workout stats endpoints
+
+### Features
+
+#### Muscle Priority Management
+- **Visual Interface**: Expandable groups with slider controls
+- **Priority Scale**: 0-100 with color-coded levels (blue, green, yellow, orange, red)
+- **Default Reset**: One-click reset to 80 for all muscles
+- **Batch Updates**: Update all priorities at once
+- **Real-time Feedback**: Immediate visual feedback on changes
+
+#### Workout Creation
+- **Form Validation**: Required fields and data validation
+- **Emoji Support**: Predefined emoji selection (stored in workout name)
+- **Muscle Activation**: 0-100 rating assignment per muscle
+- **Metadata Management**: Equipment, location, notes, type selection
+- **Public/Private**: Visibility settings for workout sharing
+
+#### Split Management
+- **Day Creation**: Add multiple days to splits
+- **Target Setting**: Per-muscle activation targets per day
+- **Real-time Analysis**: Automatic muscle volume calculations
+- **Optimal Ranges**: Color-coded muscle status (warning, below, optimal, above)
+- **Split Activation**: One-click split activation with date setting
+
+#### Workout Logging
+- **Session Tracking**: Weight, reps, RIR, rest time logging
+- **Advanced Attributes**: Dropset, assisted, partial, pause, negatives
+- **Working Timer**: Start/stop timer for work/rest periods
+- **Quick Add**: Previous session data reuse
+- **Search & Filter**: Find workouts by name or muscle activation
+
+#### Progress Tracking
+- **Statistics Display**: Total sets, weight lifted, reps, RIR
+- **Date Navigation**: Calendar-based workout viewing
+- **Muscle Progress**: Current vs. target activation visualization
+- **Split Integration**: Current split day information
+- **Historical Data**: Past workout performance tracking
+
+### Design System Integration
+
+#### Visual Design
+- **Minimalistic**: Clean, uncluttered interface
+- **Modern**: Contemporary design elements
+- **High Contrast**: Clear visual hierarchy
+- **Responsive**: Seamless mobile and desktop experience
+
+#### UI Elements
+- **Tabbed Navigation**: Smooth transitions between sections
+- **Form Controls**: Rounded edges, clear labels, validation feedback
+- **Data Display**: Card-based layout for metrics and information
+- **Color Coding**: Priority colors and status indicators
+- **Icons**: Heroicons for consistent iconography
+
+#### Responsive Design
+- **Mobile First**: Optimized for mobile devices
+- **Desktop Enhancement**: Enhanced layout for larger screens
+- **Touch Friendly**: Appropriate touch targets for mobile
+- **Flexible Grid**: Adaptive grid system for different screen sizes
+
+### State Management
+
+#### Component State
+```javascript
+// WorkoutTracker main page
+const [activeTab, setActiveTab] = useState('muscle-priority');
+const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+
+// WorkoutAdder component
+const [workoutName, setWorkoutName] = useState('');
+const [selectedMuscles, setSelectedMuscles] = useState([]);
+const [selectedEmoji, setSelectedEmoji] = useState('');
+
+// MusclePriority component
+const [musclePriorities, setMusclePriorities] = useState([]);
+const [expandedGroups, setExpandedGroups] = useState({});
+
+// SplitCreator component
+const [splitDays, setSplitDays] = useState([]);
+const [analysis, setAnalysis] = useState({});
+
+// WorkoutLogger component
+const [selectedWorkout, setSelectedWorkout] = useState(null);
+const [workTime, setWorkTime] = useState(0);
+const [isWorking, setIsWorking] = useState(false);
+```
+
+#### API Integration
+- **Error Handling**: Graceful handling of API failures
+- **Loading States**: User feedback during API calls
+- **Data Validation**: Client-side validation with server confirmation
+- **Optimistic Updates**: Immediate UI updates with rollback on failure
+
+### Testing
+
+#### Component Tests
+- **Unit Tests**: Individual component testing
+- **User Interaction**: Form submission and navigation testing
+- **State Management**: React state and context testing
+- **API Integration**: Mock API testing
+- **Responsive Design**: Mobile and desktop layout testing
+
+#### E2E Tests
+- **Complete Workflows**: End-to-end user journey testing
+- **Cross-Component**: Integration between components
+- **Data Persistence**: Data saving and retrieval testing
+- **Error Scenarios**: Validation and error handling testing
+- **Performance**: Load time and responsiveness testing
+
+### Usage Examples
+
+#### Creating a Workout
+```javascript
+const workoutData = {
+  workout_name: 'Bench Press',
+  type: 'barbell',
+  equipment_brand: 'Rogue Fitness',
+  location: 'Home Gym',
+  notes: 'Focus on form',
+  make_public: true,
+  muscles: [
+    { muscle: 1, activation_rating: 100 }, // Chest
+    { muscle: 2, activation_rating: 75 }    // Triceps
+  ],
+  emoji: '🏋️'
+};
+
+await api.createWorkout(workoutData);
+```
+
+#### Updating Muscle Priorities
+```javascript
+const priorities = [
+  { muscle_name: 1, importance: 90 }, // Chest - High priority
+  { muscle_name: 2, importance: 85 }, // Triceps - High priority
+  { muscle_name: 3, importance: 70 }  // Quads - Medium priority
+];
+
+await api.updateMusclePriorities(priorities);
+```
+
+#### Logging a Workout
+```javascript
+const logData = {
+  workout: 1, // Workout ID
+  weight: 135.0,
+  reps: 10,
+  rir: 2,
+  attributes: [
+    { type: 'dropset', weight: 115, reps: 8 },
+    { type: 'pause', reps: 5, wait_time: 3 }
+  ],
+  rest_time: 120
+};
+
+await api.createWorkoutLog(logData);
+```
+
+## Profile System - Comprehensive User Interface
+
+### Overview
+The profile system provides a comprehensive user interface for managing personal information, goals, body metrics, and historical data. It features a responsive tabbed interface with modern design principles and robust error handling.
+
+### Key Components
+
+#### 1. Main Profile Component (`pages/Profile.js`)
+- **Purpose**: Main profile page with tabbed interface
+- **Features**: 
+  - Responsive design (mobile/desktop)
+  - Tab navigation (Personal Info, Goals, Body Metrics, History)
+  - User information display with fitness ranking
+  - Logout functionality
+- **State Management**: Comprehensive state for all profile data
+- **Error Handling**: Graceful error handling with user feedback
+
+#### 2. Sub-Components
+- **PersonalInfoTab**: Personal information editing interface
+- **GoalsTab**: Goals management with AI-powered macro calculator
+- **MetricsTab**: Body metrics display with fitness ranking system
+- **HistoryTab**: Historical data visualization and trend analysis
+
+#### 3. API Integration (`services/api.js`)
+- **Profile Methods**: Complete API integration for profile operations
+- **Error Handling**: Robust error handling for API calls
+- **Data Validation**: Client-side validation for user inputs
+
+### Features
+
+#### Personal Information Management
+- **Editable Fields**: Height, birthday, gender, unit preferences, activity level
+- **Form Validation**: Real-time validation with error messages
+- **Data Persistence**: Automatic saving with user feedback
+- **Responsive Design**: Mobile-optimized form layouts
+
+#### Goal Management
+- **Weight Goals**: Target weight, lean mass, fat mass goals
+- **Macro Goals**: Complete macro tracking (calories, protein, fat, carbs, fiber, sodium)
+- **AI Calculator**: Generate macro goals based on weight target and timeframe
+- **Smart Warnings**: System warnings for extreme goals
+- **Manual Editing**: Direct goal editing with validation
+
+#### Body Metrics Display
+- **Comprehensive Metrics**: BMI, BMR, TDEE, body ratios, body composition
+- **Fitness Ranking**: 17-tier ranking system with color-coded badges
+- **Progress Tracking**: Current rank with requirements for next rank
+- **Visual Design**: Card-based layout with clear data presentation
+
+#### Historical Data Analysis
+- **Weight Trends**: Automatic trend classification (gaining, losing, stable, no_data)
+- **Total Change**: Weight lost or gained calculation
+- **Weekly Recommendations**: Recommended weekly weight change
+- **Weight History**: Recent weight logs with dates and values
+
+### Design System Integration
+
+#### Visual Design
+- **Minimalistic**: Clean, uncluttered interface
+- **Modern**: Contemporary design elements
+- **High Contrast**: Clear visual hierarchy
+- **Responsive**: Seamless mobile and desktop experience
+
+#### UI Elements
+- **Tabbed Navigation**: Smooth transitions between sections
+- **Form Controls**: Rounded edges, clear labels, validation feedback
+- **Data Display**: Card-based layout for metrics and information
+- **Color Coding**: Fitness rank colors and trend indicators
+- **Icons**: Heroicons for consistent iconography
+
+#### Responsive Design
+- **Mobile First**: Optimized for mobile devices
+- **Desktop Enhancement**: Enhanced layout for larger screens
+- **Touch Friendly**: Appropriate touch targets for mobile
+- **Flexible Grid**: Adaptive grid system for different screen sizes
+
+### State Management
+
+#### Profile Data State
+```javascript
+const [profileData, setProfileData] = useState(null);
+const [goals, setGoals] = useState({});
+const [metrics, setMetrics] = useState({});
+const [historical, setHistorical] = useState({});
+const [loading, setLoading] = useState(true);
+const [error, setError] = useState('');
+```
+
+#### Form State Management
+- **Editing State**: Tracks which sections are being edited
+- **Form Data**: Manages form input values
+- **Validation**: Real-time validation state
+- **Submission**: Handles form submission and API calls
+
+### API Integration
+
+#### Profile Endpoints
+- **GET /api/users/profile/**: Complete profile data
+- **PUT /api/users/profile/**: Update personal information
+- **GET /api/users/goals/**: Retrieve user goals
+- **PUT /api/users/goals/**: Update user goals
+- **GET /api/users/calculate-metrics/**: Calculate body metrics
+- **POST /api/users/calculate-macros/**: Generate macro goals
+
+#### Error Handling
+- **API Errors**: Graceful handling of API failures
+- **Validation Errors**: Client-side validation with user feedback
+- **Network Errors**: Offline handling and retry logic
+- **User Feedback**: Clear error messages and success notifications
+
+### Testing
+
+#### Component Tests
+- **Unit Tests**: Individual component testing
+- **User Interaction**: Form submission and navigation testing
+- **State Management**: React state and context testing
+- **API Integration**: Mock API testing
+- **Responsive Design**: Mobile and desktop layout testing
+
+#### E2E Tests
+- **Complete Workflows**: End-to-end user journey testing
+- **Cross-Browser**: Multi-browser compatibility testing
+- **Performance**: Load time and responsiveness testing
+- **Accessibility**: Keyboard navigation and screen reader testing
+- **Data Persistence**: Data saving and retrieval testing
+
+### Usage Examples
+
+#### Profile Data Loading
+```javascript
+const loadProfileData = async () => {
+  try {
+    setLoading(true);
+    const response = await api.getUserProfile();
+    
+    if (response.data.data) {
+      setProfileData(response.data.data.user);
+      setGoals(response.data.data.goals);
+      setMetrics(response.data.data.metrics);
+      setHistorical(response.data.data.historical);
+    }
+  } catch (err) {
+    setError('Failed to load profile data');
+  } finally {
+    setLoading(false);
+  }
+};
+```
+
+#### Macro Calculator
+```javascript
+const calculateMacros = async () => {
+  try {
+    setMacroCalculation(prev => ({ ...prev, calculating: true }));
+    
+    const response = await api.generateMacroGoals(
+      macroCalculation.weight_goal,
+      macroCalculation.timeframe_weeks
+    );
+
+    if (response.data.data) {
+      setMacroCalculation(prev => ({
+        ...prev,
+        result: response.data.data,
+        calculating: false
+      }));
+    }
+  } catch (err) {
+    setError('Failed to calculate macros');
+    setMacroCalculation(prev => ({ ...prev, calculating: false }));
+  }
+};
+```
+
+#### Profile Update
+```javascript
+const updateProfile = async (updatedData) => {
+  try {
+    await api.updateUserProfile(updatedData);
+    await loadProfileData();
+    setEditing(false);
+  } catch (err) {
+    setError('Failed to update profile');
+  }
+};
+```
 
 ## Common Development Tasks
 

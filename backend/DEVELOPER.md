@@ -33,10 +33,15 @@ backend/
 - **Endpoints**: Registration, login, logout, profile management, password change
 
 ### Users App (`apps/users/`)
-- **Purpose**: User models and profile management
+- **Purpose**: User models and comprehensive profile management
 - **Key Files**:
   - `models.py` - User, AccessLevel, Unit, ActivityLevel, UserGoal models
+  - `services.py` - BodyMetricsService, MacroGoalsService, ProfileService
+  - `views.py` - Profile management endpoints
+  - `urls.py` - Profile API URL patterns
 - **Models**: Custom User model extending AbstractUser with additional fields
+- **Features**: Personal information management, goal tracking, body metrics calculation, historical data analysis
+- **API Endpoints**: Profile CRUD, goals management, macro calculations, body metrics
 
 ### Foods App (`apps/foods/`)
 - **Purpose**: Food database and meal management
@@ -45,22 +50,57 @@ backend/
 - **Models**: Nutritional data, meal compositions, food-meal relationships
 
 ### Logging App (`apps/logging/`)
-- **Purpose**: Activity and consumption tracking
+- **Purpose**: Activity and consumption tracking with comprehensive tracking system
 - **Key Files**:
   - `models.py` - FoodLog, WeightLog, BodyMeasurementLog, WaterLog, StepsLog, CardioLog
+  - `serializers.py` - Serializers for all tracker models with validation
+  - `views.py` - CRUD views and streak calculation for all trackers
+  - `urls.py` - URL patterns for all tracker endpoints
 - **Models**: Various logging tables for tracking user activities
+- **Features**: Full CRUD operations, streak calculations, date filtering, user isolation
+- **API Endpoints**: Weight, water, body measurements, steps, cardio tracking with individual and bulk operations
 
 ### Workouts App (`apps/workouts/`)
-- **Purpose**: Exercise tracking and muscle data
+- **Purpose**: Comprehensive workout tracking and management system
 - **Key Files**:
-  - `models.py` - Workout, Muscle, WorkoutLog, MuscleLog, WorkoutMuscle models
-- **Models**: Exercise definitions, muscle activation, workout performance
+  - `models.py` - Workout, Muscle, WorkoutLog, MuscleLog, WorkoutMuscle, Split, SplitDay, SplitDayTarget models
+  - `serializers.py` - Complete serialization for all workout-related data
+  - `views.py` - CRUD operations, muscle priorities, splits, workout logging, statistics
+  - `urls.py` - Workout API URL patterns
+- **Models**: Workout definitions, muscle management, workout logging, split programs
+- **Features**: Muscle priority system, workout creation, split management, progress tracking
+- **API Endpoints**: Complete workout lifecycle management
 
 ### Health App (`apps/health/`)
-- **Purpose**: Health metrics and sleep tracking
+- **Purpose**: Health metrics and sleep tracking with comprehensive analytics
 - **Key Files**:
   - `models.py` - SleepLog, HealthMetricsLog models
+  - `serializers.py` - Serializers for health tracker models with validation
+  - `views.py` - CRUD views and streak calculation for health trackers
+  - `urls.py` - URL patterns for health tracker endpoints
+- **Features**: Sleep pattern tracking, health metrics logging, rating systems, streak calculations
+- **API Endpoints**: Sleep tracking, health metrics with comprehensive data validation
 - **Models**: Sleep data, daily health metrics
+
+### Additional Trackers System
+- **Purpose**: Comprehensive health and fitness tracking with seven different tracker types
+- **Implementation**: Distributed across `apps/logging/` and `apps/health/` apps
+- **Trackers**:
+  - **Weight Log**: Daily weight tracking with unit support (lbs/kg)
+  - **Water Log**: Hydration tracking with multiple units and daily totals
+  - **Body Measurement Log**: Flexible body measurement tracking (waist, shoulder, etc.)
+  - **Steps Log**: Daily step count tracking with formatted display
+  - **Cardio Log**: Comprehensive cardiovascular exercise tracking
+  - **Sleep Log**: Detailed sleep pattern and quality tracking
+  - **Health Metrics Log**: Daily wellness metrics with rating systems
+- **Key Features**:
+  - Streak calculation algorithms for all trackers
+  - Comprehensive data validation and error handling
+  - Date filtering and historical data access
+  - User isolation and security
+  - Bulk streak retrieval for dashboard display
+- **API Design**: RESTful endpoints with consistent patterns across all trackers
+- **Documentation**: See `ADDITIONAL_TRACKERS_SUMMARY.md` for complete implementation details
 
 ### Analytics App (`apps/analytics/`)
 - **Purpose**: API usage and error tracking
@@ -725,6 +765,285 @@ direct_mapping = {
 4. Apply migration: `python manage.py migrate`
 5. Test changes thoroughly
 6. **NEW**: Update Data Viewer table mappings if needed
+
+## Workout Tracker System - Comprehensive Fitness Management
+
+### Overview
+The workout tracker system provides comprehensive fitness tracking with muscle priority management, workout creation, split programs, workout logging, and progress tracking. It's built with a modular architecture that supports both individual workout tracking and structured training programs.
+
+### Key Components
+
+#### 1. Models (`apps/workouts/models.py`)
+- **Workout**: Core workout definitions with metadata (name, type, equipment, location, notes)
+- **Muscle**: Muscle groups and individual muscles for activation tracking
+- **WorkoutLog**: Individual workout session logs with weight, reps, RIR, attributes
+- **MuscleLog**: User-specific muscle priority settings (0-100 scale)
+- **WorkoutMuscle**: Workout-muscle activation relationships (0-100 rating)
+- **Split**: Workout program definitions with start dates
+- **SplitDay**: Individual days within a split program
+- **SplitDayTarget**: Target activation for muscles per day
+
+#### 2. Serializers (`apps/workouts/serializers.py`)
+- **WorkoutSerializer**: Handles workout CRUD with emoji support in workout names
+- **MuscleSerializer**: Basic muscle data serialization
+- **WorkoutLogSerializer**: Workout session logging with attribute support
+- **MuscleLogSerializer**: Muscle priority management
+- **SplitSerializer**: Split creation and management with nested days and targets
+- **SplitDaySerializer**: Day management within splits
+- **SplitDayTargetSerializer**: Target activation management
+
+#### 3. Views (`apps/workouts/views.py`)
+- **Muscle Priority Management**: List and update muscle priorities with default 80
+- **Workout CRUD**: Create, read, update, delete workouts with emoji support
+- **Split Management**: Create, activate, manage workout splits with day targets
+- **Workout Logging**: Log workout sessions with advanced attributes
+- **Statistics**: Track progress and performance metrics
+- **Split Day Info**: Get current split day information based on start date
+
+#### 4. URL Patterns (`apps/workouts/urls.py`)
+- `/api/workouts/` - Workout CRUD operations
+- `/api/workouts/muscles/` - Muscle management
+- `/api/workouts/muscle-priorities/` - Priority management
+- `/api/workouts/splits/` - Split management
+- `/api/workouts/logs/` - Workout logging
+- `/api/workouts/stats/` - Statistics and metrics
+
+### Features
+
+#### Muscle Priority System
+- **Base Priority**: All muscles start at 80 priority
+- **Priority Scale**: 0-100 with color-coded levels
+- **Usage**: Influences volume distribution in splits
+- **Management**: Expandable groups with slider controls
+- **Default Creation**: Automatic MuscleLog creation for all muscles
+
+#### Workout Creation
+- **Metadata**: Name, type, equipment, location, notes
+- **Icons**: Predefined emoji selection (stored in name field)
+- **Muscle Activation**: 0-100 rating per muscle
+- **Visibility**: Public/private settings
+- **Validation**: Required fields and data validation
+
+#### Split Management
+- **Structure**: Multiple days with target activations
+- **Analysis**: Real-time muscle volume calculations
+- **Activation**: One active split per user (deactivates others)
+- **Targets**: Per-muscle activation goals per day
+- **Optimization**: Automatic optimal range calculations
+- **Day Calculation**: Determines current day based on start date
+
+#### Workout Logging
+- **Session Data**: Weight, reps, RIR, rest time
+- **Attributes**: Advanced training techniques (dropset, assisted, partial, pause, negatives)
+- **Timer**: Working/resting time tracking
+- **Quick Add**: Previous session data reuse
+- **Validation**: Required field enforcement
+- **Date Filtering**: Filter logs by specific dates
+
+#### Progress Tracking
+- **Statistics**: Sets, weight, reps, RIR totals
+- **History**: Date-based workout viewing
+- **Muscle Progress**: Activation vs. targets
+- **Trends**: Performance over time
+- **Split Day Info**: Current day information and targets
+
+### Security Features
+- JWT authentication required for all endpoints
+- User data isolation (users can only access their own data)
+- Public workout visibility for all users
+- Input validation and sanitization
+- SQL injection prevention
+- Comprehensive error logging
+
+### Testing
+- **Unit Tests**: Model and serializer testing
+- **Integration Tests**: API endpoint testing
+- **Error Handling**: Comprehensive error scenario testing
+- **Data Validation**: Input validation testing
+- **Authentication**: Security testing
+- **Complete Workflows**: End-to-end workout lifecycle testing
+
+### Usage Examples
+
+#### Create Workout with Emoji
+```python
+from apps.workouts.models import Workout, WorkoutMuscle
+from apps.workouts.serializers import WorkoutSerializer
+
+workout_data = {
+    'workout_name': 'Bench Press',
+    'type': 'barbell',
+    'equipment_brand': 'Rogue Fitness',
+    'make_public': True,
+    'muscles': [{'muscle': 1, 'activation_rating': 100}],
+    'emoji': '🏋️'
+}
+
+serializer = WorkoutSerializer(data=workout_data)
+if serializer.is_valid():
+    workout = serializer.save(user=user)
+    # Workout name becomes "🏋️ Bench Press"
+```
+
+#### Update Muscle Priorities
+```python
+from apps.workouts.models import MuscleLog
+from apps.workouts.views import update_muscle_priorities
+
+priorities_data = [
+    {'muscle_name': 1, 'importance': 90},  # Chest - High priority
+    {'muscle_name': 2, 'importance': 85},  # Triceps - High priority
+]
+
+# This will update or create MuscleLog entries for the user
+```
+
+#### Create Split with Targets
+```python
+from apps.workouts.models import Split, SplitDay, SplitDayTarget
+from apps.workouts.serializers import SplitSerializer
+
+split_data = {
+    'split_name': 'Push/Pull/Legs',
+    'split_days': [
+        {
+            'day_name': 'Push Day',
+            'day_order': 1,
+            'targets': [
+                {'muscle': 1, 'target_activation': 225},  # Chest
+                {'muscle': 2, 'target_activation': 200}   # Triceps
+            ]
+        }
+    ]
+}
+
+serializer = SplitSerializer(data=split_data)
+if serializer.is_valid():
+    split = serializer.save(user=user)
+```
+
+#### Log Workout with Attributes
+```python
+from apps.workouts.models import WorkoutLog
+from apps.workouts.serializers import WorkoutLogSerializer
+
+log_data = {
+    'workout': workout_id,
+    'weight': 135.0,
+    'reps': 10,
+    'rir': 2,
+    'attributes': [
+        {'type': 'dropset', 'weight': 115, 'reps': 8},
+        {'type': 'pause', 'reps': 5, 'wait_time': 3}
+    ],
+    'rest_time': 120
+}
+
+serializer = WorkoutLogSerializer(data=log_data)
+if serializer.is_valid():
+    log = serializer.save(user=user)
+```
+
+## Profile System - Comprehensive User Management
+
+### Overview
+The profile system provides comprehensive user management with personal information, goal tracking, body metrics calculation, and historical data analysis. It's built with a service-oriented architecture for maintainability and testability.
+
+### Key Components
+
+#### 1. Services (`apps/users/services.py`)
+- **BodyMetricsService**: Calculates BMI, BMR, TDEE, body composition ratios
+- **MacroGoalsService**: Generates macro goals based on weight targets and timeframes
+- **ProfileService**: Aggregates profile data and historical analysis
+
+#### 2. API Endpoints (`apps/users/views.py`)
+- **GET /api/users/profile/**: Complete profile data (user, goals, metrics, historical)
+- **PUT /api/users/profile/**: Update personal information
+- **GET /api/users/goals/**: Retrieve user goals
+- **PUT /api/users/goals/**: Update user goals
+- **GET /api/users/calculate-metrics/**: Calculate body metrics
+- **POST /api/users/calculate-macros/**: Generate macro goals
+
+#### 3. Data Models
+- **User**: Extended AbstractUser with height, birthday, gender, unit preferences
+- **UserGoal**: Weight goals, macro goals, cost goals
+- **Unit**: Metric/Imperial unit preferences
+- **ActivityLevel**: Activity multipliers for TDEE calculation
+
+### Features
+
+#### Personal Information Management
+- Editable user profile fields
+- Unit preference support (metric/imperial)
+- Activity level integration
+- Data validation and sanitization
+
+#### Goal Management
+- Weight goals (target, lean mass, fat mass)
+- Macro goals (calories, protein, fat, carbs, fiber, sodium)
+- Cost goals for budget tracking
+- AI-powered macro calculation
+
+#### Body Metrics Calculation
+- **BMI**: Body Mass Index calculation
+- **BMR**: Basal Metabolic Rate (Mifflin-St Jeor equation)
+- **TDEE**: Total Daily Energy Expenditure
+- **Body Ratios**: Waist-to-height, waist-to-shoulder, legs-to-height
+- **Body Composition**: Fat mass %, lean mass %, FFBMI
+- **Fitness Ranking**: 17-tier system (dirt → mithril)
+
+#### Historical Data Analysis
+- Weight trend analysis (gaining, losing, stable, no_data)
+- Total weight change calculation
+- Weekly recommendation for goal achievement
+- Weight log integration
+
+### Security Features
+- JWT authentication required for all endpoints
+- User data isolation (users can only access their own data)
+- Input validation and sanitization
+- SQL injection prevention
+- Comprehensive error logging
+
+### Testing
+- **Unit Tests**: Service and view testing
+- **Integration Tests**: API endpoint testing
+- **Error Handling**: Comprehensive error scenario testing
+- **Data Validation**: Input validation testing
+- **Authentication**: Security testing
+
+### Usage Examples
+
+#### Calculate Body Metrics
+```python
+from apps.users.services import BodyMetricsService
+
+service = BodyMetricsService()
+metrics = service.calculate_all_metrics(user)
+# Returns: BMI, BMR, TDEE, body ratios, fitness rank
+```
+
+#### Generate Macro Goals
+```python
+from apps.users.services import MacroGoalsService
+
+service = MacroGoalsService()
+macros = service.calculate_macros(
+    user=user,
+    weight_goal=65.0,
+    timeframe_weeks=12
+)
+# Returns: calories, protein, fat, carbs, fiber, sodium
+```
+
+#### Get Complete Profile
+```python
+from apps.users.services import ProfileService
+
+service = ProfileService()
+profile_data = service.get_complete_profile(user)
+# Returns: user, goals, metrics, historical data
+```
 
 ## Integration Points
 

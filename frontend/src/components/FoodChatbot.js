@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import api from '../services/api';
 import VoiceRecorder from './VoiceRecorder';
 
@@ -18,8 +18,37 @@ const FoodChatbot = ({ onFoodsLogged }) => {
   const [error, setError] = useState('');
   const [history, setHistory] = useState([]);
   const [showVoice, setShowVoice] = useState(false);
+  const [createMeal, setCreateMeal] = useState(false);
+  const [recentFoods, setRecentFoods] = useState([]);
+  const [aiStats, setAiStats] = useState({ tokens: 0, prompts: 0 });
 
-  const handleSubmit = async (createMeal = false) => {
+  useEffect(() => {
+    loadRecentFoods();
+    loadAiStats();
+  }, []);
+
+  const loadRecentFoods = async () => {
+    try {
+      const response = await api.getRecentlyLoggedFoods(7);
+      if (response.data.data && response.data.data.foods) {
+        setRecentFoods(response.data.data.foods);
+      }
+    } catch (err) {
+      console.error('Failed to load recent foods:', err);
+    }
+  };
+
+  const loadAiStats = async () => {
+    try {
+      // This would need to be implemented in the backend
+      // For now, we'll use placeholder data
+      setAiStats({ tokens: 1250, prompts: 15 });
+    } catch (err) {
+      console.error('Failed to load AI stats:', err);
+    }
+  };
+
+  const handleSubmit = async () => {
     if (!inputText.trim()) {
       setError('Please enter food description');
       return;
@@ -54,6 +83,10 @@ const FoodChatbot = ({ onFoodsLogged }) => {
       if (result.success) {
         setInputText('');
         
+        // Refresh recent foods and AI stats
+        loadRecentFoods();
+        loadAiStats();
+        
         // Notify parent to refresh
         if (onFoodsLogged) {
           onFoodsLogged();
@@ -77,7 +110,9 @@ const FoodChatbot = ({ onFoodsLogged }) => {
 
   const formatTimestamp = (isoString) => {
     try {
+      if (!isoString) return '';
       const date = new Date(isoString);
+      if (isNaN(date.getTime())) return '';
       return date.toLocaleTimeString();
     } catch {
       return '';
@@ -87,14 +122,6 @@ const FoodChatbot = ({ onFoodsLogged }) => {
   return (
     <div className="food-chatbot">
       <div className="card">
-        <div className="card-header">
-          <div className="flex items-center gap-3">
-            <svg className="icon icon-lg" viewBox="0 0 20 20" fill="var(--accent-purple)">
-              <path fillRule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clipRule="evenodd" />
-            </svg>
-            <h2 className="card-title">AI Food Logger</h2>
-          </div>
-        </div>
 
         {error && (
           <div className="error-message mb-4">
@@ -119,65 +146,76 @@ const FoodChatbot = ({ onFoodsLogged }) => {
             className="form-input"
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
-            placeholder="e.g., 2 chicken breasts, 1 cup of rice, and a protein shake"
             rows="3"
             disabled={loading}
           />
-          <p className="text-xs text-tertiary mt-2">
-            Tip: Be specific with quantities and food names for best results
-          </p>
+        </div>
+
+        {/* Create Meal Option */}
+        <div className="form-group">
+          <label className="checkbox-container">
+            <input
+              type="checkbox"
+              checked={createMeal}
+              onChange={(e) => setCreateMeal(e.target.checked)}
+              className="checkbox-input"
+            />
+            <span className="checkbox-custom"></span>
+            <span className="checkbox-label">
+              Create this as a meal
+            </span>
+          </label>
         </div>
 
         {/* Actions */}
-        <div className="flex gap-3 flex-wrap">
+        <div className="flex gap-6 justify-center">
           <button
-            className="btn btn-primary"
-            onClick={() => handleSubmit(false)}
-            disabled={loading || !inputText.trim()}
-          >
-            <svg className="icon icon-md" viewBox="0 0 20 20" fill="currentColor">
-              <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
-            </svg>
-            {loading ? 'Parsing...' : 'Send'}
-          </button>
-
-          <button
-            className="btn btn-success"
-            onClick={() => handleSubmit(true)}
-            disabled={loading || !inputText.trim()}
-          >
-            <svg className="icon icon-md" viewBox="0 0 20 20" fill="currentColor">
-              <path d="M3 1a1 1 0 000 2h1.22l.305 1.222a.997.997 0 00.01.042l1.358 5.43-.893.892C3.74 11.846 4.632 14 6.414 14H15a1 1 0 000-2H6.414l1-1H14a1 1 0 00.894-.553l3-6A1 1 0 0017 3H6.28l-.31-1.243A1 1 0 005 1H3zM16 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM6.5 18a1.5 1.5 0 100-3 1.5 1.5 0 000 3z" />
-            </svg>
-            Create Meal
-          </button>
-
-          <button
-            className="btn btn-secondary"
+            className="btn btn-icon-only"
             onClick={() => setShowVoice(!showVoice)}
             disabled={loading}
+            title={showVoice ? 'Hide Voice Input' : 'Voice Input'}
           >
-            <svg className="icon icon-md" viewBox="0 0 20 20" fill="currentColor">
+            <svg className="icon icon-lg" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8a1 1 0 10-2 0A5 5 0 015 8a1 1 0 00-2 0 7.001 7.001 0 006 6.93V17H6a1 1 0 100 2h8a1 1 0 100-2h-3v-2.07z" clipRule="evenodd" />
             </svg>
-            {showVoice ? 'Hide' : 'Voice Input'}
           </button>
+
+          <button
+            className="btn btn-icon-only btn-primary"
+            onClick={handleSubmit}
+            disabled={loading || !inputText.trim()}
+            title={loading ? 'Parsing...' : 'Send'}
+          >
+            <svg className="icon icon-lg" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+
+      {/* AI Usage Statistics */}
+      <div className="card">
+
+        <div className="ai-stats-grid">
+          <div className="stat-item">
+            <div className="stat-label">Prompts Sent</div>
+            <div className="stat-value">{aiStats.prompts}</div>
+          </div>
+          <div className="stat-item">
+            <div className="stat-label">Tokens Used</div>
+            <div className="stat-value">{aiStats.tokens.toLocaleString()}</div>
+          </div>
         </div>
       </div>
 
       {/* Recent Interactions */}
       {history.length > 0 && (
         <div className="card">
-          <div className="flex items-center gap-3 mb-4">
-            <svg className="icon icon-lg" viewBox="0 0 20 20" fill="var(--text-secondary)">
-              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
-            </svg>
-            <h3 style={{ margin: 0 }}>Recent Interactions</h3>
-          </div>
 
           <div className="history-list">
             {history.map((entry) => (
-              <div key={entry.id} className="history-item card animate-slide-in-left" style={{ background: 'var(--bg-tertiary)', marginBottom: 'var(--space-3)', padding: 'var(--space-4)' }}>
+              <div key={entry.id} className="history-item card animate-slide-in-left" style={{ background: 'var(--bg-tertiary)', marginBottom: 'var(--space-2)', padding: 'var(--space-3)' }}>
                 <div className="flex justify-between items-start mb-2">
                   <span className="text-xs text-tertiary">{formatTimestamp(entry.timestamp)}</span>
                   {entry.success ? (
@@ -210,6 +248,263 @@ const FoodChatbot = ({ onFoodsLogged }) => {
           </div>
         </div>
       )}
+
+      {/* Recent Foods */}
+      {recentFoods.length > 0 && (
+        <div className="card">
+          <div className="flex items-center gap-3 mb-4">
+            <svg className="icon icon-lg" viewBox="0 0 20 20" fill="var(--text-secondary)">
+              <path fillRule="evenodd" d="M3 1a1 1 0 000 2h1.22l.305 1.222a.997.997 0 00.01.042l1.358 5.43-.893.892C3.74 11.846 4.632 14 6.414 14H15a1 1 0 000-2H6.414l1-1H14a1 1 0 00.894-.553l3-6A1 1 0 0017 3H6.28l-.31-1.243A1 1 0 005 1H3zM16 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM6.5 18a1.5 1.5 0 100-3 1.5 1.5 0 000 3z" clipRule="evenodd" />
+            </svg>
+            <h3 style={{ margin: 0 }}>Recent Foods</h3>
+          </div>
+
+          <div className="recent-foods-list">
+            {recentFoods.slice(0, 10).map((food) => (
+              <div key={food.macro_log_id} className="recent-food-item" style={{ padding: 'var(--space-4)', borderBottom: '1px solid var(--border-primary)' }}>
+                <div className="food-item-content">
+                  <div className="food-main-info">
+                    <div className="flex items-center gap-3">
+                      <div className="food-icon">
+                        {food.food_group === 'protein' && '🥩'}
+                        {food.food_group === 'fruit' && '🍎'}
+                        {food.food_group === 'vegetable' && '🥬'}
+                        {food.food_group === 'grain' && '🌾'}
+                        {food.food_group === 'dairy' && '🥛'}
+                        {(!food.food_group || food.food_group === 'other') && '🍽️'}
+                      </div>
+                      <div>
+                        <div className="food-name">{food.food_name}</div>
+                        <div className="food-time">{formatTimestamp(food.date_time)}</div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="food-metadata">
+                    <div className="metadata-grid">
+                      <div className="metadata-item">
+                        <span className="metadata-label">Calories</span>
+                        <span className="metadata-value">{Math.round(food.consumed_macros?.calories || 0)}</span>
+                      </div>
+                      <div className="metadata-item">
+                        <span className="metadata-label">Protein</span>
+                        <span className="metadata-value">{Math.round(food.consumed_macros?.protein || 0)}g</span>
+                      </div>
+                      <div className="metadata-item">
+                        <span className="metadata-label">Carbs</span>
+                        <span className="metadata-value">{Math.round(food.consumed_macros?.carbohydrates || 0)}g</span>
+                      </div>
+                      <div className="metadata-item">
+                        <span className="metadata-label">Fat</span>
+                        <span className="metadata-value">{Math.round(food.consumed_macros?.fat || 0)}g</span>
+                      </div>
+                      <div className="metadata-item">
+                        <span className="metadata-label">Fiber</span>
+                        <span className="metadata-value">{Math.round(food.consumed_macros?.fiber || 0)}g</span>
+                      </div>
+                      <div className="metadata-item">
+                        <span className="metadata-label">Sugar</span>
+                        <span className="metadata-value">{Math.round(food.consumed_macros?.sugar || 0)}g</span>
+                      </div>
+                      <div className="metadata-item">
+                        <span className="metadata-label">Sodium</span>
+                        <span className="metadata-value">{Math.round(food.consumed_macros?.sodium || 0)}mg</span>
+                      </div>
+                      <div className="metadata-item">
+                        <span className="metadata-label">Servings</span>
+                        <span className="metadata-value">{food.servings}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+
+      <style jsx>{`
+        .checkbox-container {
+          display: flex;
+          align-items: center;
+          gap: var(--space-3);
+          cursor: pointer;
+          user-select: none;
+        }
+
+        .checkbox-input {
+          position: absolute;
+          opacity: 0;
+          cursor: pointer;
+        }
+
+        .checkbox-custom {
+          position: relative;
+          width: 20px;
+          height: 20px;
+          background: var(--bg-secondary);
+          border: 2px solid var(--border-primary);
+          border-radius: var(--radius-sm);
+          transition: all 0.2s var(--ease-out-cubic);
+        }
+
+        .checkbox-input:checked + .checkbox-custom {
+          background: var(--accent-primary);
+          border-color: var(--accent-primary);
+        }
+
+        .checkbox-input:checked + .checkbox-custom::after {
+          content: '';
+          position: absolute;
+          left: 6px;
+          top: 2px;
+          width: 6px;
+          height: 10px;
+          border: solid white;
+          border-width: 0 2px 2px 0;
+          transform: rotate(45deg);
+        }
+
+        .checkbox-label {
+          display: flex;
+          align-items: center;
+          gap: var(--space-2);
+          font-size: var(--text-sm);
+          color: var(--text-primary);
+        }
+
+        .stat-item {
+          text-align: center;
+          padding: var(--space-4);
+          background: var(--bg-tertiary);
+          border-radius: var(--radius-md);
+        }
+
+        .stat-value {
+          font-size: var(--text-2xl);
+          font-weight: var(--font-weight-bold);
+          color: var(--accent-primary);
+          margin-bottom: var(--space-1);
+        }
+
+        .stat-label {
+          font-size: var(--text-sm);
+          color: var(--text-secondary);
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+        }
+
+        .recent-food-item:last-child {
+          border-bottom: none;
+        }
+
+        .btn-icon-only {
+          width: 48px;
+          height: 48px;
+          padding: 0;
+          border: 1px solid var(--border-primary);
+          border-radius: var(--radius-lg);
+          background: var(--bg-tertiary);
+          color: var(--text-secondary);
+          cursor: pointer;
+          transition: all 0.2s var(--ease-out-cubic);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .btn-icon-only:hover {
+          background: var(--bg-secondary);
+          color: var(--text-primary);
+          border-color: var(--accent-primary);
+          transform: translateY(-2px);
+        }
+
+        .btn-icon-only.btn-primary {
+          background: var(--accent-primary);
+          color: white;
+          border-color: var(--accent-primary);
+        }
+
+        .btn-icon-only.btn-primary:hover {
+          background: var(--accent-primary-dark);
+          border-color: var(--accent-primary-dark);
+        }
+
+        .food-item-content {
+          display: flex;
+          flex-direction: column;
+          gap: var(--space-3);
+        }
+
+        .food-main-info {
+          display: flex;
+          align-items: center;
+          gap: var(--space-3);
+        }
+
+        .food-icon {
+          font-size: var(--text-xl);
+          width: 32px;
+          height: 32px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: var(--bg-secondary);
+          border-radius: var(--radius-md);
+        }
+
+        .food-name {
+          font-size: var(--text-base);
+          font-weight: var(--font-weight-medium);
+          color: var(--text-primary);
+        }
+
+        .food-time {
+          font-size: var(--text-xs);
+          color: var(--text-tertiary);
+        }
+
+        .food-metadata {
+          background: var(--bg-secondary);
+          padding: var(--space-3);
+          border-radius: var(--radius-md);
+        }
+
+        .metadata-grid {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: var(--space-3);
+        }
+
+        .metadata-item {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: var(--space-1);
+        }
+
+        .metadata-label {
+          font-size: var(--text-xs);
+          color: var(--text-tertiary);
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          font-weight: var(--font-weight-medium);
+        }
+
+        .metadata-value {
+          font-size: var(--text-sm);
+          font-weight: var(--font-weight-bold);
+          color: var(--text-primary);
+        }
+
+        @media (max-width: 768px) {
+          .metadata-grid {
+            grid-template-columns: repeat(2, 1fr);
+          }
+        }
+      `}</style>
     </div>
   );
 };

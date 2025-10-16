@@ -1,0 +1,9 @@
+{
+  "devDependencies": {
+    "@playwright/test": "^1.56.0",
+    "axios": "^1.12.2"
+  },
+  "dependencies": {
+    "puppeteer": "^24.25.0"
+  }
+}

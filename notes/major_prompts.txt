@@ -217,7 +217,177 @@ GENERAL REQUIREMENTS:
 - Prioritize working and tested code over literal adherence to this prompt.
 - Ensure testing covers all use cases. Do not limit testing to reduce API costs
 
+=== Food logger UI changes ===
+Repeat your rules so that it can be ensured you are following them correctly. 
+Update the food logging UI to support both PC and mobile views while maintaining existing logic, code style, and visual guidelines used in the project. 
+Review the database setup scripts before accessing any data to confirm the correct schema. 
+Do not rewrite existing working logic. Remove unused UI components or code that is no longer used.
 
-==== Profile improvement ====
-Repeat your rules back to me so I can make sure you are following them correctly. 
-Improve the profile section of the app.
+MAIN SCREEN:
+- Display the user's current food metadata progress for the day (calories, protein, fat, carbs).
+- Get goal values from the user_goal table.
+- Show a circular progress bar for calories, protein, fat, and carbs on the main view.
+- When the user clicks the progress section, expand to show all other metadata except:
+  tokens goal, weight goal, lean mass goal, and fat mass goal.
+- The expanded metadata screen should use linear progress bars with numbers.
+- Each progress bar should have a distinct color.
+- Show the numeric progress and the amount remaining for each goal.
+
+FOOD LOG LIST:
+- Show all foods logged for the selected day.
+- Each entry should include: name, time logged, servings, calories, protein, carbs, and food group icon.
+- Add separation lines at 6am, 9am, 12pm, 3pm, 6pm, 9pm, and 12am.
+- Include a day selector to view logs and goal progress for other dates.
+- Display the number of foods logged for the current day.
+
+FOOD LOGGER:
+- On PC view: show the food logger panel beside the food list.
+- On mobile view: show a button to open a food logging screen.
+- Include a search bar to search all user foods and meals.
+- Include a toggle button to show or hide public foods.
+- If no search is made, show foods sorted by most frequently logged.
+- Each food card should display: calories, protein, fat, carbs, and food group icon.
+- Each food should have an input for servings, adjustable by up/down arrows or manual entry.
+- Changing servings should automatically update the shown macros.
+- Include an "Add" button for each food that logs it without closing the screen.
+
+FOOD CREATOR:
+- On PC view: show the food creator beside the food list.
+- On mobile view: show a button to open a separate food creator screen.
+- Allow editing all food metadata fields.
+- Include options to:
+  1. Make the food public.
+  2. Log the food immediately after creation.
+  3. Generate missing metadata using AI.
+
+MEAL CREATION:
+- Include a button to open the meal creation screen.
+- Use the same list and search UI as the food logger.
+- Allow the user to search and add foods to a meal.
+- Allow changing the meal name.
+- Include a button to log all foods after creating the meal.
+
+AI FOOD LOGGER:
+- Include a button to open the AI food logger screen.
+- Include a text box for manual text input.
+- Include a record button to start voice input that becomes a stop button during recording.
+- The transcribed recording will show in the same text box as the manual text input.
+- Add a checkbox to mark input as a meal.
+- Display the last 10 foods logged with the same layout and style as the main food list.
+- Display the number of AI requests made that day and the number of tokens used.
+
+Ensure all UI changes follow the same color scheme, spacing, typography, and component styles as the existing project.
+Remove any redundant UI or unused logic from previous versions.
+
+
+=== Profile Improvements ===
+Repeat your rules so it can be ensured you are following them completely 
+Update the profile section of the application with the following improvements. Ensure all changes use the correct database schema by reviewing the setup scripts. Remove the dashboard and OpenAI menus from the application.
+
+GENERAL LAYOUT:
+- Implement both mobile and desktop versions.
+- The desktop version should minimize whitespace on screen edges.
+- Mobile view should retain a mobile-friendly layout.
+
+USER PERSONAL INFORMATION:
+- Display all user personal information.
+- Provide options to update personal information.
+
+GOALS:
+- Display weight goal, lean mass goal, fat mass goal, and cost goal with options to update them.
+- Display all macro goals (calories, protein, fat, carbs, etc.) with options to update them.
+- Include a feature to generate all macro goals based on the timeframe to achieve the user’s goal weight.
+  - Calculations should use standard equations considering: current weight, goal weight, height, age, activity level, and gender.
+  - Provide warnings if the weight goal is extreme for the selected timeframe.
+  - Include messages explaining that calculated macros may not be 100% accurate due to natural differences.
+
+CALCULATED BODY METRICS:
+- Provide calculated values based on current weight, height, age, activity level, gender, and measurements.
+- Provide reference values labeled as: dirt, gravel, tin, aluminum, lead, bronze, copper, iron, quartz, gold, ruby, crystal, emerald, diamond, titanium, platinum, mithril, according to user gender, weight, height, and age.
+  - The user should be provided which rank they are currently at along with what value they require to get to the next rank.
+- Display the following metrics:
+  - Body Mass Index (BMI)
+  - Waist-to-Height Ratio
+  - Waist-to-Shoulder Ratio
+  - Legs-to-Height Ratio
+  - Basal Metabolic Rate (BMR)
+  - Total Daily Energy Expenditure (TDEE)
+  - Fat Mass Percentage
+  - Lean Mass Percentage
+  - Fat-Free Body Mass Index (FFBMI)
+
+HISTORICAL DATA:
+- Provide total weight lost or gained.
+- Provide recommended weekly weight gain or loss to achieve goals.
+
+LOGOUT:
+- Remove the logout button from the top tab.
+- Add the logout button at the bottom of the profile section.
+
+GENERAL REQUIREMENTS:
+- Maintain existing visual styling, spacing, and color schemes.
+- Ensure all fields are editable where specified and validate user input.
+- Ensure desktop and mobile layouts adjust dynamically based on screen size.
+- Remove any unused code or UI components from previous versions.
+
+=== Workout Tracker ===
+
+Create a Workout Tracker section in the application. Review the database setup scripts to ensure all queries and inserts use the correct schema. Maintain existing logic where implemented; do not rewrite working code. Remove any unused UI or logic.
+
+MUSCLE PRIORITY:
+- Provide a menu to adjust priority for each muscle, updating the muscle_log table.
+- Show muscle groups with expandable sections to adjust individual muscles.
+- Explain that priority is used for emphasizing, balancing, or improving weaker/stronger muscles.
+- Base priority should be 80. All muscles should have a priority.
+- Include an "Update" button at the bottom to save changes.
+
+WORKOUT ADDER:
+- Allow users to add new workouts.
+- All metadata in the workouts table should be editable.
+- Allow adding muscles with activation ratings via the workout_muscle table.
+- Include an information tooltip explaining activation ratings:
+  "Workouts can be given activation ratings that range from 0-100. Muscles prioritized by the movement should have higher ratings. Examples: Bench Press: chest-100, triceps-75, front delt-40. Squats: quads-100, hamstrings-90, glutes-95, abs-20, abductor-90, adductor-90."
+- Workouts can have an icon chosen from a predefined list of emojis.
+  - Store the emoji in the name field internally but do not display it to the user.
+
+SPLIT CREATOR:
+- Allow users to create splits using splits, split_days, and split_day_targets tables.
+- Users can add days to a split; each day has a name and list of muscles with target activation.
+- Include an information tooltip:
+  "Target activation ratings outline the volume for each muscle. ~225-275 activation ≈ 3 sets. Optimal per week: 10-20 sets per muscle (~2250-5550 total activation)."
+- Display total activation rating per muscle across the split.
+- Calculate and show optimal activation range for each muscle. P = muscle priority. D = number of days in the split
+  - Lower end: R(P,D)=90⋅(10+0.1P)⋅7/D
+  - Upper end: R(P,D)=90⋅(20+0.1P)⋅7⋅D
+- Highlight muscles:
+  - No activation → warning.
+  - Below optimal → gray.
+  - Within 15% of optimal → green.
+  - Above optimal → red.
+- Allow naming splits and showing a menu of all user splits.
+- Allow users to select an active split and assign a start date.
+
+WORKOUT LOG:
+- Determine the day of the split based on the selected split's start date.
+- Show muscles worked that day and progress toward daily activation goals.
+- Display the name of the split day.
+- Show all workouts logged for that day with: icon, name, weight, reps, attributes.
+- Include a quick-add button for workouts from the previous split day.
+- Include a working timer.
+- Display stats at the top: total sets, total weight lifted, total reps, total RIR, total activation rating completed.
+- Include a calendar that lets different days be displayed 
+
+WORKOUT LOGGER:
+- Provide a menu for adding workouts to the current log.
+- Include search with filters: text, muscle activation threshold (default 80), alphabetical.
+- When logging a workout, all fields should be editable.
+- Attributes selection options:
+  - Dropset: weight and reps
+  - Assisted: reps
+  - Partial: reps
+  - Pause: wait time and reps
+  - Negatives: reps
+  - Provide short descriptions for all attribute types.
+- Autofill workout fields (weight, reps, RIR, attributes) from the most recent log if the workout was done previously.
+- Include description for RIR (reps in reserve).
+- Show message: "Progressive overload should be done if not in a caloric deficit."

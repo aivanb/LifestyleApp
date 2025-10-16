@@ -210,7 +210,7 @@ const DataViewer = () => {
         </div>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: '300px 1fr', gap: '20px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(250px, 350px) 1fr', gap: 'var(--space-6)', minHeight: 'calc(100vh - 200px)' }}>
         {/* Tables List Sidebar */}
         <div>
           <div className="card">
@@ -397,6 +397,21 @@ const DataViewer = () => {
 
         .table-item.active .table-info {
           opacity: 1;
+        }
+
+        @media (max-width: 1024px) {
+          .data-viewer > div:first-of-type {
+            grid-template-columns: 1fr !important;
+            gap: var(--space-4) !important;
+          }
+          
+          .data-viewer > div:first-of-type > div:first-child {
+            order: 2;
+          }
+          
+          .data-viewer > div:first-of-type > div:last-child {
+            order: 1;
+          }
         }
       `}</style>
     </div>

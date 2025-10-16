@@ -123,6 +123,27 @@ class ApiService {
     return this.get('/openai/usage/');
   }
 
+  // User methods
+  getUserProfile() {
+    return this.get('/users/profile/');
+  }
+
+  updateUserProfile(profileData) {
+    return this.put('/users/profile/', profileData);
+  }
+
+  getUserGoals() {
+    return this.get('/users/goals/');
+  }
+
+  createUserGoals(goalsData) {
+    return this.post('/users/goals/', goalsData);
+  }
+
+  updateUserGoals(goalsData) {
+    return this.put('/users/goals/', goalsData);
+  }
+
   // Food methods
   getFoods(params = {}) {
     const queryString = new URLSearchParams(params).toString();
@@ -170,6 +191,261 @@ class ApiService {
 
   deleteFoodLog(logId) {
     return this.delete(`/foods/logs/${logId}/`);
+  }
+
+  // Profile management
+
+  calculateBodyMetrics() {
+    return this.get('/users/calculate-metrics/');
+  }
+
+  generateMacroGoals(weightGoal, timeframeWeeks) {
+    return this.post('/users/calculate-macros/', {
+      weight_goal: weightGoal,
+      timeframe_weeks: timeframeWeeks
+    });
+  }
+
+  // Workout management
+  getWorkouts(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    return this.get(`/workouts/?${queryString}`);
+  }
+
+  createWorkout(workoutData) {
+    return this.post('/workouts/', workoutData);
+  }
+
+  getWorkout(workoutId) {
+    return this.get(`/workouts/${workoutId}/`);
+  }
+
+  updateWorkout(workoutId, workoutData) {
+    return this.put(`/workouts/${workoutId}/`, workoutData);
+  }
+
+  deleteWorkout(workoutId) {
+    return this.delete(`/workouts/${workoutId}/`);
+  }
+
+  // Muscle management
+  getMuscles() {
+    return this.get('/workouts/muscles/');
+  }
+
+  getMusclePriorities() {
+    return this.get('/workouts/muscle-priorities/');
+  }
+
+  updateMusclePriorities(muscleLogsData) {
+    return this.post('/workouts/muscle-priorities/', muscleLogsData);
+  }
+
+  // Workout logging
+  getWorkoutLogs(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    return this.get(`/workouts/logs/?${queryString}`);
+  }
+
+  createWorkoutLog(logData) {
+    return this.post('/workouts/logs/', logData);
+  }
+
+  // Split management
+  getSplits() {
+    return this.get('/workouts/splits/');
+  }
+
+  createSplit(splitData) {
+    return this.post('/workouts/splits/', splitData);
+  }
+
+  getSplit(splitId) {
+    return this.get(`/workouts/splits/${splitId}/`);
+  }
+
+  updateSplit(splitId, splitData) {
+    return this.put(`/workouts/splits/${splitId}/`, splitData);
+  }
+
+  deleteSplit(splitId) {
+    return this.delete(`/workouts/splits/${splitId}/`);
+  }
+
+  activateSplit(splitId, startDate) {
+    return this.post(`/workouts/splits/${splitId}/activate/`, { start_date: startDate });
+  }
+
+  // Statistics and utilities
+  getWorkoutStats() {
+    return this.get('/workouts/stats/');
+  }
+
+  getRecentlyLoggedWorkouts() {
+    return this.get('/workouts/recently-logged/');
+  }
+
+  getWorkoutIcons() {
+    return this.get('/workouts/icons/');
+  }
+
+  // Additional Trackers - Weight Log
+  getWeightLogs(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    return this.get(`/logging/weight/?${queryString}`);
+  }
+
+  createWeightLog(logData) {
+    return this.post('/logging/weight/', logData);
+  }
+
+  updateWeightLog(logId, logData) {
+    return this.put(`/logging/weight/${logId}/`, logData);
+  }
+
+  deleteWeightLog(logId) {
+    return this.delete(`/logging/weight/${logId}/`);
+  }
+
+  getWeightStreak() {
+    return this.get('/logging/weight/streak/');
+  }
+
+  // Additional Trackers - Body Measurement Log
+  getBodyMeasurementLogs(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    return this.get(`/logging/body-measurement/?${queryString}`);
+  }
+
+  createBodyMeasurementLog(logData) {
+    return this.post('/logging/body-measurement/', logData);
+  }
+
+  updateBodyMeasurementLog(logId, logData) {
+    return this.put(`/logging/body-measurement/${logId}/`, logData);
+  }
+
+  deleteBodyMeasurementLog(logId) {
+    return this.delete(`/logging/body-measurement/${logId}/`);
+  }
+
+  getBodyMeasurementStreak() {
+    return this.get('/logging/body-measurement/streak/');
+  }
+
+  // Additional Trackers - Water Log
+  getWaterLogs(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    return this.get(`/logging/water/?${queryString}`);
+  }
+
+  createWaterLog(logData) {
+    return this.post('/logging/water/', logData);
+  }
+
+  updateWaterLog(logId, logData) {
+    return this.put(`/logging/water/${logId}/`, logData);
+  }
+
+  deleteWaterLog(logId) {
+    return this.delete(`/logging/water/${logId}/`);
+  }
+
+  getWaterStreak() {
+    return this.get('/logging/water/streak/');
+  }
+
+  // Additional Trackers - Steps Log
+  getStepsLogs(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    return this.get(`/logging/steps/?${queryString}`);
+  }
+
+  createStepsLog(logData) {
+    return this.post('/logging/steps/', logData);
+  }
+
+  updateStepsLog(logId, logData) {
+    return this.put(`/logging/steps/${logId}/`, logData);
+  }
+
+  deleteStepsLog(logId) {
+    return this.delete(`/logging/steps/${logId}/`);
+  }
+
+  getStepsStreak() {
+    return this.get('/logging/steps/streak/');
+  }
+
+  // Additional Trackers - Cardio Log
+  getCardioLogs(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    return this.get(`/logging/cardio/?${queryString}`);
+  }
+
+  createCardioLog(logData) {
+    return this.post('/logging/cardio/', logData);
+  }
+
+  updateCardioLog(logId, logData) {
+    return this.put(`/logging/cardio/${logId}/`, logData);
+  }
+
+  deleteCardioLog(logId) {
+    return this.delete(`/logging/cardio/${logId}/`);
+  }
+
+  getCardioStreak() {
+    return this.get('/logging/cardio/streak/');
+  }
+
+  // Additional Trackers - Sleep Log
+  getSleepLogs(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    return this.get(`/health/sleep/?${queryString}`);
+  }
+
+  createSleepLog(logData) {
+    return this.post('/health/sleep/', logData);
+  }
+
+  updateSleepLog(logId, logData) {
+    return this.put(`/health/sleep/${logId}/`, logData);
+  }
+
+  deleteSleepLog(logId) {
+    return this.delete(`/health/sleep/${logId}/`);
+  }
+
+  getSleepStreak() {
+    return this.get('/health/sleep/streak/');
+  }
+
+  // Additional Trackers - Health Metrics Log
+  getHealthMetricsLogs(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    return this.get(`/health/health-metrics/?${queryString}`);
+  }
+
+  createHealthMetricsLog(logData) {
+    return this.post('/health/health-metrics/', logData);
+  }
+
+  updateHealthMetricsLog(logId, logData) {
+    return this.put(`/health/health-metrics/${logId}/`, logData);
+  }
+
+  deleteHealthMetricsLog(logId) {
+    return this.delete(`/health/health-metrics/${logId}/`);
+  }
+
+  getHealthMetricsStreak() {
+    return this.get('/health/health-metrics/streak/');
+  }
+
+  // Get all tracker streaks at once
+  getAllTrackerStreaks() {
+    return this.get('/logging/streaks/');
   }
 }
 

@@ -3,11 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { Link } from 'react-router-dom';
 
 const Navbar = () => {
-  const { user, logout, isAuthenticated } = useAuth();
-
-  const handleLogout = () => {
-    logout();
-  };
+  const { user, isAuthenticated } = useAuth();
 
   return (
     <nav className="navbar">
@@ -21,31 +17,22 @@ const Navbar = () => {
             {isAuthenticated ? (
               <>
                 <li>
-                  <Link to="/dashboard">Dashboard</Link>
-                </li>
-                <li>
-                  <Link to="/food-log">Food Log</Link>
-                </li>
-                <li>
-                  <Link to="/data-viewer">Data Viewer</Link>
-                </li>
-                <li>
-                  <Link to="/openai">OpenAI</Link>
-                </li>
-                <li>
                   <Link to="/profile">Profile</Link>
                 </li>
+                    <li>
+                      <Link to="/food-log">Food Log</Link>
+                    </li>
+                    <li>
+                      <Link to="/workout-tracker">Workout Tracker</Link>
+                    </li>
+                    <li>
+                      <Link to="/additional-trackers">Additional Trackers</Link>
+                    </li>
+                    <li>
+                      <Link to="/data-viewer">Data Viewer</Link>
+                    </li>
                 <li>
                   <span>Welcome, {user?.username}</span>
-                </li>
-                <li>
-                  <button 
-                    className="btn btn-secondary" 
-                    onClick={handleLogout}
-                    style={{ marginLeft: '10px' }}
-                  >
-                    Logout
-                  </button>
                 </li>
               </>
             ) : (

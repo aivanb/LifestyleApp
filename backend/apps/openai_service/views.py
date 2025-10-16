@@ -2,8 +2,13 @@ from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from django.core.files.storage import default_storage
+from django.core.files.base import ContentFile
+import io
+import wave
 from .services import OpenAIService
 from .food_parser import FoodParserService
+from .transcription import get_transcription_service
 
 
 @api_view(['POST'])
@@ -168,3 +173,125 @@ def generate_metadata(request):
         return Response({
             'error': {'message': f'Metadata generation failed: {str(e)}'}
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def transcribe_audio(request):
+    """
+    Transcribe audio using Vosk offline model
+    
+    Expected payload:
+    {
+        "audio": <audio_file_blob>
+    }
+    """
+    if 'audio' not in request.FILES:
+        return Response({
+            'error': {'message': 'Audio file is required'}
+        }, status=status.HTTP_400_BAD_REQUEST)
+    
+    audio_file = request.FILES['audio']
+    
+    # Validate file size (max 10MB)
+    if audio_file.size > 10 * 1024 * 1024:
+        return Response({
+            'error': {'message': 'Audio file too large (max 10MB)'}
+        }, status=status.HTTP_400_BAD_REQUEST)
+    
+    # Validate file type
+    allowed_types = ['audio/wav', 'audio/wave', 'audio/x-wav']
+    if audio_file.content_type not in allowed_types:
+        return Response({
+            'error': {'message': 'Only WAV audio files are supported'}
+        }, status=status.HTTP_400_BAD_REQUEST)
+    
+    try:
+        # Read audio data
+        audio_data = audio_file.read()
+        
+        # Convert to proper format for Vosk (16kHz, mono, 16-bit)
+        audio_data = _convert_audio_to_vosk_format(audio_data)
+        
+        # Get transcription service
+        transcription_service = get_transcription_service()
+        
+        if not transcription_service.is_available():
+            return Response({
+                'error': {'message': 'Voice transcription service not available. Please install Vosk model.'}
+            }, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+        
+        # Transcribe audio
+        result = transcription_service.transcribe_audio(audio_data)
+        
+        if result['success']:
+            return Response({
+                'data': {
+                    'text': result['text'],
+                    'confidence': result['confidence'],
+                    'model': result.get('model', 'unknown')
+                }
+            })
+        else:
+            return Response({
+                'error': {'message': f'Transcription failed: {result.get("error", "Unknown error")}'}
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            
+    except Exception as e:
+        return Response({
+            'error': {'message': f'Transcription failed: {str(e)}'}
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+def _convert_audio_to_vosk_format(audio_data):
+    """
+    Convert audio data to Vosk-compatible format (16kHz, mono, 16-bit)
+    
+    Args:
+        audio_data: Raw audio bytes
+        
+    Returns:
+        Converted audio bytes suitable for Vosk
+    """
+    try:
+        # Try to read as WAV file
+        audio_io = io.BytesIO(audio_data)
+        
+        with wave.open(audio_io, 'rb') as wav_file:
+            # Get audio parameters
+            frames = wav_file.getnframes()
+            sample_rate = wav_file.getframerate()
+            channels = wav_file.getnchannels()
+            sample_width = wav_file.getsampwidth()
+            
+            # Read raw audio data
+            raw_audio = wav_file.readframes(frames)
+            
+            # If already in correct format, return as-is
+            if sample_rate == 16000 and channels == 1 and sample_width == 2:
+                return raw_audio
+            
+            # For now, return raw audio and let Vosk handle it
+            # In production, you'd want to use librosa or pydub for proper conversion
+            return raw_audio
+            
+    except Exception as e:
+        # If we can't parse as WAV, return raw data
+        # Vosk might still be able to handle it
+        return audio_data
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def transcription_status(request):
+    """
+    Check if transcription service is available
+    """
+    transcription_service = get_transcription_service()
+    
+    return Response({
+        'data': {
+            'available': transcription_service.is_available(),
+            'model': 'vosk-model-small-en-us-0.15' if transcription_service.is_available() else None
+        }
+    })

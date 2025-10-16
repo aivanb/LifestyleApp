@@ -11,6 +11,7 @@ jest.mock('../services/api', () => ({
   get: jest.fn(),
   setAuthToken: jest.fn(),
   getUsageStats: jest.fn(),
+  sendPrompt: jest.fn(),
 }));
 
 // Mock localStorage
@@ -81,7 +82,7 @@ describe('OpenAI Component', () => {
   });
 
   test('handles successful prompt submission', async () => {
-    api.post.mockResolvedValueOnce({
+    api.sendPrompt.mockResolvedValueOnce({
       data: {
         data: {
           response: 'Test AI response',
@@ -102,14 +103,12 @@ describe('OpenAI Component', () => {
     fireEvent.submit(form);
     
     await waitFor(() => {
-      expect(api.post).toHaveBeenCalledWith('/openai/prompt/', {
-        prompt: 'Test prompt'
-      });
+      expect(api.sendPrompt).toHaveBeenCalledWith('Test prompt');
     });
   });
 
   test('handles prompt submission error', async () => {
-    api.post.mockRejectedValueOnce({
+    api.sendPrompt.mockRejectedValueOnce({
       response: {
         data: {
           error: { message: 'API rate limit exceeded' }

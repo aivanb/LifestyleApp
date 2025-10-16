@@ -25,35 +25,17 @@ const VoiceRecorder = ({ onTranscriptionComplete }) => {
   const recognitionRef = useRef(null);
 
   useEffect(() => {
-    // Initialize recognition
-    recognitionRef.current = voiceService.initializeRecognition(
-      (result) => {
-        if (result.isFinal && result.final) {
-          setTranscription(prev => (prev + ' ' + result.final).trim());
-        }
-        setInterimText(result.interim);
-      },
-      (error) => {
-        setError(`Recognition error: ${error}`);
-        stopRecording();
-      }
-    );
-
     return () => {
       if (timerRef.current) {
         clearInterval(timerRef.current);
       }
-      if (recognitionRef.current) {
-        try {
-          recognitionRef.current.stop();
-        } catch (e) {
-          // Ignore errors on cleanup
-        }
+      if (voiceService.isCurrentlyRecording()) {
+        voiceService.stopRecording();
       }
     };
   }, []);
 
-  const startRecording = () => {
+  const startRecording = async () => {
     if (!voiceService.isVoiceSupported()) {
       setError('Speech recognition is not supported in your browser');
       return;
@@ -65,7 +47,27 @@ const VoiceRecorder = ({ onTranscriptionComplete }) => {
     setRecordingTime(0);
     setIsRecording(true);
 
-    voiceService.start();
+    // Start recording with the best available method
+    const success = await voiceService.startRecording(
+      (result) => {
+        if (result.isFinal && result.final) {
+          setTranscription(prev => (prev + ' ' + result.final).trim());
+          setInterimText('');
+        } else {
+          setInterimText(result.interim);
+        }
+      },
+      (error) => {
+        setError(`Recognition error: ${error}`);
+        stopRecording();
+      }
+    );
+
+    if (!success) {
+      setError('Failed to start recording');
+      setIsRecording(false);
+      return;
+    }
 
     // Start timer
     timerRef.current = setInterval(() => {
@@ -89,7 +91,7 @@ const VoiceRecorder = ({ onTranscriptionComplete }) => {
       timerRef.current = null;
     }
 
-    voiceService.stop();
+    voiceService.stopRecording();
     setIsRecording(false);
 
     // Trigger callback with final transcription

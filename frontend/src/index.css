@@ -252,6 +252,14 @@ a:hover {
   padding: 0 var(--space-4);
 }
 
+/* Food Log Page - Full Width */
+.food-log-page {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+}
+
 @media (min-width: 768px) {
   .container {
     padding: 0 var(--space-6);
