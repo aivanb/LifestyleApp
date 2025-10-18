@@ -121,35 +121,46 @@ const AdditionalTrackersMenu = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+      <div className="form-container flex items-center justify-center">
+        <div 
+          className="animate-spin rounded-full h-16 w-16 border-b-2" 
+          style={{ borderColor: 'var(--accent-color)' }}
+        ></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="form-container">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Additional Trackers</h1>
-              <p className="mt-2 text-gray-600">
-                Track various health and fitness metrics with detailed logging
-              </p>
-            </div>
-            <div className="flex items-center space-x-2 text-sm text-gray-500">
-              <CalendarIcon className="h-5 w-5" />
-              <span>Track your daily progress</span>
-            </div>
+      <div className="mb-8">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold mb-2" style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-primary)', fontWeight: 'var(--font-weight-bold)' }}>
+              Additional Trackers
+            </h1>
+            <p className="text-lg" style={{ color: 'var(--text-secondary)', fontFamily: 'var(--font-primary)' }}>
+              Track various health and fitness metrics with detailed logging
+            </p>
+          </div>
+          <div className="flex items-center space-x-2 text-sm" style={{ color: 'var(--text-tertiary)', fontFamily: 'var(--font-primary)' }}>
+            <CalendarIcon 
+              className="h-5 w-5" 
+              style={{
+                width: '20px',
+                height: '20px',
+                minWidth: '20px',
+                minHeight: '20px',
+                color: 'var(--text-tertiary)'
+              }}
+            />
+            <span>Track your daily progress</span>
           </div>
         </div>
       </div>
 
       {/* Tracker Grid */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-8">
           {trackers.map((tracker) => {
             const Icon = tracker.icon;
             const streak = streaks[tracker.id] || 0;
@@ -158,88 +169,147 @@ const AdditionalTrackersMenu = () => {
               <div
                 key={tracker.id}
                 onClick={() => handleTrackerClick(tracker)}
-                className={`
-                  relative overflow-hidden rounded-2xl cursor-pointer transform transition-all duration-300
-                  ${tracker.color} ${tracker.hoverColor} shadow-lg hover:shadow-xl hover:scale-105
-                  group
-                `}
+                className="p-4 rounded-lg cursor-pointer transition-all duration-200 hover:transform hover:scale-105 group"
+                style={{ 
+                  backgroundColor: 'var(--bg-secondary)', 
+                  border: '1px solid var(--border-color)',
+                  borderRadius: 'var(--radius-lg)'
+                }}
               >
-                {/* Background Pattern */}
-                <div className="absolute inset-0 opacity-10">
-                  <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent"></div>
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-16 translate-x-16"></div>
-                  <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/10 rounded-full translate-y-12 -translate-x-12"></div>
-                </div>
-
-                {/* Content */}
-                <div className="relative p-6 text-white">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
-                      <Icon className="h-8 w-8 text-white" />
-                    </div>
-                    <div className="text-right">
-                      <div className="text-2xl font-bold">{streak}</div>
-                      <div className="text-xs opacity-80">day streak</div>
-                    </div>
+                <div className="flex items-start justify-between mb-3">
+                  <div className="p-2 rounded-md" style={{ backgroundColor: 'var(--bg-tertiary)' }}>
+                    <Icon 
+                      className="h-6 w-6" 
+                      style={{
+                        width: '24px',
+                        height: '24px',
+                        minWidth: '24px',
+                        minHeight: '24px',
+                        color: 'var(--accent-color)'
+                      }}
+                    />
                   </div>
-
-                  <h3 className="text-xl font-semibold mb-2 group-hover:text-white transition-colors">
-                    {tracker.name}
-                  </h3>
-
-                  <div className="flex items-center justify-between">
-                    <span className={`text-sm font-medium ${getStreakColor(streak)}`}>
-                      {getStreakText(streak)}
-                    </span>
-                    <div className="flex items-center space-x-1 text-xs opacity-80">
-                      <span>Click to track</span>
-                      <svg className="w-4 h-4 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
+                  <div className="text-right">
+                    <div className="text-xl font-bold" style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-primary)' }}>
+                      {streak}
+                    </div>
+                    <div className="text-xs" style={{ color: 'var(--text-tertiary)', fontFamily: 'var(--font-primary)' }}>
+                      day streak
                     </div>
                   </div>
                 </div>
 
-                {/* Hover Effect */}
-                <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <h3 className="text-lg font-semibold mb-2 group-hover:text-opacity-80 transition-colors" style={{ 
+                  color: 'var(--text-primary)', 
+                  fontFamily: 'var(--font-primary)', 
+                  fontWeight: 'var(--font-weight-semibold)' 
+                }}>
+                  {tracker.name}
+                </h3>
+
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium" style={{ 
+                    color: getStreakColor(streak) === 'text-gray-500' ? 'var(--text-tertiary)' : 
+                           getStreakColor(streak) === 'text-yellow-600' ? 'var(--accent-warning)' :
+                           getStreakColor(streak) === 'text-orange-600' ? 'var(--accent-warning)' :
+                           'var(--accent-secondary)',
+                    fontFamily: 'var(--font-primary)' 
+                  }}>
+                    {getStreakText(streak)}
+                  </span>
+                  <div className="flex items-center space-x-1 text-xs" style={{ color: 'var(--text-tertiary)', fontFamily: 'var(--font-primary)' }}>
+                    <span>Click to track</span>
+                    <svg 
+                      className="w-4 h-4 transform group-hover:translate-x-1 transition-transform" 
+                      fill="none" 
+                      stroke="currentColor" 
+                      viewBox="0 0 24 24"
+                      style={{
+                        width: '16px',
+                        height: '16px',
+                        minWidth: '16px',
+                        minHeight: '16px'
+                      }}
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </div>
+                </div>
               </div>
             );
           })}
-        </div>
+      </div>
 
-        {/* Info Section */}
-        <div className="mt-12 bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
-          <div className="text-center">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">
-              Track Your Health Journey
-            </h2>
-            <p className="text-gray-600 max-w-3xl mx-auto mb-6">
-              Maintain consistent logging habits to build meaningful streaks. Each tracker helps you 
-              monitor different aspects of your health and fitness, providing insights into your 
-              progress over time.
-            </p>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
-              <div className="bg-gray-50 rounded-xl p-6">
-                <div className="text-3xl mb-3">📊</div>
-                <h3 className="font-semibold text-gray-900 mb-2">Detailed Analytics</h3>
-                <p className="text-gray-600 text-sm">
-                  View trends and patterns in your health data with comprehensive tracking.
-                </p>
-              </div>
-              <div className="bg-gray-50 rounded-xl p-6">
-                <div className="text-3xl mb-3">🎯</div>
-                <h3 className="font-semibold text-gray-900 mb-2">Goal Tracking</h3>
-                <p className="text-gray-600 text-sm">
-                  Set and monitor progress toward your health and fitness objectives.
-                </p>
-              </div>
-              <div className="bg-gray-50 rounded-xl p-6">
-                <div className="text-3xl mb-3">📈</div>
-                <h3 className="font-semibold text-gray-900 mb-2">Progress Insights</h3>
-                <p className="text-gray-600 text-sm">
-                  Understand how your daily habits impact your overall wellness.
-                </p>
-              </div>
+      {/* Info Section */}
+      <div className="p-6 rounded-lg" style={{ 
+        backgroundColor: 'var(--bg-secondary)', 
+        border: '1px solid var(--border-color)',
+        borderRadius: 'var(--radius-lg)'
+      }}>
+        <div className="text-center">
+          <h2 className="text-2xl font-bold mb-4" style={{ 
+            color: 'var(--text-primary)', 
+            fontFamily: 'var(--font-primary)', 
+            fontWeight: 'var(--font-weight-bold)' 
+          }}>
+            Track Your Health Journey
+          </h2>
+          <p className="text-lg mb-6 max-w-3xl mx-auto" style={{ 
+            color: 'var(--text-secondary)', 
+            fontFamily: 'var(--font-primary)' 
+          }}>
+            Maintain consistent logging habits to build meaningful streaks. Each tracker helps you 
+            monitor different aspects of your health and fitness, providing insights into your 
+            progress over time.
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-left">
+            <div className="p-4 rounded-lg" style={{ backgroundColor: 'var(--bg-tertiary)', borderRadius: 'var(--radius-lg)' }}>
+              <div className="text-2xl mb-2">📊</div>
+              <h3 className="font-semibold mb-2" style={{ 
+                color: 'var(--text-primary)', 
+                fontFamily: 'var(--font-primary)', 
+                fontWeight: 'var(--font-weight-semibold)' 
+              }}>
+                Detailed Analytics
+              </h3>
+              <p className="text-sm" style={{ 
+                color: 'var(--text-secondary)', 
+                fontFamily: 'var(--font-primary)' 
+              }}>
+                View trends and patterns in your health data with comprehensive tracking.
+              </p>
+            </div>
+            <div className="p-4 rounded-lg" style={{ backgroundColor: 'var(--bg-tertiary)', borderRadius: 'var(--radius-lg)' }}>
+              <div className="text-2xl mb-2">🎯</div>
+              <h3 className="font-semibold mb-2" style={{ 
+                color: 'var(--text-primary)', 
+                fontFamily: 'var(--font-primary)', 
+                fontWeight: 'var(--font-weight-semibold)' 
+              }}>
+                Goal Tracking
+              </h3>
+              <p className="text-sm" style={{ 
+                color: 'var(--text-secondary)', 
+                fontFamily: 'var(--font-primary)' 
+              }}>
+                Set and monitor progress toward your health and fitness objectives.
+              </p>
+            </div>
+            <div className="p-4 rounded-lg" style={{ backgroundColor: 'var(--bg-tertiary)', borderRadius: 'var(--radius-lg)' }}>
+              <div className="text-2xl mb-2">📈</div>
+              <h3 className="font-semibold mb-2" style={{ 
+                color: 'var(--text-primary)', 
+                fontFamily: 'var(--font-primary)', 
+                fontWeight: 'var(--font-weight-semibold)' 
+              }}>
+                Progress Insights
+              </h3>
+              <p className="text-sm" style={{ 
+                color: 'var(--text-secondary)', 
+                fontFamily: 'var(--font-primary)' 
+              }}>
+                Understand how your daily habits impact your overall wellness.
+              </p>
             </div>
           </div>
         </div>

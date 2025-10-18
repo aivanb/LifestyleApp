@@ -38,7 +38,7 @@ class VoiceService {
     try {
       const token = localStorage.getItem('access_token');
       if (!token) {
-        console.log('No auth token available for Vosk check');
+        // No auth token available for Vosk check
         return false;
       }
 
@@ -53,12 +53,12 @@ class VoiceService {
         this.isVoskAvailable = data.data.available;
         return this.isVoskAvailable;
       } else {
-        console.log('Vosk check failed:', response.status);
+        // Vosk check failed
         this.isVoskAvailable = false;
         return false;
       }
     } catch (error) {
-      console.log('Vosk not available, using Web Speech API:', error.message);
+      // Vosk not available, using Web Speech API
       this.isVoskAvailable = false;
       return false;
     }

@@ -80,7 +80,7 @@ const mockMusclePriorities = [
     muscle_log_id: 1,
     muscle_name: 'Chest',
     muscle_group: 'Upper Body',
-    importance: 85
+    priority: 85
   }
 ];
 
@@ -272,11 +272,9 @@ describe('MusclePriority Component', () => {
     fireEvent.click(screen.getByRole('button', { name: /update priorities/i }));
 
     await waitFor(() => {
-      expect(api.updateMusclePriorities).toHaveBeenCalledWith({
-        muscle_logs: [
-          { muscle_name: 'Chest', importance: 85 }
-        ]
-      });
+      expect(api.updateMusclePriorities).toHaveBeenCalledWith([
+        { muscle_name: 1, priority: 85 }
+      ]);
     });
   });
 

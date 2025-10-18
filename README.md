@@ -1,205 +1,188 @@
-# Tracking App
+# Workout & Macro Tracking App
 
-A fullstack application for tracking nutrition, workouts, health metrics, and more, built with Django, React, MySQL, and OpenAI API integration.
+A comprehensive fitness tracking application that helps you monitor your workouts, nutrition, and health metrics - all in one place. Built with modern web technologies and featuring AI-powered food logging.
 
-## Features
+## 🎯 What is this app?
 
-- **User Authentication**: JWT-based authentication with registration, login, and profile management
-- **OpenAI Integration**: Send prompts to OpenAI API and track usage statistics
-- **Database Schema**: Comprehensive MySQL database for tracking various health and fitness metrics
-- **Modern Frontend**: React-based UI with responsive design
-- **API-First Architecture**: RESTful API with proper error handling and logging
+This is a full-featured fitness tracking system that allows you to:
+- **Track your workouts** with detailed exercise logs and muscle group targeting
+- **Monitor nutrition** with an extensive food database and macro tracking
+- **Log health metrics** including weight, body measurements, sleep, and more
+- **Use voice commands** to log food quickly with AI transcription
+- **View analytics** with comprehensive data visualization and progress tracking
 
-## Tech Stack
+## 🚀 Getting Started
 
-### Backend
-- **Django 4.2.7**: Web framework
-- **Django REST Framework**: API development
-- **MySQL**: Database
-- **JWT Authentication**: Secure token-based auth
-- **OpenAI API**: AI integration
+### System Requirements
 
-### Frontend
-- **React 18**: UI framework
-- **React Router**: Navigation
-- **Axios**: HTTP client
-- **Context API**: State management
+Before installing, ensure you have:
+- Python 3.8 or higher
+- Node.js 16 or higher  
+- MySQL 8.0 or higher
+- A modern web browser (Chrome, Firefox, Safari, Edge)
+- At least 2GB of free disk space
 
-## Quick Start
+### Quick Installation
 
-### Prerequisites
-- Python 3.8+
-- Node.js 16+
-- MySQL 8.0+
-- OpenAI API key
-
-### Backend Setup
-
-1. **Navigate to backend directory**:
+1. **Clone the repository**
    ```bash
-   cd backend
+   git clone <repository-url>
+   cd TrackingApp
    ```
 
-2. **Create virtual environment**:
+2. **Set up the environment file**
    ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   cp env.example .env
    ```
+   Edit `.env` and add:
+   - Your MySQL database credentials
+   - A secure SECRET_KEY (use a password generator)
+   - Your OpenAI API key (optional, for AI features)
 
-3. **Install dependencies**:
+3. **Install and run with the setup script** (Recommended)
    ```bash
-   pip install -r requirements.txt
+   # Windows
+   .\scripts\setup.bat
+   
+   # Mac/Linux
+   ./scripts/setup.sh
    ```
 
-4. **Set up environment variables**:
-   ```bash
-   cp ../env.example .env
-   # Edit .env with your database credentials and OpenAI API key
-   ```
+### Manual Installation
 
-5. **Set up MySQL database**:
-   ```sql
-   CREATE DATABASE tracking_app;
-   ```
+If you prefer manual setup, see the detailed instructions in `DEVELOPER.md`.
 
-6. **Run migrations**:
-   ```bash
-   python manage.py makemigrations
-   python manage.py migrate
-   ```
+## 📱 Using the Application
 
-7. **Create superuser**:
-   ```bash
-   python manage.py createsuperuser
-   ```
+### First Time Setup
 
-8. **Start development server**:
-   ```bash
-   python manage.py runserver
-   ```
+1. **Create an account**: Navigate to http://localhost:3000 and click "Register"
+2. **Set your profile**: Add your height, birthday, and activity level
+3. **Set your goals**: Define target weight, calories, and macros
 
-### Frontend Setup
+### Core Features
 
-1. **Navigate to frontend directory**:
-   ```bash
-   cd frontend
-   ```
+#### 🏋️ Workout Tracking
+- Create custom workout routines and splits
+- Log sets, reps, and weights
+- Track muscle group activation
+- View workout history and progress
 
-2. **Install dependencies**:
-   ```bash
-   npm install
-   ```
+#### 🍎 Nutrition Logging
+- Search our database of 8000+ foods
+- Create custom foods and meals
+- Use voice commands to log food naturally
+- Track calories and all macronutrients
 
-3. **Start development server**:
-   ```bash
-   npm start
-   ```
+#### 📊 Health Metrics
+- Log daily weight and body measurements
+- Track water intake and steps
+- Monitor sleep quality and duration
+- Record cardio sessions
 
-## API Endpoints
+#### 📈 Data Analysis
+- View trends and progress charts
+- Export data for external analysis
+- Get AI-powered insights (requires OpenAI API key)
 
-### Authentication
-- `POST /api/auth/register/` - User registration
-- `POST /api/auth/login/` - User login
-- `POST /api/auth/logout/` - User logout
-- `GET /api/auth/profile/` - Get user profile
-- `PUT /api/auth/profile/update/` - Update user profile
-- `POST /api/auth/change-password/` - Change password
-- `POST /api/auth/token/refresh/` - Refresh JWT token
+## 🛠️ Troubleshooting
 
-### OpenAI Integration
-- `POST /api/openai/prompt/` - Send prompt to OpenAI
-- `GET /api/openai/usage/` - Get usage statistics
+### Common Issues
 
-## Database Schema
+**"Cannot connect to database"**
+- Ensure MySQL is running: `mysql --version`
+- Check your database credentials in `.env`
+- Make sure the database exists: `CREATE DATABASE tracking_app;`
 
-The application uses a comprehensive MySQL database schema that includes:
+**"Module not found" errors**
+- Backend: Activate virtual environment and run `pip install -r requirements.txt`
+- Frontend: Run `npm install` in the frontend directory
 
-- **Users**: User accounts with goals and preferences
-- **Foods**: Nutritional information database
-- **Meals**: Meal planning and tracking
-- **Logging**: Food, weight, water, steps, cardio logs
-- **Workouts**: Exercise tracking and muscle activation
-- **Health**: Sleep and health metrics
-- **Analytics**: API usage and error logging
+**"Port already in use"**
+- Backend runs on port 8000, frontend on port 3000
+- Kill existing processes or change ports in configuration
 
-See `notes/database_structure.md` for detailed schema information.
+**Voice recording not working**
+- Ensure microphone permissions are granted in browser
+- For better accuracy, install Vosk model: `python backend/download_vosk_model.py`
 
-## Environment Variables
+### Getting Help
 
-Create a `.env` file in the root directory with the following variables:
+1. Check the `notes/` directory for additional documentation
+2. Review `DEVELOPER.md` for technical details
+3. Look at existing test files for usage examples
+
+## 🔧 Configuration
+
+### Essential Settings
+
+The app can be configured through environment variables in `.env`:
 
 ```env
-# Database Configuration
+# Database (Required)
 DB_NAME=tracking_app
-DB_USER=root
-DB_PASSWORD=your_password
-DB_HOST=localhost
-DB_PORT=3306
+DB_USER=your_mysql_user
+DB_PASSWORD=your_mysql_password
 
-# Django Configuration
-SECRET_KEY=your-secret-key-here
-DEBUG=True
-ALLOWED_HOSTS=localhost,127.0.0.1
+# Security (Required - generate a random string)
+SECRET_KEY=generate-a-long-random-string-here
 
-# JWT Configuration
-JWT_SECRET_KEY=your-jwt-secret-key
-JWT_ACCESS_TOKEN_LIFETIME=3600
-JWT_REFRESH_TOKEN_LIFETIME=604800
-
-# OpenAI Configuration
-OPENAI_API_KEY=your-openai-api-key
-OPENAI_MODEL=gpt-3.5-turbo
-
-# Frontend Configuration
-REACT_APP_API_URL=http://localhost:8000/api
-REACT_APP_ENV=development
+# Features (Optional)
+OPENAI_API_KEY=your-key-here  # For AI features
+DEBUG=False                    # Set True for development only
 ```
 
-## Development
+### Optional Features
 
-### Backend Development
-- Follow the style guide in `backend/STYLE_GUIDE.md`
-- Use Django's built-in development server for local development
-- Run tests with `python manage.py test`
+- **AI Food Parsing**: Add an OpenAI API key to enable natural language food logging
+- **Voice Transcription**: Install Vosk for offline voice processing
+- **Email Notifications**: Configure SMTP settings (coming soon)
 
-### Frontend Development
-- Follow the style guide in `frontend/STYLE_GUIDE.md`
-- Use `npm start` for development server with hot reload
-- Run tests with `npm test`
+## 📊 Data Privacy
 
-## Testing
+Your data stays on your machine:
+- All data is stored locally in your MySQL database
+- No telemetry or usage data is collected
+- API keys are only used for their intended services
+- You can export and delete your data at any time
 
-### Backend Tests
+## 🔄 Updates
+
+To update to the latest version:
 ```bash
-cd backend
-python manage.py test
+git pull origin main
+cd backend && pip install -r requirements.txt
+cd ../frontend && npm install
+# Run any new migrations
+cd ../backend && python manage.py migrate
 ```
 
-### Frontend Tests
-```bash
-cd frontend
-npm test
-```
+## 🎮 Quick Start Examples
 
-## Deployment
+### Log Your First Workout
+1. Go to "Workout Tracker"
+2. Click "Create Workout" 
+3. Add exercises (e.g., "Bench Press")
+4. Log your sets and reps
+5. Save the workout
 
-### Backend Deployment
-1. Set `DEBUG=False` in production
-2. Configure production database
-3. Set up static file serving
-4. Use a production WSGI server (e.g., Gunicorn)
+### Track Your First Meal
+1. Go to "Food Log"
+2. Search for a food (e.g., "chicken breast")
+3. Enter the amount
+4. Click "Log Food"
+5. View your daily totals on the dashboard
 
-### Frontend Deployment
-1. Build production bundle: `npm run build`
-2. Serve static files through web server (e.g., Nginx)
+### Use Voice Commands
+1. Click the microphone icon in Food Log
+2. Say "I had 200 grams of chicken breast and a cup of brown rice"
+3. Review the parsed items
+4. Confirm to log
 
-## Contributing
+## 📝 License
 
-1. Follow the established style guides
-2. Write tests for new features
-3. Update documentation as needed
-4. Follow the existing code structure and patterns
+This project is licensed under the MIT License. See `LICENSE` file for details.
 
-## License
+---
 
-This project is licensed under the MIT License.
+**Need more help?** Check out `DEVELOPER.md` for technical documentation or explore the `notes/` directory for detailed guides.

@@ -61,15 +61,21 @@ backend/
 - **API Endpoints**: Weight, water, body measurements, steps, cardio tracking with individual and bulk operations
 
 ### Workouts App (`apps/workouts/`)
-- **Purpose**: Comprehensive workout tracking and management system
+- **Purpose**: Comprehensive workout tracking and management system with full feature implementation
 - **Key Files**:
   - `models.py` - Workout, Muscle, WorkoutLog, MuscleLog, WorkoutMuscle, Split, SplitDay, SplitDayTarget models
-  - `serializers.py` - Complete serialization for all workout-related data
-  - `views.py` - CRUD operations, muscle priorities, splits, workout logging, statistics
-  - `urls.py` - Workout API URL patterns
+  - `serializers.py` - Complete serialization for all workout-related data with priority field updates
+  - `views.py` - CRUD operations, muscle priorities, splits, workout logging, statistics, current split day
+  - `urls.py` - Workout API URL patterns including new current split day endpoint
 - **Models**: Workout definitions, muscle management, workout logging, split programs
-- **Features**: Muscle priority system, workout creation, split management, progress tracking
-- **API Endpoints**: Complete workout lifecycle management
+- **Features**: 
+  - **Muscle Priority System**: Priority-based muscle management (default 80, 0-100 scale)
+  - **Workout Creation**: Full metadata editing with emoji icons and muscle activation ratings
+  - **Split Management**: Multi-day programs with target activation and optimal range calculations
+  - **Workout Logging**: Advanced session tracking with attributes (dropset, assisted, partial, pause, negatives)
+  - **Progress Tracking**: Real-time statistics, muscle progress, and split day determination
+  - **Current Split Day**: Automatic calculation based on start date and current date
+- **API Endpoints**: Complete workout lifecycle management with new split day tracking
 
 ### Health App (`apps/health/`)
 - **Purpose**: Health metrics and sleep tracking with comprehensive analytics
@@ -888,11 +894,11 @@ if serializer.is_valid():
 #### Update Muscle Priorities
 ```python
 from apps.workouts.models import MuscleLog
-from apps.workouts.views import update_muscle_priorities
+from apps.workouts.views import muscle_priorities
 
 priorities_data = [
-    {'muscle_name': 1, 'importance': 90},  # Chest - High priority
-    {'muscle_name': 2, 'importance': 85},  # Triceps - High priority
+    {'muscle_name': 1, 'priority': 90},  # Chest - High priority
+    {'muscle_name': 2, 'priority': 85},  # Triceps - High priority
 ]
 
 # This will update or create MuscleLog entries for the user
@@ -942,6 +948,16 @@ log_data = {
 serializer = WorkoutLogSerializer(data=log_data)
 if serializer.is_valid():
     log = serializer.save(user=user)
+```
+
+#### Get Current Split Day
+```python
+from apps.workouts.views import current_split_day
+from datetime import date
+
+# Get current split day for a specific date
+response = current_split_day(request, date='2024-01-15')
+# Returns active split and current day based on start date calculation
 ```
 
 ## Profile System - Comprehensive User Management

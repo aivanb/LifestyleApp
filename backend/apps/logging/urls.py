@@ -27,15 +27,6 @@ urlpatterns = [
     path('cardio/<int:pk>/', views.CardioLogRetrieveUpdateDestroyView.as_view(), name='cardio-log-retrieve-update-destroy'),
     path('cardio/streak/', views.get_cardio_streak, name='cardio-log-streak'),
     
-    # Sleep Log
-    path('sleep/', views.SleepLogListCreateView.as_view(), name='sleep-log-list-create'),
-    path('sleep/<int:pk>/', views.SleepLogRetrieveUpdateDestroyView.as_view(), name='sleep-log-retrieve-update-destroy'),
-    path('sleep/streak/', views.get_sleep_streak, name='sleep-log-streak'),
-    
-    # Health Metrics Log
-    path('health-metrics/', views.HealthMetricsLogListCreateView.as_view(), name='health-metrics-log-list-create'),
-    path('health-metrics/<int:pk>/', views.HealthMetricsLogRetrieveUpdateDestroyView.as_view(), name='health-metrics-log-retrieve-update-destroy'),
-    path('health-metrics/streak/', views.get_health_metrics_streak, name='health-metrics-log-streak'),
     
     # All Trackers
     path('streaks/', views.get_all_tracker_streaks, name='all-tracker-streaks'),

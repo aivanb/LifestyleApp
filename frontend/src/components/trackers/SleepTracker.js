@@ -60,31 +60,33 @@ const SleepTracker = () => {
     e.preventDefault();
     
     try {
+      // Validate required fields more thoroughly
+      if (!formData.time_went_to_bed || formData.time_went_to_bed.trim() === '') {
+        alert('Please fill in the bedtime field.');
+        return;
+      }
+      if (!formData.time_got_out_of_bed || formData.time_got_out_of_bed.trim() === '') {
+        alert('Please fill in the wake time field.');
+        return;
+      }
+      if (!formData.date_time || formData.date_time.trim() === '') {
+        alert('Please select a date.');
+        return;
+      }
+      
       const logData = {
         date_time: formData.date_time,
         time_went_to_bed: formData.time_went_to_bed,
-        time_got_out_of_bed: formData.time_got_out_of_bed
+        time_got_out_of_bed: formData.time_got_out_of_bed,
+        time_fell_asleep: formData.time_fell_asleep && formData.time_fell_asleep.trim() !== '' ? formData.time_fell_asleep : null,
+        time_in_light_sleep: formData.time_in_light_sleep && formData.time_in_light_sleep.trim() !== '' ? parseInt(formData.time_in_light_sleep) : null,
+        time_in_deep_sleep: formData.time_in_deep_sleep && formData.time_in_deep_sleep.trim() !== '' ? parseInt(formData.time_in_deep_sleep) : null,
+        time_in_rem_sleep: formData.time_in_rem_sleep && formData.time_in_rem_sleep.trim() !== '' ? parseInt(formData.time_in_rem_sleep) : null,
+        number_of_times_woke_up: formData.number_of_times_woke_up && formData.number_of_times_woke_up.trim() !== '' ? parseInt(formData.number_of_times_woke_up) : null,
+        resting_heart_rate: formData.resting_heart_rate && formData.resting_heart_rate.trim() !== '' ? parseInt(formData.resting_heart_rate) : null
       };
 
-      // Only add optional fields if they have values
-      if (formData.time_fell_asleep) {
-        logData.time_fell_asleep = formData.time_fell_asleep;
-      }
-      if (formData.time_in_light_sleep) {
-        logData.time_in_light_sleep = parseInt(formData.time_in_light_sleep);
-      }
-      if (formData.time_in_deep_sleep) {
-        logData.time_in_deep_sleep = parseInt(formData.time_in_deep_sleep);
-      }
-      if (formData.time_in_rem_sleep) {
-        logData.time_in_rem_sleep = parseInt(formData.time_in_rem_sleep);
-      }
-      if (formData.number_of_times_woke_up) {
-        logData.number_of_times_woke_up = parseInt(formData.number_of_times_woke_up);
-      }
-      if (formData.resting_heart_rate) {
-        logData.resting_heart_rate = parseInt(formData.resting_heart_rate);
-      }
+      console.log('Sending sleep data:', logData); // Debug log
 
       if (editingLog) {
         await api.updateSleepLog(editingLog.sleep_log_id, logData);
@@ -96,7 +98,41 @@ const SleepTracker = () => {
       resetForm();
     } catch (error) {
       console.error('Error saving sleep log:', error);
-      alert('Error saving sleep log. Please try again.');
+      console.error('Error details:', error.response?.data); // More detailed error logging
+      
+      // Show specific validation errors to the user
+      let errorMessage = 'Error saving sleep log. ';
+      
+      if (error.response?.data) {
+        const errorData = error.response.data;
+        
+        // Handle field-specific errors
+        if (errorData.time_went_to_bed) {
+          errorMessage += `Bedtime error: ${Array.isArray(errorData.time_went_to_bed) ? errorData.time_went_to_bed[0] : errorData.time_went_to_bed}. `;
+        }
+        if (errorData.time_got_out_of_bed) {
+          errorMessage += `Wake time error: ${Array.isArray(errorData.time_got_out_of_bed) ? errorData.time_got_out_of_bed[0] : errorData.time_got_out_of_bed}. `;
+        }
+        if (errorData.date_time) {
+          errorMessage += `Date error: ${Array.isArray(errorData.date_time) ? errorData.date_time[0] : errorData.date_time}. `;
+        }
+        if (errorData.non_field_errors) {
+          errorMessage += `Validation error: ${Array.isArray(errorData.non_field_errors) ? errorData.non_field_errors[0] : errorData.non_field_errors}. `;
+        }
+        
+        // Handle general validation errors
+        if (errorData.detail) {
+          errorMessage += errorData.detail;
+        } else if (typeof errorData === 'string') {
+          errorMessage += errorData;
+        } else if (Object.keys(errorData).length === 0) {
+          errorMessage += 'Please check that all required fields are filled correctly.';
+        }
+      } else {
+        errorMessage += 'Please check that all required fields are filled correctly.';
+      }
+      
+      alert(errorMessage);
     }
   };
 
@@ -152,363 +188,509 @@ const SleepTracker = () => {
     });
   };
 
-  const formatTime = (timeString) => {
-    if (!timeString) return '';
-    const [hours, minutes] = timeString.split(':');
-    const hour = parseInt(hours);
-    const ampm = hour >= 12 ? 'PM' : 'AM';
-    const displayHour = hour % 12 || 12;
-    return `${displayHour}:${minutes} ${ampm}`;
-  };
-
-  const calculateSleepDuration = (log) => {
-    if (!log.time_went_to_bed || !log.time_got_out_of_bed) return null;
-    
-    const bedTime = new Date(`2000-01-01T${log.time_went_to_bed}`);
-    const wakeTime = new Date(`2000-01-01T${log.time_got_out_of_bed}`);
-    
-    // Handle overnight sleep
-    if (wakeTime < bedTime) {
-      wakeTime.setDate(wakeTime.getDate() + 1);
-    }
-    
-    const diffMs = wakeTime - bedTime;
-    const diffHours = diffMs / (1000 * 60 * 60);
-    
-    const hours = Math.floor(diffHours);
-    const minutes = Math.round((diffHours - hours) * 60);
-    
-    return `${hours}h ${minutes}m`;
-  };
-
   const getRecentLogs = () => {
     return logs.slice(0, 10);
   };
 
-  const getAverageSleepDuration = () => {
-    const validLogs = logs.filter(log => log.time_went_to_bed && log.time_got_out_of_bed);
-    if (validLogs.length === 0) return null;
-    
-    const totalMinutes = validLogs.reduce((total, log) => {
-      const bedTime = new Date(`2000-01-01T${log.time_went_to_bed}`);
-      const wakeTime = new Date(`2000-01-01T${log.time_got_out_of_bed}`);
-      
-      if (wakeTime < bedTime) {
-        wakeTime.setDate(wakeTime.getDate() + 1);
-      }
-      
-      return total + (wakeTime - bedTime) / (1000 * 60);
-    }, 0);
-    
-    const avgMinutes = totalMinutes / validLogs.length;
-    const hours = Math.floor(avgMinutes / 60);
-    const minutes = Math.round(avgMinutes % 60);
-    
-    return `${hours}h ${minutes}m`;
-  };
-
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-indigo-600"></div>
+      <div className="form-container flex items-center justify-center">
+        <div 
+          className="animate-spin rounded-full h-16 w-16 border-b-2" 
+          style={{ borderColor: 'var(--accent-color)' }}
+        ></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="form-container">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={() => navigate('/additional-trackers')}
-                className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors"
-              >
-                <ArrowLeftIcon className="h-5 w-5 text-gray-600" />
-              </button>
-              <div className="flex items-center space-x-3">
-                <div className="p-2 bg-indigo-100 rounded-xl">
-                  <MoonIcon className="h-8 w-8 text-indigo-600" />
-                </div>
-                <div>
-                  <h1 className="text-3xl font-bold text-gray-900">Sleep Tracker</h1>
-                  <p className="text-gray-600">Track your sleep patterns and quality</p>
-                </div>
+      <div className="mb-8">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <button
+              onClick={() => navigate('/additional-trackers')}
+              className="p-2 rounded-lg transition-colors"
+              style={{ 
+                backgroundColor: 'var(--bg-tertiary)', 
+                borderRadius: 'var(--radius-lg)',
+                border: '1px solid var(--border-color)'
+              }}
+            >
+              <ArrowLeftIcon 
+                className="h-5 w-5" 
+                style={{
+                  width: '20px',
+                  height: '20px',
+                  minWidth: '20px',
+                  minHeight: '20px',
+                  color: 'var(--text-secondary)'
+                }}
+              />
+            </button>
+            <div className="flex items-center space-x-3">
+              <div className="p-2 rounded-xl" style={{ backgroundColor: 'var(--bg-tertiary)', borderRadius: 'var(--radius-lg)' }}>
+                <MoonIcon 
+                  className="h-8 w-8" 
+                  style={{
+                    width: '32px',
+                    height: '32px',
+                    minWidth: '32px',
+                    minHeight: '32px',
+                    color: 'var(--accent-color)'
+                  }}
+                />
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold" style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-primary)', fontWeight: 'var(--font-weight-bold)' }}>
+                  Sleep Tracker
+                </h1>
+                <p style={{ color: 'var(--text-secondary)', fontFamily: 'var(--font-primary)' }}>
+                  Track your sleep patterns and quality
+                </p>
               </div>
             </div>
-            <button
-              onClick={() => setShowForm(true)}
-              className="flex items-center space-x-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
-            >
-              <PlusIcon className="h-5 w-5" />
-              <span>Add Sleep</span>
-            </button>
           </div>
+          <button
+            onClick={() => setShowForm(true)}
+            className="flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors"
+            style={{ 
+              backgroundColor: 'var(--accent-color)', 
+              color: 'white',
+              borderRadius: 'var(--radius-lg)',
+              fontFamily: 'var(--font-primary)'
+            }}
+          >
+            <PlusIcon 
+              className="h-5 w-5" 
+              style={{
+                width: '20px',
+                height: '20px',
+                minWidth: '20px',
+                minHeight: '20px'
+              }}
+            />
+            <span>Add Sleep</span>
+          </button>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Average Sleep Duration */}
-        {getAverageSleepDuration() && (
-          <div className="bg-gradient-to-r from-indigo-500 to-indigo-600 rounded-2xl shadow-lg p-6 mb-8 text-white">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-2xl font-bold">Average Sleep Duration</h2>
-                <p className="text-indigo-100 mt-1">Based on your recent entries</p>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Form Section */}
+        <div className="lg:col-span-1">
+          {showForm && (
+            <div className="p-6 mb-6 rounded-lg" style={{ 
+              backgroundColor: 'var(--bg-secondary)', 
+              border: '1px solid var(--border-color)',
+              borderRadius: 'var(--radius-lg)'
+            }}>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-semibold" style={{ 
+                  color: 'var(--text-primary)', 
+                  fontFamily: 'var(--font-primary)', 
+                  fontWeight: 'var(--font-weight-semibold)' 
+                }}>
+                  {editingLog ? 'Edit Sleep Entry' : 'Add Sleep Entry'}
+                </h2>
+                <button
+                  onClick={resetForm}
+                  className="p-1 rounded-lg transition-colors"
+                  style={{ borderRadius: 'var(--radius-lg)' }}
+                >
+                  <XMarkIcon 
+                    className="h-5 w-5" 
+                    style={{
+                      width: '20px',
+                      height: '20px',
+                      minWidth: '20px',
+                      minHeight: '20px',
+                      color: 'var(--text-tertiary)'
+                    }}
+                  />
+                </button>
               </div>
-              <div className="text-right">
-                <div className="text-4xl font-bold">{getAverageSleepDuration()}</div>
-                <div className="text-indigo-100">per night</div>
-              </div>
-            </div>
-          </div>
-        )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Form Section */}
-          <div className="lg:col-span-1">
-            {showForm && (
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-6">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-xl font-semibold text-gray-900">
-                    {editingLog ? 'Edit Sleep Entry' : 'Add Sleep Entry'}
-                  </h2>
-                  <button
-                    onClick={resetForm}
-                    className="p-1 rounded-lg hover:bg-gray-100 transition-colors"
-                  >
-                    <XMarkIcon className="h-5 w-5 text-gray-500" />
-                  </button>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2" style={{ 
+                    color: 'var(--text-primary)', 
+                    fontFamily: 'var(--font-primary)' 
+                  }}>
+                    Date
+                  </label>
+                  <input
+                    type="date"
+                    name="date_time"
+                    value={formData.date_time}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 rounded-lg"
+                    style={{ 
+                      backgroundColor: 'var(--bg-primary)', 
+                      border: '1px solid var(--border-color)',
+                      borderRadius: 'var(--radius-lg)',
+                      color: 'var(--text-primary)',
+                      fontFamily: 'var(--font-primary)'
+                    }}
+                    required
+                  />
                 </div>
 
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Date *
-                    </label>
-                    <input
-                      type="date"
-                      name="date_time"
-                      value={formData.date_time}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                      required
+                <div>
+                  <label className="block text-sm font-medium mb-2" style={{ 
+                    color: 'var(--text-primary)', 
+                    fontFamily: 'var(--font-primary)' 
+                  }}>
+                    Time Went to Bed
+                  </label>
+                  <input
+                    type="time"
+                    name="time_went_to_bed"
+                    value={formData.time_went_to_bed}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 rounded-lg"
+                    style={{ 
+                      backgroundColor: 'var(--bg-primary)', 
+                      border: '1px solid var(--border-color)',
+                      borderRadius: 'var(--radius-lg)',
+                      color: 'var(--text-primary)',
+                      fontFamily: 'var(--font-primary)'
+                    }}
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-2" style={{ 
+                    color: 'var(--text-primary)', 
+                    fontFamily: 'var(--font-primary)' 
+                  }}>
+                    Time Got Out of Bed
+                  </label>
+                  <input
+                    type="time"
+                    name="time_got_out_of_bed"
+                    value={formData.time_got_out_of_bed}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 rounded-lg"
+                    style={{ 
+                      backgroundColor: 'var(--bg-primary)', 
+                      border: '1px solid var(--border-color)',
+                      borderRadius: 'var(--radius-lg)',
+                      color: 'var(--text-primary)',
+                      fontFamily: 'var(--font-primary)'
+                    }}
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-2" style={{ 
+                    color: 'var(--text-primary)', 
+                    fontFamily: 'var(--font-primary)' 
+                  }}>
+                    Time Fell Asleep (Optional)
+                  </label>
+                  <input
+                    type="time"
+                    name="time_fell_asleep"
+                    value={formData.time_fell_asleep}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 rounded-lg"
+                    style={{ 
+                      backgroundColor: 'var(--bg-primary)', 
+                      border: '1px solid var(--border-color)',
+                      borderRadius: 'var(--radius-lg)',
+                      color: 'var(--text-primary)',
+                      fontFamily: 'var(--font-primary)'
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-2" style={{ 
+                    color: 'var(--text-primary)', 
+                    fontFamily: 'var(--font-primary)' 
+                  }}>
+                    Light Sleep (minutes)
+                  </label>
+                  <input
+                    type="number"
+                    name="time_in_light_sleep"
+                    value={formData.time_in_light_sleep}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 rounded-lg"
+                    style={{ 
+                      backgroundColor: 'var(--bg-primary)', 
+                      border: '1px solid var(--border-color)',
+                      borderRadius: 'var(--radius-lg)',
+                      color: 'var(--text-primary)',
+                      fontFamily: 'var(--font-primary)'
+                    }}
+                    placeholder="Optional"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-2" style={{ 
+                    color: 'var(--text-primary)', 
+                    fontFamily: 'var(--font-primary)' 
+                  }}>
+                    Deep Sleep (minutes)
+                  </label>
+                  <input
+                    type="number"
+                    name="time_in_deep_sleep"
+                    value={formData.time_in_deep_sleep}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 rounded-lg"
+                    style={{ 
+                      backgroundColor: 'var(--bg-primary)', 
+                      border: '1px solid var(--border-color)',
+                      borderRadius: 'var(--radius-lg)',
+                      color: 'var(--text-primary)',
+                      fontFamily: 'var(--font-primary)'
+                    }}
+                    placeholder="Optional"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-2" style={{ 
+                    color: 'var(--text-primary)', 
+                    fontFamily: 'var(--font-primary)' 
+                  }}>
+                    REM Sleep (minutes)
+                  </label>
+                  <input
+                    type="number"
+                    name="time_in_rem_sleep"
+                    value={formData.time_in_rem_sleep}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 rounded-lg"
+                    style={{ 
+                      backgroundColor: 'var(--bg-primary)', 
+                      border: '1px solid var(--border-color)',
+                      borderRadius: 'var(--radius-lg)',
+                      color: 'var(--text-primary)',
+                      fontFamily: 'var(--font-primary)'
+                    }}
+                    placeholder="Optional"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-2" style={{ 
+                    color: 'var(--text-primary)', 
+                    fontFamily: 'var(--font-primary)' 
+                  }}>
+                    Times Woke Up
+                  </label>
+                  <input
+                    type="number"
+                    name="number_of_times_woke_up"
+                    value={formData.number_of_times_woke_up}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 rounded-lg"
+                    style={{ 
+                      backgroundColor: 'var(--bg-primary)', 
+                      border: '1px solid var(--border-color)',
+                      borderRadius: 'var(--radius-lg)',
+                      color: 'var(--text-primary)',
+                      fontFamily: 'var(--font-primary)'
+                    }}
+                    placeholder="Optional"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-2" style={{ 
+                    color: 'var(--text-primary)', 
+                    fontFamily: 'var(--font-primary)' 
+                  }}>
+                    Resting Heart Rate (BPM)
+                  </label>
+                  <input
+                    type="number"
+                    name="resting_heart_rate"
+                    value={formData.resting_heart_rate}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 rounded-lg"
+                    style={{ 
+                      backgroundColor: 'var(--bg-primary)', 
+                      border: '1px solid var(--border-color)',
+                      borderRadius: 'var(--radius-lg)',
+                      color: 'var(--text-primary)',
+                      fontFamily: 'var(--font-primary)'
+                    }}
+                    placeholder="Optional"
+                  />
+                </div>
+
+                <div className="flex space-x-3">
+                  <button
+                    type="submit"
+                    className="flex-1 flex items-center justify-center space-x-2 px-4 py-2 rounded-lg transition-colors"
+                    style={{ 
+                      backgroundColor: 'var(--accent-color)', 
+                      color: 'white',
+                      borderRadius: 'var(--radius-lg)',
+                      fontFamily: 'var(--font-primary)'
+                    }}
+                  >
+                    <CheckIcon 
+                      className="h-5 w-5" 
+                      style={{
+                        width: '20px',
+                        height: '20px',
+                        minWidth: '20px',
+                        minHeight: '20px'
+                      }}
                     />
-                  </div>
+                    <span>{editingLog ? 'Update' : 'Save'}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={resetForm}
+                    className="px-4 py-2 rounded-lg transition-colors"
+                    style={{ 
+                      backgroundColor: 'var(--bg-tertiary)', 
+                      border: '1px solid var(--border-color)',
+                      borderRadius: 'var(--radius-lg)',
+                      color: 'var(--text-primary)',
+                      fontFamily: 'var(--font-primary)'
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
+        </div>
 
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Bed Time *
-                      </label>
-                      <input
-                        type="time"
-                        name="time_went_to_bed"
-                        value={formData.time_went_to_bed}
-                        onChange={handleInputChange}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Wake Time *
-                      </label>
-                      <input
-                        type="time"
-                        name="time_got_out_of_bed"
-                        value={formData.time_got_out_of_bed}
-                        onChange={handleInputChange}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                        required
-                      />
-                    </div>
-                  </div>
+        {/* Logs Section */}
+        <div className="lg:col-span-2">
+          <div className="rounded-lg" style={{ 
+            backgroundColor: 'var(--bg-secondary)', 
+            border: '1px solid var(--border-color)',
+            borderRadius: 'var(--radius-lg)'
+          }}>
+            <div className="p-6 border-b" style={{ borderColor: 'var(--border-color)' }}>
+              <h2 className="text-xl font-semibold" style={{ 
+                color: 'var(--text-primary)', 
+                fontFamily: 'var(--font-primary)', 
+                fontWeight: 'var(--font-weight-semibold)' 
+              }}>
+                Recent Entries
+              </h2>
+              <p style={{ color: 'var(--text-secondary)', fontFamily: 'var(--font-primary)' }}>
+                Your latest sleep records
+              </p>
+            </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Time to Fall Asleep
-                    </label>
-                    <input
-                      type="time"
-                      name="time_fell_asleep"
-                      value={formData.time_fell_asleep}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-3">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Light Sleep (min)
-                      </label>
-                      <input
-                        type="number"
-                        name="time_in_light_sleep"
-                        value={formData.time_in_light_sleep}
-                        onChange={handleInputChange}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                        placeholder="Optional"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Deep Sleep (min)
-                      </label>
-                      <input
-                        type="number"
-                        name="time_in_deep_sleep"
-                        value={formData.time_in_deep_sleep}
-                        onChange={handleInputChange}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                        placeholder="Optional"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        REM Sleep (min)
-                      </label>
-                      <input
-                        type="number"
-                        name="time_in_rem_sleep"
-                        value={formData.time_in_rem_sleep}
-                        onChange={handleInputChange}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                        placeholder="Optional"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Times Woke Up
-                      </label>
-                      <input
-                        type="number"
-                        name="number_of_times_woke_up"
-                        value={formData.number_of_times_woke_up}
-                        onChange={handleInputChange}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                        placeholder="Optional"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Resting HR (BPM)
-                      </label>
-                      <input
-                        type="number"
-                        name="resting_heart_rate"
-                        value={formData.resting_heart_rate}
-                        onChange={handleInputChange}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                        placeholder="Optional"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex space-x-3">
-                    <button
-                      type="submit"
-                      className="flex-1 flex items-center justify-center space-x-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
-                    >
-                      <CheckIcon className="h-5 w-5" />
-                      <span>{editingLog ? 'Update' : 'Save'}</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={resetForm}
-                      className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </form>
-              </div>
-            )}
-          </div>
-
-          {/* Logs Section */}
-          <div className="lg:col-span-2">
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200">
-              <div className="p-6 border-b border-gray-200">
-                <h2 className="text-xl font-semibold text-gray-900">Recent Entries</h2>
-                <p className="text-gray-600 mt-1">Your latest sleep records</p>
-              </div>
-
-              <div className="divide-y divide-gray-200">
-                {getRecentLogs().length === 0 ? (
-                  <div className="p-8 text-center">
-                    <MoonIcon className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                    <p className="text-gray-500">No sleep entries yet</p>
-                    <p className="text-gray-400 text-sm">Start tracking your sleep to see your patterns</p>
-                  </div>
-                ) : (
-                  getRecentLogs().map((log) => (
-                    <div key={log.sleep_log_id} className="p-6 hover:bg-gray-50 transition-colors">
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-start space-x-4">
-                          <div className="p-2 bg-indigo-100 rounded-lg">
-                            <MoonIcon className="h-5 w-5 text-indigo-600" />
-                          </div>
-                          <div className="flex-1">
-                            <div className="flex items-center space-x-2 mb-2">
-                              <h3 className="text-lg font-semibold text-gray-900">
-                                {formatDate(log.date_time)}
-                              </h3>
-                              {calculateSleepDuration(log) && (
-                                <span className="px-2 py-1 bg-indigo-100 text-indigo-700 text-sm rounded-full">
-                                  {calculateSleepDuration(log)}
-                                </span>
-                              )}
-                            </div>
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                              <div>
-                                <span className="text-gray-500">Bed:</span>
-                                <span className="ml-1 font-medium">{formatTime(log.time_went_to_bed)}</span>
-                              </div>
-                              <div>
-                                <span className="text-gray-500">Wake:</span>
-                                <span className="ml-1 font-medium">{formatTime(log.time_got_out_of_bed)}</span>
-                              </div>
-                              {log.time_fell_asleep && (
-                                <div>
-                                  <span className="text-gray-500">Asleep:</span>
-                                  <span className="ml-1 font-medium">{formatTime(log.time_fell_asleep)}</span>
-                                </div>
-                              )}
-                              {log.number_of_times_woke_up && (
-                                <div>
-                                  <span className="text-gray-500">Woke up:</span>
-                                  <span className="ml-1 font-medium">{log.number_of_times_woke_up} times</span>
-                                </div>
-                              )}
-                            </div>
-                          </div>
+            <div className="divide-y" style={{ borderColor: 'var(--border-color)' }}>
+              {getRecentLogs().length === 0 ? (
+                <div className="p-8 text-center">
+                  <MoonIcon 
+                    className="h-12 w-12 mx-auto mb-4" 
+                    style={{
+                      width: '48px',
+                      height: '48px',
+                      minWidth: '48px',
+                      minHeight: '48px',
+                      color: 'var(--text-tertiary)'
+                    }}
+                  />
+                  <p style={{ color: 'var(--text-tertiary)', fontFamily: 'var(--font-primary)' }}>
+                    No sleep entries yet
+                  </p>
+                  <p className="text-sm" style={{ color: 'var(--text-tertiary)', fontFamily: 'var(--font-primary)' }}>
+                    Start tracking your sleep to see your patterns
+                  </p>
+                </div>
+              ) : (
+                getRecentLogs().map((log) => (
+                  <div key={log.sleep_log_id} className="p-6 transition-colors" style={{ borderColor: 'var(--border-color)' }}>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-4">
+                        <div className="p-2 rounded-lg" style={{ backgroundColor: 'var(--bg-tertiary)', borderRadius: 'var(--radius-lg)' }}>
+                          <MoonIcon 
+                            className="h-5 w-5" 
+                            style={{
+                              width: '20px',
+                              height: '20px',
+                              minWidth: '20px',
+                              minHeight: '20px',
+                              color: 'var(--accent-color)'
+                            }}
+                          />
                         </div>
-                        <div className="flex items-center space-x-2">
-                          <button
-                            onClick={() => handleEdit(log)}
-                            className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
-                          >
-                            <PencilIcon className="h-4 w-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(log.sleep_log_id)}
-                            className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                          >
-                            <TrashIcon className="h-4 w-4" />
-                          </button>
+                        <div>
+                          <div className="flex items-center space-x-2">
+                            <span className="text-lg font-bold" style={{ 
+                              color: 'var(--text-primary)', 
+                              fontFamily: 'var(--font-primary)', 
+                              fontWeight: 'var(--font-weight-bold)' 
+                            }}>
+                              {log.time_went_to_bed} - {log.time_got_out_of_bed}
+                            </span>
+                          </div>
+                          <div className="flex items-center space-x-1 text-sm mt-1">
+                            <CalendarIcon 
+                              className="h-4 w-4" 
+                              style={{
+                                width: '16px',
+                                height: '16px',
+                                minWidth: '16px',
+                                minHeight: '16px',
+                                color: 'var(--text-tertiary)'
+                              }}
+                            />
+                            <span style={{ color: 'var(--text-tertiary)', fontFamily: 'var(--font-primary)' }}>
+                              {formatDate(log.date_time)}
+                            </span>
+                          </div>
                         </div>
                       </div>
+                      <div className="flex items-center space-x-2">
+                        <button
+                          onClick={() => handleEdit(log)}
+                          className="p-2 rounded-lg transition-colors"
+                          style={{ borderRadius: 'var(--radius-lg)' }}
+                        >
+                          <PencilIcon 
+                            className="h-4 w-4" 
+                            style={{
+                              width: '16px',
+                              height: '16px',
+                              minWidth: '16px',
+                              minHeight: '16px',
+                              color: 'var(--text-tertiary)'
+                            }}
+                          />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(log.sleep_log_id)}
+                          className="p-2 rounded-lg transition-colors"
+                          style={{ borderRadius: 'var(--radius-lg)' }}
+                        >
+                          <TrashIcon 
+                            className="h-4 w-4" 
+                            style={{
+                              width: '16px',
+                              height: '16px',
+                              minWidth: '16px',
+                              minHeight: '16px',
+                              color: 'var(--text-tertiary)'
+                            }}
+                          />
+                        </button>
+                      </div>
                     </div>
-                  ))
-                )}
-              </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </div>

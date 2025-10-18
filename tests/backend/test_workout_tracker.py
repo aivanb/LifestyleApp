@@ -92,12 +92,12 @@ class WorkoutModelTests(TestCase):
         muscle_log = MuscleLog.objects.create(
             user=self.user,
             muscle_name=self.muscle,
-            importance=85
+            priority=85
         )
         
         self.assertEqual(muscle_log.user, self.user)
         self.assertEqual(muscle_log.muscle_name, self.muscle)
-        self.assertEqual(muscle_log.importance, 85)
+        self.assertEqual(muscle_log.priority, 85)
 
     def test_split_creation(self):
         """Test creating a split"""
@@ -287,7 +287,7 @@ class WorkoutAPITests(APITestCase):
         MuscleLog.objects.create(
             user=self.user,
             muscle_name=self.muscle,
-            importance=85
+            priority=85
         )
         
         url = reverse('muscle_priorities')
@@ -300,8 +300,8 @@ class WorkoutAPITests(APITestCase):
         """Test updating muscle priorities"""
         data = {
             'muscle_logs': [{
-                'muscle_name': self.muscle.muscle_name,
-                'importance': 90
+                'muscle_name': self.muscle.muscles_id,
+                'priority': 90
             }]
         }
         
@@ -310,7 +310,7 @@ class WorkoutAPITests(APITestCase):
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         muscle_log = MuscleLog.objects.get(user=self.user, muscle_name=self.muscle)
-        self.assertEqual(muscle_log.importance, 90)
+        self.assertEqual(muscle_log.priority, 90)
 
     def test_create_split(self):
         """Test creating a split"""
@@ -440,6 +440,34 @@ class WorkoutAPITests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIsInstance(response.data['data'], list)
         self.assertGreater(len(response.data['data']), 0)
+
+    def test_get_current_split_day(self):
+        """Test getting current split day"""
+        split = Split.objects.create(
+            user=self.user,
+            split_name='Push/Pull/Legs',
+            start_date=date.today()
+        )
+        
+        split_day = SplitDay.objects.create(
+            split=split,
+            day_name='Push Day',
+            day_order=1
+        )
+        
+        SplitDayTarget.objects.create(
+            split_day=split_day,
+            muscle=self.muscle,
+            target_activation=225
+        )
+        
+        url = reverse('current_split_day')
+        response = self.client.get(url, {'date': date.today().isoformat()})
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIsNotNone(response.data['data']['active_split'])
+        self.assertIsNotNone(response.data['data']['current_split_day'])
+        self.assertEqual(response.data['data']['current_split_day']['day_name'], 'Push Day')
 
     def test_unauthorized_access(self):
         """Test unauthorized access"""
@@ -595,8 +623,8 @@ class WorkoutIntegrationTests(APITestCase):
         # 2. Set muscle priority
         priority_data = {
             'muscle_logs': [{
-                'muscle_name': self.muscle.muscle_name,
-                'importance': 90
+                'muscle_name': self.muscle.muscles_id,
+                'priority': 90
             }]
         }
         

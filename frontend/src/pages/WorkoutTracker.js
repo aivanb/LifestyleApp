@@ -8,6 +8,7 @@ import WorkoutLog from '../components/WorkoutLog';
 const WorkoutTracker = () => {
   const [activeTab, setActiveTab] = useState('muscle-priority');
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const tabs = [
     { id: 'muscle-priority', label: 'Muscle Priority', icon: '🎯' },
@@ -38,7 +39,8 @@ const WorkoutTracker = () => {
   };
 
   const handleWorkoutLogged = () => {
-    // Refresh data if needed
+    // Refresh workout log data by updating the key
+    setRefreshKey(prev => prev + 1);
   };
 
   const renderActiveTab = () => {
@@ -71,6 +73,8 @@ const WorkoutTracker = () => {
           <WorkoutLog 
             selectedDate={selectedDate}
             onDateChange={setSelectedDate}
+            onWorkoutLogged={handleWorkoutLogged}
+            refreshTrigger={refreshKey}
           />
         );
       default:

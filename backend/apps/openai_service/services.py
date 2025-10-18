@@ -21,13 +21,10 @@ class OpenAIService:
                 # Set the API key directly (old method)
                 openai.api_key = self.api_key
                 self.client = openai
-                print(f"OpenAI client initialized using old API (0.28.x)")
-                print(f"Client type: {type(self.client)}")
+                # Using OpenAI API 0.28.x
                 
             except Exception as e:
-                print(f"OpenAI client initialization failed: {e}")
-                print(f"API Key present: {bool(self.api_key)}")
-                print(f"API Key length: {len(self.api_key) if self.api_key else 0}")
+                # OpenAI client initialization failed
                 self.client = None
     
     def send_prompt(self, prompt, user=None):
@@ -67,13 +64,10 @@ class OpenAIService:
             ai_response = response.choices[0].message.content
             tokens_used = response.usage.total_tokens
             
-            # Debug logging
+            # Check for empty response
             if not ai_response or ai_response.strip() == '':
-                print(f"WARNING: OpenAI returned empty response!")
-                print(f"Model: {self.model}")
-                print(f"Prompt length: {len(prompt)}")
-                print(f"Tokens used: {tokens_used}")
-                print(f"Full response object: {response}")
+                # OpenAI returned empty response - log for debugging
+                pass
             
             # Calculate cost (approximate for gpt-3.5-turbo)
             cost = self._calculate_cost(tokens_used)
@@ -149,4 +143,4 @@ class OpenAIService:
             )
         except Exception as e:
             # Don't let logging errors break the main functionality
-            print(f"Failed to log API usage: {e}")
+            pass

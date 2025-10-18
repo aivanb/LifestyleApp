@@ -1,16 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
+import { PlusIcon, XMarkIcon, InformationCircleIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
 
-/**
- * WorkoutAdder Component
- * 
- * Allows users to create new workouts with:
- * - All metadata fields from workouts table
- * - Muscle activation ratings via workout_muscle table
- * - Icon selection from predefined emoji list
- * - Information tooltip for activation ratings
- */
-const WorkoutAdder = ({ onWorkoutCreated }) => {
+const WorkoutAdder = ({ onWorkoutAdded }) => {
+  const [muscles, setMuscles] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [isCreating, setIsCreating] = useState(false);
+  
   const [formData, setFormData] = useState({
     workout_name: '',
     equipment_brand: '',
@@ -18,45 +16,69 @@ const WorkoutAdder = ({ onWorkoutCreated }) => {
     location: '',
     notes: '',
     make_public: false,
-    workout_muscles: []
+    muscles: []
   });
 
-  const [muscles, setMuscles] = useState({});
-  const [selectedMuscles, setSelectedMuscles] = useState({});
-  const [selectedIcon, setSelectedIcon] = useState('💪');
-  const [icons, setIcons] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
+  const [selectedIcon, setSelectedIcon] = useState('⚡');
+  const [isEmojiDropdownOpen, setIsEmojiDropdownOpen] = useState(false);
+  const [availableIcons] = useState([
+    '⚡', '🔥', '💎', '🌟', '⭐', '✨', '💫', '🎨', '🎭', '🎪',
+    '🎯', '🎲', '🎳', '🔮', '💧', '🌊', '❄️', '🌈', '☀️', '🌙',
+    '🔺', '🔻', '🔸', '🔹', '🔶', '🔷', '🔴', '🟠', '🟡', '🟢',
+    '🔵', '🟣', '🟤', '⚫', '⚪', '🟥', '🟧', '🟨', '🟩', '🟦',
+    '🟪', '🟫', '⬛', '⬜'
+  ]);
+
+  // Gradient slider color function
+  const getSliderColor = (value) => {
+    const percentage = (value - 0) / 100;
+    
+    if (percentage <= 0.25) {
+      // 0-25: Red to Orange
+      const ratio = percentage / 0.25;
+      return `rgb(${255}, ${Math.round(165 * ratio)}, 0)`;
+    } else if (percentage <= 0.5) {
+      // 25-50: Orange to Yellow
+      const ratio = (percentage - 0.25) / 0.25;
+      return `rgb(${Math.round(255 - 55 * ratio)}, ${Math.round(165 + 90 * ratio)}, 0)`;
+    } else if (percentage <= 0.75) {
+      // 50-75: Yellow to Green
+      const ratio = (percentage - 0.5) / 0.25;
+      return `rgb(${Math.round(200 - 200 * ratio)}, ${Math.round(255 - 55 * ratio)}, 0)`;
+    } else {
+      // 75-100: Green to Blue
+      const ratio = (percentage - 0.75) / 0.25;
+      return `rgb(${Math.round(0 + 0 * ratio)}, ${Math.round(200 - 200 * ratio)}, ${Math.round(0 + 255 * ratio)})`;
+    }
+  };
 
   useEffect(() => {
     loadMuscles();
-    loadIcons();
   }, []);
 
   const loadMuscles = async () => {
     try {
       const response = await api.getMuscles();
       if (response.data.success) {
-        setMuscles(response.data.data);
+        // Group muscles by muscle group
+        const groupedMuscles = response.data.data.reduce((groups, muscle) => {
+          const group = muscle.muscle_group;
+          if (!groups[group]) {
+            groups[group] = [];
+          }
+          groups[group].push(muscle);
+          return groups;
+        }, {});
+        setMuscles(groupedMuscles);
       }
     } catch (err) {
       setError('Failed to load muscles');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const loadIcons = async () => {
-    try {
-      const response = await api.getWorkoutIcons();
-      if (response.data.success) {
-        setIcons(response.data.data);
-      }
-    } catch (err) {
-      setError('Failed to load icons');
-    }
-  };
-
-  const handleChange = (e) => {
+  const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData(prev => ({
       ...prev,
@@ -64,49 +86,48 @@ const WorkoutAdder = ({ onWorkoutCreated }) => {
     }));
   };
 
-  const handleMuscleToggle = (muscleId, muscleName) => {
-    setSelectedMuscles(prev => {
-      const newSelected = { ...prev };
-      if (newSelected[muscleId]) {
-        delete newSelected[muscleId];
-      } else {
-        newSelected[muscleId] = {
-          muscle: muscleId,
-          activation_rating: 50 // Default activation rating
-        };
-      }
-      return newSelected;
-    });
+  const addMuscle = () => {
+    setFormData(prev => ({
+      ...prev,
+      muscles: [...prev.muscles, { muscle: '', activation_rating: 50 }]
+    }));
   };
 
-  const handleActivationChange = (muscleId, rating) => {
-    setSelectedMuscles(prev => ({
+  const removeMuscle = (index) => {
+    setFormData(prev => ({
       ...prev,
-      [muscleId]: {
-        ...prev[muscleId],
-        activation_rating: parseInt(rating)
-      }
+      muscles: prev.muscles.filter((_, i) => i !== index)
+    }));
+  };
+
+  const updateMuscle = (index, field, value) => {
+    setFormData(prev => ({
+      ...prev,
+      muscles: prev.muscles.map((muscle, i) => 
+        i === index ? { ...muscle, [field]: value } : muscle
+      )
     }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
+    setIsCreating(true);
     setError('');
     setSuccess('');
 
     try {
       const workoutData = {
         ...formData,
-        workout_name: `${selectedIcon} ${formData.workout_name.trim()}`,
-        workout_muscles: Object.values(selectedMuscles)
+        workout_name: `${selectedIcon} ${formData.workout_name}`,
+        muscles: formData.muscles.map(muscle => ({
+          muscle: parseInt(muscle.muscle),
+          activation_rating: parseInt(muscle.activation_rating)
+        }))
       };
 
       const response = await api.createWorkout(workoutData);
-      
       if (response.data.success) {
         setSuccess('Workout created successfully!');
-        // Reset form
         setFormData({
           workout_name: '',
           equipment_brand: '',
@@ -114,422 +135,428 @@ const WorkoutAdder = ({ onWorkoutCreated }) => {
           location: '',
           notes: '',
           make_public: false,
-          workout_muscles: []
+          muscles: []
         });
-        setSelectedMuscles({});
-        setSelectedIcon('💪');
+        setSelectedIcon('⚡');
         
-        if (onWorkoutCreated) {
-          onWorkoutCreated(response.data.data);
-        }
-      } else {
-        setError(response.data.error?.message || 'Failed to create workout');
+        if (onWorkoutAdded) onWorkoutAdded();
       }
     } catch (err) {
+      console.error('Error creating workout:', err);
       setError('Failed to create workout');
     } finally {
-      setLoading(false);
+      setIsCreating(false);
     }
   };
 
-  const muscleGroups = Object.keys(muscles);
+  if (loading) {
+    return <div className="text-center py-8">Loading muscles...</div>;
+  }
 
   return (
-    <div className="workout-adder">
-      <div className="form-header">
-        <h2>Add New Workout</h2>
-        <div className="info-tooltip">
-          <svg className="icon icon-sm" viewBox="0 0 20 20" fill="currentColor">
-            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
-          </svg>
-          <div className="tooltip-content">
-            <h4>Activation Ratings Guide</h4>
-            <p>Workouts can be given activation ratings that range from 0-100. Muscles prioritized by the movement should have higher ratings.</p>
-            <p><strong>Examples:</strong></p>
-            <ul>
-              <li>Bench Press: chest-100, triceps-75, front delt-40</li>
-              <li>Squats: quads-100, hamstrings-90, glutes-95, abs-20, abductor-90, adductor-90</li>
-            </ul>
-          </div>
+    <div className="form-container">
+      <h2 className="text-2xl font-bold mb-6">Add New Workout</h2>
+
+      {error && (
+        <div className="mb-4 p-4 bg-red-100 dark:bg-red-900 border border-red-400 text-red-700 dark:text-red-200 rounded">
+          {error}
         </div>
-      </div>
+      )}
 
-      <form onSubmit={handleSubmit}>
-        {/* Basic Workout Information */}
-        <div className="form-section">
-          <h3>Workout Information</h3>
-          <div className="form-grid">
-            <div className="form-group">
-              <label className="form-label">Workout Name *</label>
-              <div className="icon-input-group">
-                <select
-                  value={selectedIcon}
-                  onChange={(e) => setSelectedIcon(e.target.value)}
-                  className="icon-select"
-                >
-                  {icons.map(icon => (
-                    <option key={icon} value={icon}>{icon}</option>
-                  ))}
-                </select>
-                <input
-                  type="text"
-                  name="workout_name"
-                  value={formData.workout_name}
-                  onChange={handleChange}
-                  className="form-input"
-                  placeholder="Enter workout name"
-                  required
-                />
-              </div>
-            </div>
+      {success && (
+        <div className="mb-4 p-4 bg-green-100 dark:bg-green-900 border border-green-400 text-green-700 dark:text-green-200 rounded">
+          {success}
+        </div>
+      )}
 
-            <div className="form-group">
-              <label className="form-label">Equipment Brand</label>
-              <input
-                type="text"
-                name="equipment_brand"
-                value={formData.equipment_brand}
-                onChange={handleChange}
-                className="form-input"
-                placeholder="e.g., Rogue, Hammer Strength"
-              />
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">Equipment Type *</label>
-              <select
-                name="type"
-                value={formData.type}
-                onChange={handleChange}
-                className="form-input"
-                required
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Icon Selection */}
+        <div>
+          <label className="form-label">Workout Icon</label>
+          <div className="relative mt-2">
+            <button
+              type="button"
+              onClick={() => setIsEmojiDropdownOpen(!isEmojiDropdownOpen)}
+              className="btn btn-secondary w-full flex items-center justify-between px-4 py-2"
+              style={{
+                fontFamily: 'var(--font-primary)',
+                fontSize: 'var(--text-base)',
+                fontWeight: 'var(--font-weight-normal)',
+                color: 'var(--text-primary)',
+                backgroundColor: 'var(--bg-secondary)',
+                border: '1px solid var(--border-color)',
+                borderRadius: 'var(--border-radius)'
+              }}
+            >
+              <span className="text-2xl">{selectedIcon}</span>
+              <ChevronDownIcon className="h-4 w-4" />
+            </button>
+            
+            {isEmojiDropdownOpen && (
+              <div 
+                className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg"
+                style={{
+                  backgroundColor: 'var(--bg-primary)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: 'var(--border-radius)',
+                  minWidth: '320px'
+                }}
               >
-                <option value="barbell">Barbell</option>
-                <option value="dumbbell">Dumbbell</option>
-                <option value="plate_machine">Plate Machine</option>
-                <option value="cable_machine">Cable Machine</option>
-                <option value="bodyweight">Bodyweight</option>
-              </select>
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">Location</label>
-              <input
-                type="text"
-                name="location"
-                value={formData.location}
-                onChange={handleChange}
-                className="form-input"
-                placeholder="e.g., Home Gym, Gold's Gym"
-              />
-            </div>
-
-            <div className="form-group full-width">
-              <label className="form-label">Notes</label>
-              <textarea
-                name="notes"
-                value={formData.notes}
-                onChange={handleChange}
-                className="form-input"
-                rows="3"
-                placeholder="Additional notes about this workout..."
-              />
-            </div>
-
-            <div className="form-group">
-              <label className="checkbox-label">
-                <input
-                  type="checkbox"
-                  name="make_public"
-                  checked={formData.make_public}
-                  onChange={handleChange}
-                  className="checkbox-input"
-                />
-                <span className="checkbox-custom"></span>
-                Make this workout public
-              </label>
-            </div>
-          </div>
-        </div>
-
-        {/* Muscle Activation Ratings */}
-        <div className="form-section">
-          <h3>Muscle Activation Ratings</h3>
-          <div className="muscle-groups">
-            {muscleGroups.map(group => (
-              <div key={group} className="muscle-group">
-                <h4 className="muscle-group-title">{group.charAt(0).toUpperCase() + group.slice(1)}</h4>
-                <div className="muscle-list">
-                  {muscles[group].map(muscle => (
-                    <div key={muscle.muscles_id} className="muscle-item">
-                      <label className="muscle-checkbox">
-                        <input
-                          type="checkbox"
-                          checked={!!selectedMuscles[muscle.muscles_id]}
-                          onChange={() => handleMuscleToggle(muscle.muscles_id, muscle.muscle_name)}
-                          className="checkbox-input"
-                        />
-                        <span className="checkbox-custom"></span>
-                        {muscle.muscle_name}
-                      </label>
-                      
-                      {selectedMuscles[muscle.muscles_id] && (
-                        <div className="activation-slider">
-                          <label className="slider-label">
-                            Activation: {selectedMuscles[muscle.muscles_id].activation_rating}%
-                          </label>
-                          <input
-                            type="range"
-                            min="0"
-                            max="100"
-                            value={selectedMuscles[muscle.muscles_id].activation_rating}
-                            onChange={(e) => handleActivationChange(muscle.muscles_id, e.target.value)}
-                            className="slider"
-                          />
-                        </div>
-                      )}
-                    </div>
+                <div className="grid grid-cols-10 gap-1 p-2 max-h-48 overflow-y-auto" style={{ gridTemplateColumns: 'repeat(10, 1fr)' }}>
+                  {availableIcons.map(icon => (
+                    <button
+                      key={icon}
+                      type="button"
+                      onClick={() => {
+                        setSelectedIcon(icon);
+                        setIsEmojiDropdownOpen(false);
+                      }}
+                      className={`p-1 text-lg rounded transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-center aspect-square ${
+                        selectedIcon === icon 
+                          ? 'bg-blue-100 dark:bg-blue-900' 
+                          : ''
+                      }`}
+                      style={{
+                        backgroundColor: selectedIcon === icon ? 'var(--accent-light)' : 'transparent',
+                        minWidth: '32px',
+                        minHeight: '32px',
+                        width: '32px',
+                        height: '32px'
+                      }}
+                    >
+                      {icon}
+                    </button>
                   ))}
                 </div>
               </div>
-            ))}
+            )}
           </div>
         </div>
 
-        {/* Error and Success Messages */}
-        {error && (
-          <div className="error-message">
-            <svg className="icon icon-sm" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-            </svg>
-            {error}
-          </div>
-        )}
+        {/* Workout Name */}
+        <div>
+          <label htmlFor="workout_name" className="form-label">Workout Name</label>
+          <input
+            type="text"
+            id="workout_name"
+            name="workout_name"
+            value={formData.workout_name}
+            onChange={handleInputChange}
+            className="form-input"
+            style={{
+              fontFamily: 'var(--font-primary)',
+              fontSize: 'var(--text-base)',
+              fontWeight: 'var(--font-weight-normal)',
+              color: 'var(--text-primary)',
+              backgroundColor: 'var(--bg-secondary)',
+              border: '1px solid var(--border-color)',
+              borderRadius: 'var(--border-radius)',
+              padding: 'var(--spacing-sm) var(--spacing-md)'
+            }}
+            required
+            placeholder="Enter workout name"
+          />
+        </div>
 
-        {success && (
-          <div className="success-message">
-            <svg className="icon icon-sm" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-            </svg>
-            {success}
+        {/* Equipment Brand */}
+        <div>
+          <label htmlFor="equipment_brand" className="form-label">Equipment Brand</label>
+          <input
+            type="text"
+            id="equipment_brand"
+            name="equipment_brand"
+            value={formData.equipment_brand}
+            onChange={handleInputChange}
+            className="form-input"
+            style={{
+              fontFamily: 'var(--font-primary)',
+              fontSize: 'var(--text-base)',
+              fontWeight: 'var(--font-weight-normal)',
+              color: 'var(--text-primary)',
+              backgroundColor: 'var(--bg-secondary)',
+              border: '1px solid var(--border-color)',
+              borderRadius: 'var(--border-radius)',
+              padding: 'var(--spacing-sm) var(--spacing-md)'
+            }}
+            placeholder="e.g., Rogue, Eleiko"
+          />
+        </div>
+
+        {/* Type */}
+        <div>
+          <label htmlFor="type" className="form-label">Type</label>
+          <select
+            id="type"
+            name="type"
+            value={formData.type}
+            onChange={handleInputChange}
+            className="form-input"
+            style={{
+              fontFamily: 'var(--font-primary)',
+              fontSize: 'var(--text-base)',
+              fontWeight: 'var(--font-weight-normal)',
+              color: 'var(--text-primary)',
+              backgroundColor: 'var(--bg-secondary)',
+              border: '1px solid var(--border-color)',
+              borderRadius: 'var(--border-radius)',
+              padding: 'var(--spacing-sm) var(--spacing-md)'
+            }}
+          >
+            <option value="barbell">Barbell</option>
+            <option value="dumbbell">Dumbbell</option>
+            <option value="machine">Machine</option>
+            <option value="bodyweight">Bodyweight</option>
+            <option value="cable">Cable</option>
+            <option value="kettlebell">Kettlebell</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+
+        {/* Location */}
+        <div>
+          <label htmlFor="location" className="form-label">Location</label>
+          <input
+            type="text"
+            id="location"
+            name="location"
+            value={formData.location}
+            onChange={handleInputChange}
+            className="form-input"
+            style={{
+              fontFamily: 'var(--font-primary)',
+              fontSize: 'var(--text-base)',
+              fontWeight: 'var(--font-weight-normal)',
+              color: 'var(--text-primary)',
+              backgroundColor: 'var(--bg-secondary)',
+              border: '1px solid var(--border-color)',
+              borderRadius: 'var(--border-radius)',
+              padding: 'var(--spacing-sm) var(--spacing-md)'
+            }}
+            placeholder="e.g., Home gym, Commercial gym"
+          />
+        </div>
+
+        {/* Notes */}
+        <div>
+          <label htmlFor="notes" className="form-label">Notes</label>
+          <textarea
+            id="notes"
+            name="notes"
+            value={formData.notes}
+            onChange={handleInputChange}
+            className="form-input"
+            style={{
+              fontFamily: 'var(--font-primary)',
+              fontSize: 'var(--text-base)',
+              fontWeight: 'var(--font-weight-normal)',
+              color: 'var(--text-primary)',
+              backgroundColor: 'var(--bg-secondary)',
+              border: '1px solid var(--border-color)',
+              borderRadius: 'var(--border-radius)',
+              padding: 'var(--spacing-sm) var(--spacing-md)'
+            }}
+            rows="3"
+            placeholder="Additional notes about the workout"
+          />
+        </div>
+
+        {/* Muscles */}
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <label className="form-label">Muscles</label>
+            <div className="flex items-center space-x-2 text-sm" style={{ color: 'var(--text-tertiary)' }}>
+              <InformationCircleIcon 
+                className="h-3 w-3" 
+                style={{ 
+                  width: '12px',
+                  height: '12px',
+                  minWidth: '12px',
+                  minHeight: '12px'
+                }}
+              />
+              <span>Workouts can be given activation ratings that range from 0-100. Muscles prioritized by the movement should have higher ratings. Examples: Bench Press: chest-100, triceps-75, front delt-40. Squats: quads-100, hamstrings-90, glutes-95, abs-20, abductor-90, adductor-90.</span>
+            </div>
           </div>
-        )}
+          
+          <div className="space-y-3">
+            {formData.muscles.map((muscle, index) => (
+              <div key={index} className="flex items-center space-x-3 p-3 border rounded" style={{ borderColor: 'var(--border-color)' }}>
+                <select
+                  value={muscle.muscle}
+                  onChange={(e) => updateMuscle(index, 'muscle', e.target.value)}
+                  className="form-input flex-1"
+                  style={{
+                    fontFamily: 'var(--font-primary)',
+                    fontSize: 'var(--text-base)',
+                    fontWeight: 'var(--font-weight-normal)',
+                    color: 'var(--text-primary)',
+                    backgroundColor: 'var(--bg-secondary)',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: 'var(--border-radius)',
+                    padding: 'var(--spacing-sm) var(--spacing-md)'
+                  }}
+                  required
+                >
+                  <option value="">Select muscle</option>
+                  {Object.entries(muscles).map(([groupName, groupMuscles]) => (
+                    <optgroup key={groupName} label={groupName}>
+                      {groupMuscles.map(muscleOption => (
+                        <option key={muscleOption.muscles_id} value={muscleOption.muscles_id}>
+                          {muscleOption.muscle_name}
+                        </option>
+                      ))}
+                    </optgroup>
+                  ))}
+                </select>
+                
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={muscle.activation_rating}
+                    onChange={(e) => updateMuscle(index, 'activation_rating', e.target.value)}
+                    className="w-32 h-6 slider"
+                    style={{
+                      backgroundColor: getSliderColor(muscle.activation_rating),
+                      borderRadius: '10px'
+                    }}
+                  />
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    value={muscle.activation_rating}
+                    onChange={(e) => updateMuscle(index, 'activation_rating', e.target.value)}
+                    className="form-input w-16 text-center"
+                    style={{
+                      fontFamily: 'var(--font-primary)',
+                      fontSize: 'var(--text-sm)',
+                      fontWeight: 'var(--font-weight-normal)',
+                      color: 'var(--text-primary)',
+                      backgroundColor: 'var(--bg-secondary)',
+                      border: '1px solid var(--border-color)',
+                      borderRadius: 'var(--border-radius)',
+                      padding: 'var(--spacing-xs)'
+                    }}
+                    required
+                  />
+                </div>
+                
+                <button
+                  type="button"
+                  onClick={() => removeMuscle(index)}
+                  className="p-1 text-red-500 hover:text-red-700 transition-colors"
+                >
+                  <XMarkIcon className="h-5 w-5" />
+                </button>
+              </div>
+            ))}
+            
+            <button
+              type="button"
+              onClick={addMuscle}
+              className="btn btn-secondary flex items-center space-x-2 px-4 py-2"
+              style={{
+                fontFamily: 'var(--font-primary)',
+                fontSize: 'var(--text-base)',
+                fontWeight: 'var(--font-weight-normal)',
+                color: 'var(--text-primary)',
+                backgroundColor: 'var(--bg-secondary)',
+                border: '1px solid var(--border-color)',
+                borderRadius: 'var(--border-radius)'
+              }}
+            >
+              <PlusIcon className="h-4 w-4" />
+              <span>Add Muscle</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Make Public */}
+        <div className="flex items-center space-x-2">
+          <input
+            type="checkbox"
+            id="make_public"
+            name="make_public"
+            checked={formData.make_public}
+            onChange={handleInputChange}
+            className="form-checkbox"
+            style={{
+              width: '18px',
+              height: '18px',
+              accentColor: 'var(--accent-color)',
+              border: '1px solid var(--border-color)',
+              borderRadius: 'var(--border-radius-sm)'
+            }}
+          />
+          <label htmlFor="make_public" className="form-label">Make this workout public</label>
+        </div>
 
         {/* Submit Button */}
-        <div className="form-actions">
-          <button
-            type="submit"
-            className="btn btn-primary"
-            disabled={loading || !formData.workout_name.trim()}
-          >
-            {loading ? 'Creating...' : 'Create Workout'}
-          </button>
-        </div>
+        <button
+          type="submit"
+          disabled={isCreating || formData.muscles.length === 0}
+          className="btn btn-primary w-full px-6 py-3"
+          style={{
+            fontFamily: 'var(--font-primary)',
+            fontSize: 'var(--text-base)',
+            fontWeight: 'var(--font-weight-medium)',
+            color: 'var(--text-on-primary)',
+            backgroundColor: 'var(--accent-color)',
+            border: '1px solid var(--accent-color)',
+            borderRadius: 'var(--border-radius)',
+            opacity: (isCreating || formData.muscles.length === 0) ? 0.5 : 1,
+            cursor: (isCreating || formData.muscles.length === 0) ? 'not-allowed' : 'pointer'
+          }}
+        >
+          {isCreating ? 'Creating Workout...' : 'Create Workout'}
+        </button>
       </form>
-
+      
       <style jsx>{`
-        .workout-adder {
-          max-width: 800px;
-          margin: 0 auto;
-        }
-
-        .form-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: var(--space-6);
-        }
-
-        .info-tooltip {
-          position: relative;
-          cursor: help;
-          color: var(--text-tertiary);
-        }
-
-        .info-tooltip:hover .tooltip-content {
-          opacity: 1;
-          visibility: visible;
-        }
-
-        .tooltip-content {
-          position: absolute;
-          bottom: 100%;
-          right: 0;
-          background: var(--bg-primary);
-          border: 1px solid var(--border-primary);
-          border-radius: var(--radius-md);
-          padding: var(--space-4);
-          width: 300px;
-          box-shadow: var(--shadow-lg);
-          opacity: 0;
-          visibility: hidden;
-          transition: all 0.2s var(--ease-out-cubic);
-          z-index: 1000;
-        }
-
-        .tooltip-content h4 {
-          margin: 0 0 var(--space-2) 0;
-          color: var(--text-primary);
-          font-size: var(--text-sm);
-          font-weight: var(--font-weight-bold);
-        }
-
-        .tooltip-content p {
-          margin: 0 0 var(--space-2) 0;
-          font-size: var(--text-xs);
-          color: var(--text-secondary);
-          line-height: 1.4;
-        }
-
-        .tooltip-content ul {
-          margin: var(--space-2) 0 0 0;
-          padding-left: var(--space-4);
-          font-size: var(--text-xs);
-          color: var(--text-secondary);
-        }
-
-        .tooltip-content li {
-          margin-bottom: var(--space-1);
-        }
-
-        .form-section {
-          background: var(--bg-secondary);
-          border-radius: var(--radius-lg);
-          padding: var(--space-6);
-          margin-bottom: var(--space-6);
-        }
-
-        .form-section h3 {
-          margin: 0 0 var(--space-4) 0;
-          color: var(--text-primary);
-          font-size: var(--text-lg);
-          font-weight: var(--font-weight-bold);
-        }
-
-        .form-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-          gap: var(--space-4);
-        }
-
-        .form-group.full-width {
-          grid-column: 1 / -1;
-        }
-
-        .icon-input-group {
-          display: flex;
-          gap: var(--space-2);
-        }
-
-        .icon-select {
-          width: 60px;
-          padding: var(--space-2);
-          border: 1px solid var(--border-primary);
-          border-radius: var(--radius-md);
-          background: var(--bg-primary);
-          color: var(--text-primary);
-          font-size: var(--text-lg);
-        }
-
-        .muscle-groups {
-          display: flex;
-          flex-direction: column;
-          gap: var(--space-4);
-        }
-
-        .muscle-group {
-          background: var(--bg-tertiary);
-          border-radius: var(--radius-md);
-          padding: var(--space-4);
-        }
-
-        .muscle-group-title {
-          margin: 0 0 var(--space-3) 0;
-          color: var(--text-primary);
-          font-size: var(--text-base);
-          font-weight: var(--font-weight-medium);
-          text-transform: capitalize;
-        }
-
-        .muscle-list {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-          gap: var(--space-3);
-        }
-
-        .muscle-item {
-          display: flex;
-          flex-direction: column;
-          gap: var(--space-2);
-        }
-
-        .muscle-checkbox {
-          display: flex;
-          align-items: center;
-          gap: var(--space-2);
-          cursor: pointer;
-          font-size: var(--text-sm);
-          color: var(--text-primary);
-        }
-
-        .activation-slider {
-          margin-left: var(--space-6);
-        }
-
-        .slider-label {
-          display: block;
-          font-size: var(--text-xs);
-          color: var(--text-secondary);
-          margin-bottom: var(--space-1);
-        }
-
         .slider {
-          width: 100%;
-          height: 6px;
-          border-radius: var(--radius-sm);
-          background: var(--border-primary);
-          outline: none;
           -webkit-appearance: none;
+          appearance: none;
+          height: 20px;
+          border-radius: 10px;
+          outline: none;
         }
-
+        
         .slider::-webkit-slider-thumb {
           -webkit-appearance: none;
           appearance: none;
-          width: 18px;
-          height: 18px;
-          border-radius: var(--radius-full);
-          background: var(--accent-primary);
+          height: 24px;
+          width: 24px;
+          border-radius: 50%;
+          background: #ffffff;
           cursor: pointer;
+          border: 3px solid #333;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
-
+        
         .slider::-moz-range-thumb {
-          width: 18px;
-          height: 18px;
-          border-radius: var(--radius-full);
-          background: var(--accent-primary);
+          height: 24px;
+          width: 24px;
+          border-radius: 50%;
+          background: #ffffff;
           cursor: pointer;
+          border: 3px solid #333;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .slider::-webkit-slider-track {
+          height: 20px;
+          border-radius: 10px;
+          background: transparent;
           border: none;
         }
-
-        .form-actions {
-          display: flex;
-          justify-content: center;
-          margin-top: var(--space-6);
-        }
-
-        @media (max-width: 768px) {
-          .form-grid {
-            grid-template-columns: 1fr;
-          }
-
-          .muscle-list {
-            grid-template-columns: 1fr;
-          }
-
-          .tooltip-content {
-            width: 250px;
-            right: -50px;
-          }
+        
+        .slider::-moz-range-track {
+          height: 20px;
+          border-radius: 10px;
+          background: transparent;
+          border: none;
         }
       `}</style>
     </div>

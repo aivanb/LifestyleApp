@@ -115,218 +115,416 @@ const WaterTracker = () => {
   };
 
   const getDailyTotal = () => {
-    const today = new Date().toISOString().split('T')[0];
-    const todayLogs = logs.filter(log => 
-      new Date(log.created_at).toISOString().split('T')[0] === today
-    );
-    
-    return todayLogs.reduce((total, log) => {
-      // Convert to oz for calculation (simplified)
-      let amountInOz = log.amount;
-      if (log.unit === 'ml') amountInOz = log.amount * 0.033814;
-      else if (log.unit === 'cup') amountInOz = log.amount * 8;
-      else if (log.unit === 'liter' || log.unit === 'L') amountInOz = log.amount * 33.814;
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const todayLogs = logs.filter(log => {
+        if (!log.created_at) return false;
+        return new Date(log.created_at).toISOString().split('T')[0] === today;
+      });
       
-      return total + amountInOz;
-    }, 0);
+      return todayLogs.reduce((total, log) => {
+        if (!log.amount || !log.unit) return total;
+        
+        // Convert to oz for calculation (simplified)
+        let amountInOz = parseFloat(log.amount) || 0;
+        if (log.unit === 'ml') amountInOz = amountInOz * 0.033814;
+        else if (log.unit === 'cup') amountInOz = amountInOz * 8;
+        else if (log.unit === 'liter' || log.unit === 'L') amountInOz = amountInOz * 33.814;
+        
+        return total + amountInOz;
+      }, 0);
+    } catch (error) {
+      console.error('Error calculating daily total:', error);
+      return 0;
+    }
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-cyan-600"></div>
+      <div className="form-container flex items-center justify-center">
+        <div 
+          className="animate-spin rounded-full h-16 w-16 border-b-2" 
+          style={{ borderColor: 'var(--accent-color)' }}
+        ></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="form-container">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={() => navigate('/additional-trackers')}
-                className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors"
-              >
-                <ArrowLeftIcon className="h-5 w-5 text-gray-600" />
-              </button>
-              <div className="flex items-center space-x-3">
-                <div className="p-2 bg-cyan-100 rounded-xl">
-                  <BeakerIcon className="h-8 w-8 text-cyan-600" />
-                </div>
-                <div>
-                  <h1 className="text-3xl font-bold text-gray-900">Water Tracker</h1>
-                  <p className="text-gray-600">Track your daily water intake</p>
-                </div>
+      <div className="mb-8">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <button
+              onClick={() => navigate('/additional-trackers')}
+              className="p-2 rounded-lg transition-colors"
+              style={{ 
+                backgroundColor: 'var(--bg-tertiary)', 
+                borderRadius: 'var(--radius-lg)',
+                border: '1px solid var(--border-color)'
+              }}
+            >
+              <ArrowLeftIcon 
+                className="h-5 w-5" 
+                style={{
+                  width: '20px',
+                  height: '20px',
+                  minWidth: '20px',
+                  minHeight: '20px',
+                  color: 'var(--text-secondary)'
+                }}
+              />
+            </button>
+            <div className="flex items-center space-x-3">
+              <div className="p-2 rounded-xl" style={{ backgroundColor: 'var(--bg-tertiary)', borderRadius: 'var(--radius-lg)' }}>
+                <BeakerIcon 
+                  className="h-8 w-8" 
+                  style={{
+                    width: '32px',
+                    height: '32px',
+                    minWidth: '32px',
+                    minHeight: '32px',
+                    color: 'var(--accent-color)'
+                  }}
+                />
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold" style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-primary)', fontWeight: 'var(--font-weight-bold)' }}>
+                  Water Tracker
+                </h1>
+                <p style={{ color: 'var(--text-secondary)', fontFamily: 'var(--font-primary)' }}>
+                  Track your daily water intake
+                </p>
               </div>
             </div>
-            <button
-              onClick={() => setShowForm(true)}
-              className="flex items-center space-x-2 px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors"
-            >
-              <PlusIcon className="h-5 w-5" />
-              <span>Add Water</span>
-            </button>
+          </div>
+          <button
+            onClick={() => setShowForm(true)}
+            className="flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors"
+            style={{ 
+              backgroundColor: 'var(--accent-color)', 
+              color: 'white',
+              borderRadius: 'var(--radius-lg)',
+              fontFamily: 'var(--font-primary)'
+            }}
+          >
+            <PlusIcon 
+              className="h-5 w-5" 
+              style={{
+                width: '20px',
+                height: '20px',
+                minWidth: '20px',
+                minHeight: '20px'
+              }}
+            />
+            <span>Add Water</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Daily Total */}
+      <div className="p-6 mb-8 rounded-lg" style={{ 
+        backgroundColor: 'var(--accent-color)', 
+        borderRadius: 'var(--radius-lg)',
+        color: 'white'
+      }}>
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold" style={{ fontFamily: 'var(--font-primary)', fontWeight: 'var(--font-weight-bold)' }}>
+              Today's Total
+            </h2>
+            <p className="mt-1" style={{ opacity: 0.8, fontFamily: 'var(--font-primary)' }}>
+              Keep up the great hydration!
+            </p>
+          </div>
+          <div className="text-right">
+            <div className="text-4xl font-bold" style={{ fontFamily: 'var(--font-primary)', fontWeight: 'var(--font-weight-bold)' }}>
+              {getDailyTotal().toFixed(1)}
+            </div>
+            <div style={{ opacity: 0.8, fontFamily: 'var(--font-primary)' }}>oz</div>
           </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Daily Total */}
-        <div className="bg-gradient-to-r from-cyan-500 to-cyan-600 rounded-2xl shadow-lg p-6 mb-8 text-white">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-2xl font-bold">Today's Total</h2>
-              <p className="text-cyan-100 mt-1">Keep up the great hydration!</p>
-            </div>
-            <div className="text-right">
-              <div className="text-4xl font-bold">{getDailyTotal().toFixed(1)}</div>
-              <div className="text-cyan-100">oz</div>
-            </div>
-          </div>
-        </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Form Section */}
+        <div className="lg:col-span-1">
+          {showForm && (
+            <div className="p-6 mb-6 rounded-lg" style={{ 
+              backgroundColor: 'var(--bg-secondary)', 
+              border: '1px solid var(--border-color)',
+              borderRadius: 'var(--radius-lg)'
+            }}>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-semibold" style={{ 
+                  color: 'var(--text-primary)', 
+                  fontFamily: 'var(--font-primary)', 
+                  fontWeight: 'var(--font-weight-semibold)' 
+                }}>
+                  {editingLog ? 'Edit Water Entry' : 'Add Water Entry'}
+                </h2>
+                <button
+                  onClick={resetForm}
+                  className="p-1 rounded-lg transition-colors"
+                  style={{ borderRadius: 'var(--radius-lg)' }}
+                >
+                  <XMarkIcon 
+                    className="h-5 w-5" 
+                    style={{
+                      width: '20px',
+                      height: '20px',
+                      minWidth: '20px',
+                      minHeight: '20px',
+                      color: 'var(--text-tertiary)'
+                    }}
+                  />
+                </button>
+              </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Form Section */}
-          <div className="lg:col-span-1">
-            {showForm && (
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-6">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-xl font-semibold text-gray-900">
-                    {editingLog ? 'Edit Water Entry' : 'Add Water Entry'}
-                  </h2>
-                  <button
-                    onClick={resetForm}
-                    className="p-1 rounded-lg hover:bg-gray-100 transition-colors"
-                  >
-                    <XMarkIcon className="h-5 w-5 text-gray-500" />
-                  </button>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2" style={{ 
+                    color: 'var(--text-primary)', 
+                    fontFamily: 'var(--font-primary)' 
+                  }}>
+                    Amount
+                  </label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    name="amount"
+                    value={formData.amount}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 rounded-lg"
+                    style={{ 
+                      backgroundColor: 'var(--bg-primary)', 
+                      border: '1px solid var(--border-color)',
+                      borderRadius: 'var(--radius-lg)',
+                      color: 'var(--text-primary)',
+                      fontFamily: 'var(--font-primary)'
+                    }}
+                    placeholder="Enter amount"
+                    required
+                  />
                 </div>
 
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Amount
-                    </label>
-                    <input
-                      type="number"
-                      step="0.1"
-                      name="amount"
-                      value={formData.amount}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                      placeholder="Enter amount"
-                      required
+                <div>
+                  <label className="block text-sm font-medium mb-2" style={{ 
+                    color: 'var(--text-primary)', 
+                    fontFamily: 'var(--font-primary)' 
+                  }}>
+                    Unit
+                  </label>
+                  <select
+                    name="unit"
+                    value={formData.unit}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 rounded-lg"
+                    style={{ 
+                      backgroundColor: 'var(--bg-primary)', 
+                      border: '1px solid var(--border-color)',
+                      borderRadius: 'var(--radius-lg)',
+                      color: 'var(--text-primary)',
+                      fontFamily: 'var(--font-primary)'
+                    }}
+                  >
+                    <option value="oz">Fluid Ounces (fl oz)</option>
+                    <option value="ml">Milliliters (ml)</option>
+                    <option value="cup">Cups</option>
+                    <option value="liter">Liters (L)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-2" style={{ 
+                    color: 'var(--text-primary)', 
+                    fontFamily: 'var(--font-primary)' 
+                  }}>
+                    Date
+                  </label>
+                  <input
+                    type="date"
+                    value={selectedDate}
+                    onChange={(e) => setSelectedDate(e.target.value)}
+                    className="w-full px-3 py-2 rounded-lg"
+                    style={{ 
+                      backgroundColor: 'var(--bg-primary)', 
+                      border: '1px solid var(--border-color)',
+                      borderRadius: 'var(--radius-lg)',
+                      color: 'var(--text-primary)',
+                      fontFamily: 'var(--font-primary)'
+                    }}
+                  />
+                </div>
+
+                <div className="flex space-x-3">
+                  <button
+                    type="submit"
+                    className="flex-1 flex items-center justify-center space-x-2 px-4 py-2 rounded-lg transition-colors"
+                    style={{ 
+                      backgroundColor: 'var(--accent-color)', 
+                      color: 'white',
+                      borderRadius: 'var(--radius-lg)',
+                      fontFamily: 'var(--font-primary)'
+                    }}
+                  >
+                    <CheckIcon 
+                      className="h-5 w-5" 
+                      style={{
+                        width: '20px',
+                        height: '20px',
+                        minWidth: '20px',
+                        minHeight: '20px'
+                      }}
                     />
-                  </div>
+                    <span>{editingLog ? 'Update' : 'Save'}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={resetForm}
+                    className="px-4 py-2 rounded-lg transition-colors"
+                    style={{ 
+                      backgroundColor: 'var(--bg-tertiary)', 
+                      border: '1px solid var(--border-color)',
+                      borderRadius: 'var(--radius-lg)',
+                      color: 'var(--text-primary)',
+                      fontFamily: 'var(--font-primary)'
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
+        </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Unit
-                    </label>
-                    <select
-                      name="unit"
-                      value={formData.unit}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                    >
-                      <option value="oz">Fluid Ounces (fl oz)</option>
-                      <option value="ml">Milliliters (ml)</option>
-                      <option value="cup">Cups</option>
-                      <option value="liter">Liters (L)</option>
-                    </select>
-                  </div>
+        {/* Logs Section */}
+        <div className="lg:col-span-2">
+          <div className="rounded-lg" style={{ 
+            backgroundColor: 'var(--bg-secondary)', 
+            border: '1px solid var(--border-color)',
+            borderRadius: 'var(--radius-lg)'
+          }}>
+            <div className="p-6 border-b" style={{ borderColor: 'var(--border-color)' }}>
+              <h2 className="text-xl font-semibold" style={{ 
+                color: 'var(--text-primary)', 
+                fontFamily: 'var(--font-primary)', 
+                fontWeight: 'var(--font-weight-semibold)' 
+              }}>
+                Recent Entries
+              </h2>
+              <p style={{ color: 'var(--text-secondary)', fontFamily: 'var(--font-primary)' }}>
+                Your latest water intake records
+              </p>
+            </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Date
-                    </label>
-                    <input
-                      type="date"
-                      value={selectedDate}
-                      onChange={(e) => setSelectedDate(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                    />
-                  </div>
-
-                  <div className="flex space-x-3">
-                    <button
-                      type="submit"
-                      className="flex-1 flex items-center justify-center space-x-2 px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors"
-                    >
-                      <CheckIcon className="h-5 w-5" />
-                      <span>{editingLog ? 'Update' : 'Save'}</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={resetForm}
-                      className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </form>
-              </div>
-            )}
-          </div>
-
-          {/* Logs Section */}
-          <div className="lg:col-span-2">
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200">
-              <div className="p-6 border-b border-gray-200">
-                <h2 className="text-xl font-semibold text-gray-900">Recent Entries</h2>
-                <p className="text-gray-600 mt-1">Your latest water intake records</p>
-              </div>
-
-              <div className="divide-y divide-gray-200">
-                {getRecentLogs().length === 0 ? (
-                  <div className="p-8 text-center">
-                    <BeakerIcon className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                    <p className="text-gray-500">No water entries yet</p>
-                    <p className="text-gray-400 text-sm">Start tracking your hydration to see your progress</p>
-                  </div>
-                ) : (
-                  getRecentLogs().map((log) => (
-                    <div key={log.water_log_id} className="p-6 hover:bg-gray-50 transition-colors">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-4">
-                          <div className="p-2 bg-cyan-100 rounded-lg">
-                            <BeakerIcon className="h-5 w-5 text-cyan-600" />
-                          </div>
-                          <div>
-                            <div className="flex items-center space-x-2">
-                              <span className="text-2xl font-bold text-gray-900">
-                                {log.amount}
-                              </span>
-                              <span className="text-gray-600">{log.unit}</span>
-                            </div>
-                            <div className="flex items-center space-x-1 text-sm text-gray-500 mt-1">
-                              <CalendarIcon className="h-4 w-4" />
-                              <span>{formatDate(log.created_at)}</span>
-                            </div>
-                          </div>
+            <div className="divide-y" style={{ borderColor: 'var(--border-color)' }}>
+              {getRecentLogs().length === 0 ? (
+                <div className="p-8 text-center">
+                  <BeakerIcon 
+                    className="h-12 w-12 mx-auto mb-4" 
+                    style={{
+                      width: '48px',
+                      height: '48px',
+                      minWidth: '48px',
+                      minHeight: '48px',
+                      color: 'var(--text-tertiary)'
+                    }}
+                  />
+                  <p style={{ color: 'var(--text-tertiary)', fontFamily: 'var(--font-primary)' }}>
+                    No water entries yet
+                  </p>
+                  <p className="text-sm" style={{ color: 'var(--text-tertiary)', fontFamily: 'var(--font-primary)' }}>
+                    Start tracking your hydration to see your progress
+                  </p>
+                </div>
+              ) : (
+                getRecentLogs().map((log) => (
+                  <div key={log.water_log_id} className="p-6 transition-colors" style={{ borderColor: 'var(--border-color)' }}>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-4">
+                        <div className="p-2 rounded-lg" style={{ backgroundColor: 'var(--bg-tertiary)', borderRadius: 'var(--radius-lg)' }}>
+                          <BeakerIcon 
+                            className="h-5 w-5" 
+                            style={{
+                              width: '20px',
+                              height: '20px',
+                              minWidth: '20px',
+                              minHeight: '20px',
+                              color: 'var(--accent-color)'
+                            }}
+                          />
                         </div>
-                        <div className="flex items-center space-x-2">
-                          <button
-                            onClick={() => handleEdit(log)}
-                            className="p-2 text-gray-400 hover:text-cyan-600 hover:bg-cyan-50 rounded-lg transition-colors"
-                          >
-                            <PencilIcon className="h-4 w-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(log.water_log_id)}
-                            className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                          >
-                            <TrashIcon className="h-4 w-4" />
-                          </button>
+                        <div>
+                          <div className="flex items-center space-x-2">
+                            <span className="text-2xl font-bold" style={{ 
+                              color: 'var(--text-primary)', 
+                              fontFamily: 'var(--font-primary)', 
+                              fontWeight: 'var(--font-weight-bold)' 
+                            }}>
+                              {log.amount}
+                            </span>
+                            <span style={{ color: 'var(--text-secondary)', fontFamily: 'var(--font-primary)' }}>
+                              {log.unit}
+                            </span>
+                          </div>
+                          <div className="flex items-center space-x-1 text-sm mt-1">
+                            <CalendarIcon 
+                              className="h-4 w-4" 
+                              style={{
+                                width: '16px',
+                                height: '16px',
+                                minWidth: '16px',
+                                minHeight: '16px',
+                                color: 'var(--text-tertiary)'
+                              }}
+                            />
+                            <span style={{ color: 'var(--text-tertiary)', fontFamily: 'var(--font-primary)' }}>
+                              {formatDate(log.created_at)}
+                            </span>
+                          </div>
                         </div>
                       </div>
+                      <div className="flex items-center space-x-2">
+                        <button
+                          onClick={() => handleEdit(log)}
+                          className="p-2 rounded-lg transition-colors"
+                          style={{ borderRadius: 'var(--radius-lg)' }}
+                        >
+                          <PencilIcon 
+                            className="h-4 w-4" 
+                            style={{
+                              width: '16px',
+                              height: '16px',
+                              minWidth: '16px',
+                              minHeight: '16px',
+                              color: 'var(--text-tertiary)'
+                            }}
+                          />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(log.water_log_id)}
+                          className="p-2 rounded-lg transition-colors"
+                          style={{ borderRadius: 'var(--radius-lg)' }}
+                        >
+                          <TrashIcon 
+                            className="h-4 w-4" 
+                            style={{
+                              width: '16px',
+                              height: '16px',
+                              minWidth: '16px',
+                              minHeight: '16px',
+                              color: 'var(--text-tertiary)'
+                            }}
+                          />
+                        </button>
+                      </div>
                     </div>
-                  ))
-                )}
-              </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </div>

@@ -346,9 +346,42 @@ class BodyMetricsService:
         fat_grams = (target_calories * fat_percentage) / 9  # 9 cal/g fat
         carb_grams = (target_calories * carb_percentage) / 4  # 4 cal/g carbs
         
-        # Additional nutrients (simplified)
+        # Additional nutrients (comprehensive)
         fiber_grams = max(25, self.weight * 0.4)  # 0.4g per kg, min 25g
         sodium_mg = 2300  # Standard recommendation
+        
+        # Sugar (limit to 10% of calories)
+        sugar_calories = target_calories * 0.1
+        sugar_grams = sugar_calories / 4  # 4 cal/g sugar
+        
+        # Saturated fat (limit to 10% of calories)
+        saturated_fat_calories = target_calories * 0.1
+        saturated_fat_grams = saturated_fat_calories / 9  # 9 cal/g fat
+        
+        # Trans fat (minimize)
+        trans_fat_grams = 0  # Ideally 0
+        
+        # Micronutrients (based on weight and gender)
+        if self.gender == 'male':
+            calcium_mg = 1000
+            iron_mg = 8
+            magnesium_mg = 400
+            vitamin_a_mcg = 900
+            vitamin_c_mg = 90
+            vitamin_d_iu = 600
+        else:  # female
+            calcium_mg = 1000
+            iron_mg = 18  # Higher for women
+            magnesium_mg = 310
+            vitamin_a_mcg = 700
+            vitamin_c_mg = 75
+            vitamin_d_iu = 600
+        
+        # Cholesterol (limit to 300mg)
+        cholesterol_mg = 300
+        
+        # Caffeine (moderate intake)
+        caffeine_mg = 400  # Safe daily limit
         
         # Warnings
         warnings = []
@@ -370,6 +403,17 @@ class BodyMetricsService:
             'carbohydrates': round(carb_grams, 1),
             'fiber': round(fiber_grams, 1),
             'sodium': round(sodium_mg, 0),
+            'sugar': round(sugar_grams, 1),
+            'saturated_fat': round(saturated_fat_grams, 1),
+            'trans_fat': round(trans_fat_grams, 1),
+            'calcium': round(calcium_mg, 0),
+            'iron': round(iron_mg, 1),
+            'magnesium': round(magnesium_mg, 0),
+            'cholesterol': round(cholesterol_mg, 0),
+            'vitamin_a': round(vitamin_a_mcg, 0),
+            'vitamin_c': round(vitamin_c_mg, 0),
+            'vitamin_d': round(vitamin_d_iu, 0),
+            'caffeine': round(caffeine_mg, 0),
             'weekly_weight_change': round(weekly_change, 2),
             'warnings': warnings,
             'timeframe_weeks': timeframe_weeks

@@ -238,7 +238,7 @@ class ApiService {
   }
 
   updateMusclePriorities(muscleLogsData) {
-    return this.post('/workouts/muscle-priorities/', muscleLogsData);
+    return this.post('/workouts/muscle-priorities/', { muscle_logs: muscleLogsData });
   }
 
   // Workout logging
@@ -247,7 +247,7 @@ class ApiService {
     return this.get(`/workouts/logs/?${queryString}`);
   }
 
-  createWorkoutLog(logData) {
+  logWorkout(logData) {
     return this.post('/workouts/logs/', logData);
   }
 
@@ -274,6 +274,10 @@ class ApiService {
 
   activateSplit(splitId, startDate) {
     return this.post(`/workouts/splits/${splitId}/activate/`, { start_date: startDate });
+  }
+
+  getCurrentSplitDay(date) {
+    return this.get(`/workouts/current-split-day/?date=${date}`);
   }
 
   // Statistics and utilities
