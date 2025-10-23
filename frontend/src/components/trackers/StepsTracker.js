@@ -18,7 +18,7 @@ const StepsTracker = () => {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingLog, setEditingLog] = useState(null);
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  // const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   
   const [formData, setFormData] = useState({
     steps: '',
@@ -128,14 +128,14 @@ const StepsTracker = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="loading-container min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-green-600"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="steps-tracker-container min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -159,7 +159,18 @@ const StepsTracker = () => {
             </div>
             <button
               onClick={() => setShowForm(true)}
-              className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+              className="add-steps-button"
+              style={{ 
+                backgroundColor: 'var(--accent-primary)', 
+                color: 'white',
+                borderRadius: 'var(--radius-lg)',
+                fontFamily: 'var(--font-primary)',
+                padding: 'var(--space-4) var(--space-6)',
+                fontSize: 'var(--text-sm)',
+                fontWeight: 'var(--font-weight-medium)',
+                border: '1px solid var(--accent-primary)',
+                boxShadow: 'var(--shadow-sm)'
+              }}
             >
               <PlusIcon className="h-5 w-5" />
               <span>Add Steps</span>
@@ -318,3 +329,45 @@ const StepsTracker = () => {
 };
 
 export default StepsTracker;
+
+// CSS Styling - moved to component styling
+  /*
+  .steps-tracker-container {
+    padding: 0;
+    margin: 0;
+  }
+
+  .loading-container {
+    min-height: 400px;
+  }
+
+  .add-steps-button {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    transition: all 0.2s var(--ease-out-cubic);
+  }
+
+  .add-steps-button:hover {
+    background: var(--accent-primary-dark);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+  }
+
+  .form-input {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-primary);
+    color: var(--text-primary);
+    font-family: var(--font-primary);
+  }
+
+  .form-input:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 3px rgba(var(--accent-primary-rgb), 0.1);
+  }
+
+  .form-input::placeholder {
+    color: var(--text-tertiary);
+  }
+  */

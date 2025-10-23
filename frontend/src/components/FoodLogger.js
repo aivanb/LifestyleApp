@@ -13,7 +13,7 @@ import api from '../services/api';
  * - Real-time macro calculation
  * - Add button for each food
  */
-const FoodLogger = ({ onFoodLogged, onClose, showAsPanel = false }) => {
+const FoodLogger = ({ onFoodLogged, onClose, showAsPanel = false, selectedDate = null }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [showPublicFoods, setShowPublicFoods] = useState(false);
   const [foods, setFoods] = useState([]);
@@ -21,6 +21,7 @@ const FoodLogger = ({ onFoodLogged, onClose, showAsPanel = false }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [foodServings, setFoodServings] = useState({});
+  const [foodTimes, setFoodTimes] = useState({});
   const [sortBy, setSortBy] = useState('frequency');
   const [sortOrder, setSortOrder] = useState('desc');
 
@@ -85,6 +86,24 @@ const FoodLogger = ({ onFoodLogged, onClose, showAsPanel = false }) => {
     }));
   };
 
+  const updateTime = (foodId, time) => {
+    setFoodTimes(prev => ({
+      ...prev,
+      [foodId]: time
+    }));
+  };
+
+  const getCurrentTime = () => {
+    const now = new Date();
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    return `${hours}:${minutes}`;
+  };
+
+  const getDefaultTime = (foodId) => {
+    return foodTimes[foodId] || getCurrentTime();
+  };
+
   const incrementServings = (foodId) => {
     const current = foodServings[foodId] || 1;
     updateServings(foodId, current + 0.1);
@@ -97,17 +116,39 @@ const FoodLogger = ({ onFoodLogged, onClose, showAsPanel = false }) => {
 
   const logFood = async (food) => {
     const servings = foodServings[food.food_id] || 1;
+    const timeToUse = getDefaultTime(food.food_id);
     
     try {
       setLoading(true);
+      setError(''); // Clear any previous errors
+      let dateTime;
+      
+      const [hours, minutes] = timeToUse.split(':');
+      
+      // Always use the current day (today) regardless of calendar selection
+      const baseDate = new Date();
+      
+      // Create a new date with today's date and the specified time in UTC
+      const year = baseDate.getUTCFullYear();
+      const month = baseDate.getUTCMonth();
+      const day = baseDate.getUTCDate();
+      
+      // Create new date with UTC time to avoid timezone issues
+      const logDate = new Date(Date.UTC(year, month, day, parseInt(hours), parseInt(minutes), 0, 0));
+      
+      // Convert to ISO string for backend (UTC)
+      dateTime = logDate.toISOString();
+      
       const logData = {
         food: food.food_id,
         servings: servings.toString(),
         measurement: food.unit,
-        date_time: new Date().toISOString()
+        date_time: dateTime
       };
 
-      await api.createFoodLog(logData);
+      console.log('Logging food with data:', logData);
+      const response = await api.createFoodLog(logData);
+      console.log('Food log response:', response);
       
       // Reset servings for this food
       setFoodServings(prev => ({
@@ -115,10 +156,12 @@ const FoodLogger = ({ onFoodLogged, onClose, showAsPanel = false }) => {
         [food.food_id]: 1
       }));
 
+      // Update the food log immediately
       if (onFoodLogged) {
         onFoodLogged();
       }
     } catch (err) {
+      console.error('Failed to log food:', err);
       setError(err.response?.data?.error?.message || 'Failed to log food');
     } finally {
       setLoading(false);
@@ -170,8 +213,8 @@ const FoodLogger = ({ onFoodLogged, onClose, showAsPanel = false }) => {
           break;
         case 'frequency':
         default:
-          aValue = a.log_count || 0;
-          bValue = b.log_count || 0;
+          aValue = a.log_count || a.frequency || a.count || 0;
+          bValue = b.log_count || b.frequency || b.count || 0;
           break;
       }
       
@@ -185,23 +228,23 @@ const FoodLogger = ({ onFoodLogged, onClose, showAsPanel = false }) => {
 
   return (
     <div className={`food-logger ${showAsPanel ? 'panel' : 'modal'}`}>
-      <div className="food-logger-header">
-        <div className="header-content">
-          <div className="header-title">
-            <svg className="icon icon-lg" viewBox="0 0 20 20" fill="var(--accent-primary)">
-              <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
-            </svg>
-            <h2>Log Food</h2>
-          </div>
-          {onClose && (
+      {onClose && (
+        <div className="food-logger-header">
+          <div className="header-content">
+            <div className="header-title">
+              <svg className="icon icon-lg" viewBox="0 0 20 20" fill="var(--accent-primary)">
+                <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+              </svg>
+              <h2>Log Food</h2>
+            </div>
             <button className="btn-icon" onClick={onClose} aria-label="Close">
               <svg className="icon icon-md" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L9.586 10 5.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
               </svg>
             </button>
-          )}
+          </div>
         </div>
-      </div>
+      )}
 
       {error && (
         <div className="error-message">
@@ -269,21 +312,16 @@ const FoodLogger = ({ onFoodLogged, onClose, showAsPanel = false }) => {
             <label className="form-label">Order</label>
             <div className="sort-order-container">
               <button
-                className={`sort-order-btn ${sortOrder === 'desc' ? 'active' : ''}`}
-                onClick={() => setSortOrder('desc')}
-                title="Descending"
+                className="sort-order-btn"
+                onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+                title={sortOrder === 'asc' ? 'Switch to Descending' : 'Switch to Ascending'}
               >
                 <svg className="icon icon-sm" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z" clipRule="evenodd" />
-                </svg>
-              </button>
-              <button
-                className={`sort-order-btn ${sortOrder === 'asc' ? 'active' : ''}`}
-                onClick={() => setSortOrder('asc')}
-                title="Ascending"
-              >
-                <svg className="icon icon-sm" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                  {sortOrder === 'desc' ? (
+                    <path fillRule="evenodd" d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z" clipRule="evenodd" />
+                  ) : (
+                    <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                  )}
                 </svg>
               </button>
             </div>
@@ -309,11 +347,6 @@ const FoodLogger = ({ onFoodLogged, onClose, showAsPanel = false }) => {
           </div>
         ) : (
           <div className="food-list">
-            {!searchTerm && (
-              <div className="section-title">
-                <h3>Most Frequently Logged</h3>
-              </div>
-            )}
             
             {displayFoods.map(food => {
               const servings = foodServings[food.food_id] || 1;
@@ -338,21 +371,31 @@ const FoodLogger = ({ onFoodLogged, onClose, showAsPanel = false }) => {
                     <div className="macro-grid">
                       <div className="macro-item">
                         <span className="macro-value">{macros.calories}</span>
-                        <span className="macro-label">cal</span>
+                        <span className="macro-label">CAL</span>
                       </div>
                       <div className="macro-item">
                         <span className="macro-value">{macros.protein}</span>
-                        <span className="macro-label">g</span>
+                        <span className="macro-label">PRO</span>
                       </div>
                       <div className="macro-item">
                         <span className="macro-value">{macros.fat}</span>
-                        <span className="macro-label">g</span>
+                        <span className="macro-label">FAT</span>
                       </div>
                       <div className="macro-item">
                         <span className="macro-value">{macros.carbohydrates}</span>
-                        <span className="macro-label">g</span>
+                        <span className="macro-label">CAR</span>
                       </div>
                     </div>
+                  </div>
+
+                  <div className="food-time-section">
+                    <label className="time-label">Time:</label>
+                    <input
+                      type="time"
+                      className="time-input"
+                      value={getDefaultTime(food.food_id)}
+                      onChange={(e) => updateTime(food.food_id, e.target.value)}
+                    />
                   </div>
 
                   <div className="food-actions">
@@ -404,7 +447,7 @@ const FoodLogger = ({ onFoodLogged, onClose, showAsPanel = false }) => {
         )}
       </div>
 
-      <style jsx>{`
+      <style>{`
         .food-logger {
           background: var(--bg-secondary);
           border-radius: var(--radius-lg);
@@ -414,6 +457,7 @@ const FoodLogger = ({ onFoodLogged, onClose, showAsPanel = false }) => {
 
         .food-logger.panel {
           padding: var(--space-6);
+          padding-right: calc(var(--space-6) + var(--space-4));
         }
 
         .food-logger.modal {
@@ -446,6 +490,7 @@ const FoodLogger = ({ onFoodLogged, onClose, showAsPanel = false }) => {
         .search-section {
           padding: var(--space-6);
           border-bottom: 1px solid var(--border-primary);
+          width: 100%;
         }
 
         .food-list-section {
@@ -470,6 +515,7 @@ const FoodLogger = ({ onFoodLogged, onClose, showAsPanel = false }) => {
 
         .food-list {
           padding: var(--space-4);
+          width: 100%;
         }
 
         .food-card {
@@ -490,7 +536,7 @@ const FoodLogger = ({ onFoodLogged, onClose, showAsPanel = false }) => {
           display: flex;
           align-items: center;
           gap: var(--space-3);
-          margin-bottom: var(--space-4);
+          margin-bottom: var(--space-6);
         }
 
         .food-icon {
@@ -529,6 +575,36 @@ const FoodLogger = ({ onFoodLogged, onClose, showAsPanel = false }) => {
           margin-bottom: var(--space-4);
         }
 
+        .food-time-section {
+          display: flex;
+          align-items: center;
+          gap: var(--space-2);
+          margin-top: var(--space-3);
+          margin-bottom: var(--space-4);
+        }
+
+        .time-label {
+          font-size: var(--text-sm);
+          color: var(--text-secondary);
+          font-weight: var(--font-weight-medium);
+        }
+
+        .time-input {
+          padding: var(--space-1) var(--space-2);
+          border: 1px solid var(--border-primary);
+          border-radius: var(--radius-sm);
+          background: var(--bg-secondary);
+          color: var(--text-primary);
+          font-size: var(--text-sm);
+          transition: all 0.2s var(--ease-out-cubic);
+        }
+
+        .time-input:focus {
+          outline: none;
+          border-color: var(--accent-primary);
+          box-shadow: 0 0 0 3px rgba(var(--accent-primary-rgb), 0.1);
+        }
+
         .macro-grid {
           display: grid;
           grid-template-columns: repeat(4, 1fr);
@@ -560,6 +636,7 @@ const FoodLogger = ({ onFoodLogged, onClose, showAsPanel = false }) => {
           display: flex;
           justify-content: space-between;
           align-items: center;
+          margin-top: var(--space-2);
         }
 
         .servings-control {
@@ -581,11 +658,13 @@ const FoodLogger = ({ onFoodLogged, onClose, showAsPanel = false }) => {
         .servings-input {
           width: 60px;
           text-align: center;
-          border: none;
-          background: transparent;
+          border: 1px solid var(--border-primary);
+          background: var(--bg-secondary);
           color: var(--text-primary);
           font-weight: var(--font-weight-medium);
           font-size: var(--text-sm);
+          border-radius: var(--radius-sm);
+          padding: var(--space-1);
         }
 
         .servings-input:focus {
@@ -629,13 +708,14 @@ const FoodLogger = ({ onFoodLogged, onClose, showAsPanel = false }) => {
         .checkbox-input:checked + .checkbox-custom::after {
           content: '';
           position: absolute;
-          left: 6px;
-          top: 2px;
+          left: 5px;
+          top: 1px;
           width: 6px;
           height: 10px;
           border: solid white;
           border-width: 0 2px 2px 0;
           transform: rotate(45deg);
+          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
         }
 
         .checkbox-label {
@@ -654,6 +734,7 @@ const FoodLogger = ({ onFoodLogged, onClose, showAsPanel = false }) => {
 
         .form-select {
           width: 100%;
+          min-height: 40px;
           padding: var(--space-2) var(--space-3);
           border: 1px solid var(--border-primary);
           border-radius: var(--radius-md);
@@ -661,6 +742,7 @@ const FoodLogger = ({ onFoodLogged, onClose, showAsPanel = false }) => {
           color: var(--text-primary);
           font-size: var(--text-sm);
           transition: all 0.2s var(--ease-out-cubic);
+          box-sizing: border-box;
         }
 
         .form-select:focus {
@@ -675,29 +757,27 @@ const FoodLogger = ({ onFoodLogged, onClose, showAsPanel = false }) => {
         }
 
         .sort-order-btn {
-          width: 32px;
-          height: 32px;
-          padding: 0;
+          width: auto;
+          min-height: 40px;
+          padding: var(--space-2) var(--space-3);
           border: 1px solid var(--border-primary);
-          border-radius: var(--radius-sm);
+          border-radius: var(--radius-md);
           background: var(--bg-secondary);
-          color: var(--text-tertiary);
+          color: var(--text-secondary);
           cursor: pointer;
           transition: all 0.2s var(--ease-out-cubic);
           display: flex;
           align-items: center;
           justify-content: center;
+          font-size: var(--text-sm);
+          box-sizing: border-box;
         }
 
         .sort-order-btn:hover {
-          background: var(--bg-tertiary);
-          color: var(--text-secondary);
-        }
-
-        .sort-order-btn.active {
           background: var(--accent-primary);
           color: white;
           border-color: var(--accent-primary);
+          transform: translateY(-1px);
         }
 
         .empty-state {

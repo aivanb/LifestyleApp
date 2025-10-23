@@ -208,7 +208,7 @@ const MusclePriority = ({ onPrioritiesUpdated }) => {
       <div className="container">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold text-primary">Muscle Priority</h2>
-          <div className="flex items-center space-x-3 text-xs text-tertiary">
+          <div className="flex items-center space-x-6 text-xs text-tertiary">
             <InformationCircleIcon 
               className="h-6 w-6" 
               style={{ 
@@ -235,72 +235,267 @@ const MusclePriority = ({ onPrioritiesUpdated }) => {
   return (
     <div className="container">
       <style jsx>{`
-        .slider {
-          -webkit-appearance: none;
-          appearance: none;
-          height: 20px;
-          border-radius: 10px;
+        .muscle-priority-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: var(--space-6);
+        }
+
+        .muscle-priority-title {
+          color: var(--text-primary);
+          font-family: var(--font-primary);
+          font-size: var(--text-2xl);
+          font-weight: var(--font-weight-bold);
+          margin: 0;
+        }
+
+        .muscle-priority-info {
+          display: flex;
+          align-items: center;
+          gap: var(--space-3);
+          font-size: var(--text-lg);
+          color: var(--text-secondary);
+          font-family: var(--font-primary);
+          font-weight: var(--font-weight-medium);
+        }
+
+        .muscle-group-card {
+          background: var(--bg-secondary);
+          border: 1px solid var(--border-primary);
+          border-radius: var(--radius-lg);
+          margin-bottom: var(--space-4);
+        }
+
+        .muscle-group-header {
+          padding: var(--space-6);
+        }
+
+        .muscle-group-header-content {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+
+        .muscle-group-title-section {
+          display: flex;
+          align-items: center;
+          gap: var(--space-3);
+        }
+
+        .muscle-group-title {
+          color: var(--accent-primary);
+          font-family: var(--font-primary);
+          font-size: var(--text-xl);
+          font-weight: var(--font-weight-medium);
+          margin: 0;
+        }
+
+        .muscle-group-count {
+          color: var(--text-secondary);
+          font-family: var(--font-primary);
+          font-size: var(--text-sm);
+        }
+
+        .muscle-group-priority-section {
+          display: flex;
+          align-items: center;
+          gap: var(--space-4);
+        }
+
+        .priority-label {
+          color: var(--text-secondary);
+          font-family: var(--font-primary);
+          font-size: var(--text-sm);
+          font-weight: var(--font-weight-medium);
+        }
+
+        .priority-controls {
+          display: flex;
+          align-items: center;
+          gap: var(--space-8);
+        }
+
+        .priority-input-container {
+          display: flex;
+          align-items: center;
+          border: 1px solid var(--border-primary);
+          border-radius: var(--radius-md);
+          background: var(--bg-tertiary);
+          overflow: hidden;
+        }
+
+        .priority-step-button {
+          width: 32px;
+          height: 32px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: var(--bg-secondary);
+          border: none;
+          color: var(--text-primary);
+          font-family: var(--font-primary);
+          font-size: var(--text-lg);
+          font-weight: var(--font-weight-bold);
+          cursor: pointer;
+          transition: all 0.2s var(--ease-out-cubic);
+        }
+
+        .priority-step-button:hover {
+          background: var(--accent-primary);
+          color: white;
+        }
+
+        .priority-step-button:active {
+          transform: scale(0.95);
+        }
+
+        .priority-input {
+          width: 64px;
+          height: 32px;
+          text-align: center;
+          padding: 0;
+          border: none;
+          border-left: 1px solid var(--border-primary);
+          border-right: 1px solid var(--border-primary);
+          background: var(--bg-tertiary);
+          color: var(--text-primary);
+          font-family: var(--font-primary);
+          font-size: var(--text-sm);
+          font-weight: var(--font-weight-medium);
+        }
+
+        .priority-input:focus {
           outline: none;
+          background: var(--bg-secondary);
+        }
+
+        .priority-slider {
+          width: 384px;
+          height: 24px;
+          -webkit-appearance: none;
+          appearance: none;
+          background: rgba(var(--border-primary-rgb), 0.2);
+          border: 2px solid rgba(var(--accent-primary-rgb), 0.3);
+          border-radius: 12px;
+          outline: none;
+          cursor: pointer;
+          transition: all 0.2s var(--ease-out-cubic);
         }
         
-        .slider::-webkit-slider-thumb {
+        .priority-slider::-webkit-slider-thumb {
           -webkit-appearance: none;
           appearance: none;
           height: 24px;
           width: 24px;
           border-radius: 50%;
-          background: #ffffff;
+          background: var(--accent-primary);
           cursor: pointer;
-          border: 3px solid #333;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+          border: 2px solid white;
+          box-shadow: var(--shadow-sm);
+          transition: all 0.2s var(--ease-out-cubic);
         }
         
-        .slider::-moz-range-thumb {
+        .priority-slider::-moz-range-thumb {
           height: 24px;
           width: 24px;
           border-radius: 50%;
-          background: #ffffff;
+          background: var(--accent-primary);
           cursor: pointer;
-          border: 3px solid #333;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+          border: 2px solid white;
+          box-shadow: var(--shadow-sm);
+          transition: all 0.2s var(--ease-out-cubic);
         }
         
-        .slider::-webkit-slider-track {
-          height: 20px;
-          border-radius: 10px;
+        .priority-slider::-webkit-slider-track {
+          height: 24px;
+          border-radius: 12px;
           background: transparent;
           border: none;
         }
         
-        .slider::-moz-range-track {
-          height: 20px;
-          border-radius: 10px;
+        .priority-slider::-moz-range-track {
+          height: 24px;
+          border-radius: 12px;
           background: transparent;
           border: none;
+        }
+
+        .muscle-group-expandable {
+          border-top: 1px solid var(--border-primary);
+        }
+
+        .muscle-group-toggle-button {
+          width: 100%;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: var(--space-3) var(--space-4);
+          background: var(--bg-tertiary);
+          color: var(--text-primary);
+          border: none;
+          border-radius: 0;
+          font-family: var(--font-primary);
+          font-size: var(--text-sm);
+          font-weight: var(--font-weight-medium);
+          cursor: pointer;
+          transition: all 0.2s var(--ease-out-cubic);
+        }
+
+        .toggle-icon {
+          width: 16px;
+          height: 16px;
+        }
+
+        .individual-muscles-container {
+          padding: var(--space-6);
+          background: var(--bg-secondary);
+          border-top: 1px solid var(--border-primary);
+        }
+
+        .individual-muscle-item {
+          display: flex;
+          align-items: center;
+          gap: var(--space-6);
+          margin-bottom: var(--space-4);
+        }
+
+        .muscle-info {
+          flex: 1;
+        }
+
+        .muscle-details {
+          display: flex;
+          flex-direction: column;
+        }
+
+        .muscle-name {
+          color: var(--text-primary);
+          font-family: var(--font-primary);
+          font-size: var(--text-sm);
+          font-weight: var(--font-weight-medium);
+        }
+
+        .muscle-description {
+          color: var(--text-tertiary);
+          font-family: var(--font-primary);
+          font-size: var(--text-xs);
+          font-weight: var(--font-weight-normal);
+          margin-top: 2px;
+        }
+
+        .muscle-priority-controls {
+          display: flex;
+          align-items: center;
+          gap: var(--space-4);
         }
       `}</style>
       
-      <div className="flex items-center justify-between mb-6">
-        <h2 
-          className="text-2xl font-bold"
-          style={{
-            color: 'var(--text-primary)',
-            fontFamily: 'var(--font-primary)',
-            fontSize: 'var(--text-2xl)',
-            fontWeight: 'var(--font-weight-bold)'
-          }}
-        >
+      <div className="muscle-priority-header">
+        <h2 className="muscle-priority-title">
           Muscle Priority
         </h2>
-        <div 
-          className="flex items-center space-x-3"
-          style={{
-            fontSize: 'var(--text-lg)',
-            color: 'var(--text-secondary)',
-            fontFamily: 'var(--font-primary)',
-            fontWeight: 'var(--font-weight-medium)'
-          }}
-        >
+        <div className="muscle-priority-info">
           <InformationCircleIcon 
             className="h-6 w-6" 
             style={{ 
@@ -339,61 +534,55 @@ const MusclePriority = ({ onPrioritiesUpdated }) => {
           const majorGroupPriority = getMajorGroupPriority(majorGroupName);
           
           return (
-            <div key={majorGroupName} className="card">
+            <div key={majorGroupName} className="muscle-group-card">
               {/* Major Group Header with Priority Control */}
-              <div className="card-header">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <h3 
-                      className="card-title"
-                      style={{
-                        color: 'var(--accent-primary)',
-                        fontFamily: 'var(--font-primary)',
-                        fontSize: 'var(--text-xl)',
-                        fontWeight: 'var(--font-weight-medium)'
-                      }}
-                    >
+              <div className="muscle-group-header">
+                <div className="muscle-group-header-content">
+                  <div className="muscle-group-title-section">
+                    <h3 className="muscle-group-title">
                       {majorGroupName}
                     </h3>
-                    <span 
-                      className="text-sm"
-                      style={{
-                        color: 'var(--text-secondary)',
-                        fontFamily: 'var(--font-primary)',
-                        fontSize: 'var(--text-sm)'
-                      }}
-                    >
+                    <span className="muscle-group-count">
                       ({groupMuscles.length} muscles)
                     </span>
                   </div>
-                    <div className="flex items-center space-x-4">
-                      <span 
-                        className="text-sm font-medium"
-                        style={{
-                          color: 'var(--text-secondary)',
-                          fontFamily: 'var(--font-primary)',
-                          fontSize: 'var(--text-sm)',
-                          fontWeight: 'var(--font-weight-medium)'
-                        }}
-                      >
+                    <div className="muscle-group-priority-section">
+                      <span className="priority-label">
                         Priority:
                       </span>
-                      <div className="flex items-center space-x-3">
-                        <input
-                          type="number"
-                          min="1"
-                          max="100"
-                          value={majorGroupPriority}
-                          onChange={(e) => updatePriority(null, parseInt(e.target.value) || 1, true, majorGroupName)}
-                          className="form-input w-16 text-center"
-                        />
+                      <div className="priority-controls">
+                        <div className="priority-input-container">
+                          <button
+                            type="button"
+                            className="priority-step-button"
+                            onClick={() => updatePriority(null, Math.max(1, majorGroupPriority - 1), true, majorGroupName)}
+                          >
+                            −
+                          </button>
+                          <input
+                            type="number"
+                            min="1"
+                            max="100"
+                            value={majorGroupPriority}
+                            onChange={(e) => updatePriority(null, parseInt(e.target.value) || 1, true, majorGroupName)}
+                            className="priority-input"
+                            readOnly
+                          />
+                          <button
+                            type="button"
+                            className="priority-step-button"
+                            onClick={() => updatePriority(null, Math.min(100, majorGroupPriority + 1), true, majorGroupName)}
+                          >
+                            +
+                          </button>
+                        </div>
                         <input
                           type="range"
                           min="1"
                           max="100"
                           value={majorGroupPriority}
                           onChange={(e) => updatePriority(null, parseInt(e.target.value), true, majorGroupName)}
-                          className="w-96 h-6 slider"
+                          className="priority-slider"
                           style={{
                             backgroundColor: getSliderColor(majorGroupPriority),
                             borderRadius: '10px'
@@ -405,18 +594,10 @@ const MusclePriority = ({ onPrioritiesUpdated }) => {
       </div>
 
               {/* Expandable Sub-Muscles */}
-              <div>
+              <div className="muscle-group-expandable">
             <button
                   onClick={() => toggleGroup(majorGroupName)}
-                  className="w-full flex items-center justify-between px-4 py-3 text-sm font-medium transition-all duration-200 ease-out"
-                  style={{
-                    backgroundColor: 'var(--bg-tertiary)',
-                    color: 'var(--text-primary)',
-                    borderTop: '1px solid var(--border-primary)',
-                    borderRadius: '0',
-                    fontFamily: 'var(--font-primary)',
-                    cursor: 'pointer'
-                  }}
+                  className="muscle-group-toggle-button flex items-center justify-between"
                   onMouseEnter={(e) => {
                     e.target.style.backgroundColor = 'var(--bg-hover)';
                   }}
@@ -427,83 +608,69 @@ const MusclePriority = ({ onPrioritiesUpdated }) => {
                   <span>Individual Muscles</span>
                   {expandedGroups[majorGroupName] ? (
                     <ChevronDownIcon 
-                      className="h-4 w-4" 
+                      className="toggle-icon" 
                       style={{ color: 'var(--text-primary)' }}
                     />
                   ) : (
                     <ChevronRightIcon 
-                      className="h-4 w-4" 
+                      className="toggle-icon" 
                       style={{ color: 'var(--text-primary)' }}
                     />
               )}
             </button>
             
                 {expandedGroups[majorGroupName] && (
-                  <div 
-                    className="p-6 space-y-4"
-                    style={{
-                      backgroundColor: 'var(--bg-secondary)',
-                      borderTop: '1px solid var(--border-primary)'
-                    }}
-                  >
+                  <div className="individual-muscles-container">
                     {groupMuscles.map(muscleLog => (
-                      <div key={muscleLog.muscle_log_id} className="flex items-center space-x-6">
-                    <div className="flex-1">
-                          <div className="flex flex-col">
-                            <span 
-                              className="font-medium text-sm"
-                              style={{
-                                color: 'var(--text-primary)',
-                                fontFamily: 'var(--font-primary)',
-                                fontSize: 'var(--text-sm)',
-                                fontWeight: 'var(--font-weight-medium)'
-                              }}
-                            >
+                      <div key={muscleLog.muscle_log_id} className="individual-muscle-item">
+                    <div className="muscle-info">
+                          <div className="muscle-details">
+                            <span className="muscle-name">
                               {muscleLog.muscle_name}
                             </span>
-                            <span 
-                              className="text-xs"
-                              style={{
-                                color: 'var(--text-tertiary)',
-                                fontFamily: 'var(--font-primary)',
-                                fontSize: 'var(--text-xs)',
-                                fontWeight: 'var(--font-weight-normal)',
-                                marginTop: '2px'
-                              }}
-                            >
+                            <span className="muscle-description">
                               {getMuscleDescription(muscleLog.muscle_name)}
                             </span>
                           </div>
                     </div>
                     
-                        <div className="flex items-center space-x-4">
-                          <span 
-                            className="text-sm font-medium"
-                            style={{
-                              color: 'var(--text-secondary)',
-                              fontFamily: 'var(--font-primary)',
-                              fontSize: 'var(--text-sm)',
-                              fontWeight: 'var(--font-weight-medium)'
-                            }}
-                          >
+                        <div className="muscle-priority-controls">
+                          <span className="priority-label">
                             Priority:
                           </span>
-                    <div className="flex items-center space-x-3">
-                            <input
-                              type="number"
-                              min="1"
-                              max="100"
-                              value={muscleLog.priority}
-                              onChange={(e) => updatePriority(muscleLog.muscle_log_id, parseInt(e.target.value) || 1)}
-                              className="form-input w-16 text-center"
-                            />
+                    <div className="priority-controls">
+                        <div className="priority-input-container">
+                          <button
+                            type="button"
+                            className="priority-step-button"
+                            onClick={() => updatePriority(muscleLog.muscle_log_id, Math.max(1, muscleLog.priority - 1))}
+                          >
+                            −
+                          </button>
+                          <input
+                            type="number"
+                            min="1"
+                            max="100"
+                            value={muscleLog.priority}
+                            onChange={(e) => updatePriority(muscleLog.muscle_log_id, parseInt(e.target.value) || 1)}
+                            className="priority-input"
+                            readOnly
+                          />
+                          <button
+                            type="button"
+                            className="priority-step-button"
+                            onClick={() => updatePriority(muscleLog.muscle_log_id, Math.min(100, muscleLog.priority + 1))}
+                          >
+                            +
+                          </button>
+                        </div>
                         <input
                           type="range"
                           min="1"
                           max="100"
                           value={muscleLog.priority}
                           onChange={(e) => updatePriority(muscleLog.muscle_log_id, parseInt(e.target.value))}
-                          className="w-96 h-6 slider"
+                          className="priority-slider"
                           style={{
                             backgroundColor: getSliderColor(muscleLog.priority),
                             borderRadius: '10px'

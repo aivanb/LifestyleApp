@@ -58,7 +58,7 @@ const ThemeSwitcher = () => {
         </>
       )}
 
-      <style jsx>{`
+      <style>{`
         .theme-toggle-btn {
           position: fixed;
           bottom: var(--space-6);
@@ -80,14 +80,12 @@ const ThemeSwitcher = () => {
 
         .theme-toggle-btn:hover {
           transform: scale(1.1) rotate(15deg);
-          box-shadow: 0 8px 16px rgba(59, 130, 246, 0.4);
         }
 
         .theme-backdrop {
           position: fixed;
           inset: 0;
-          background: rgba(0, 0, 0, 0.5);
-          backdrop-filter: blur(4px);
+          background: transparent;
           z-index: calc(var(--z-fixed) - 1);
           animation: fadeIn 0.2s var(--ease-out-cubic);
         }

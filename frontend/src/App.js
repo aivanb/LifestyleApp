@@ -6,12 +6,12 @@ import Navbar from './components/Navbar';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Profile from './pages/Profile';
+import Personalization from './pages/Personalization';
 import DataViewer from './pages/DataViewer';
 import FoodLog from './pages/FoodLog';
 import WorkoutTracker from './pages/WorkoutTracker';
 import AdditionalTrackers from './pages/AdditionalTrackers';
 import ProtectedRoute from './components/ProtectedRoute';
-import ThemeSwitcher from './components/ThemeSwitcher';
 
 function App() {
   return (
@@ -20,7 +20,7 @@ function App() {
         <Router>
           <div className="App">
             <Navbar />
-            <main className="container">
+            <main className="main-content">
               <Routes>
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
@@ -30,6 +30,14 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <Profile />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/personalization" 
+                element={
+                  <ProtectedRoute>
+                    <Personalization />
                   </ProtectedRoute>
                 } 
               />
@@ -69,12 +77,42 @@ function App() {
                   />
                 </Routes>
             </main>
-            <ThemeSwitcher />
           </div>
         </Router>
       </AuthProvider>
     </ThemeProvider>
   );
+}
+
+// Add styles for the main content area
+const AppStyles = `
+  .main-content {
+    padding: var(--space-6) var(--space-4) var(--space-4);
+    padding-left: calc(var(--space-4) + 60px); /* Account for hamburger button */
+    max-width: 100%;
+    margin: 0 auto;
+    min-height: 100vh;
+  }
+
+  @media (max-width: 768px) {
+    .main-content {
+      padding-left: calc(var(--space-4) + 52px); /* Smaller hamburger button on mobile */
+    }
+  }
+
+  @media (max-width: 480px) {
+    .main-content {
+      padding: var(--space-4) var(--space-2);
+      padding-left: calc(var(--space-2) + 52px);
+    }
+  }
+`;
+
+// Inject styles
+if (typeof document !== 'undefined') {
+  const styleSheet = document.createElement('style');
+  styleSheet.textContent = AppStyles;
+  document.head.appendChild(styleSheet);
 }
 
 export default App;

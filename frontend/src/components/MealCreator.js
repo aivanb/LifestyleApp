@@ -192,6 +192,40 @@ const MealCreator = ({ onMealCreated, onClose }) => {
         </div>
       )}
 
+      {/* Actions - Moved to top */}
+      <div className="flex gap-4 mt-6">
+        <button 
+          type="submit" 
+          className="btn btn-success" 
+          disabled={loading || selectedFoods.length === 0}
+        >
+          <svg className="icon icon-md" viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+          </svg>
+          {loading ? 'Creating...' : 'Create Meal'}
+        </button>
+        
+        {onClose && (
+          <button type="button" className="btn btn-secondary" onClick={onClose}>
+            Cancel
+          </button>
+        )}
+      </div>
+
+      {/* Log All Foods Option */}
+      <div className="form-group">
+        <label className="checkbox-container">
+          <input
+            type="checkbox"
+            checked={createAndLog}
+            onChange={(e) => setCreateAndLog(e.target.checked)}
+            className="checkbox-input"
+          />
+          <span className="checkbox-custom"></span>
+          <span className="checkbox-label">Log All Foods</span>
+        </label>
+      </div>
+
       {/* Total Macro Preview */}
       {selectedFoods.length > 0 && (
         <div className="macro-preview card animate-scale-in" style={{ background: 'var(--accent-secondary-alpha)', marginBottom: 'var(--space-2)' }}>
@@ -202,15 +236,15 @@ const MealCreator = ({ onMealCreated, onClose }) => {
               <div className="macro-value" style={{ color: 'var(--accent-secondary)' }}>{totalMacros.calories}</div>
             </div>
             <div className="macro-item">
-              <div className="macro-label">Protein</div>
+              <div className="macro-label macro-label-protein">Protein</div>
               <div className="macro-value" style={{ color: 'var(--accent-secondary)' }}>{totalMacros.protein}g</div>
             </div>
             <div className="macro-item">
-              <div className="macro-label">Carbs</div>
+              <div className="macro-label macro-label-carbohydrates">Carbohydrates</div>
               <div className="macro-value" style={{ color: 'var(--accent-secondary)' }}>{totalMacros.carbs}g</div>
             </div>
             <div className="macro-item">
-              <div className="macro-label">Fat</div>
+              <div className="macro-label macro-label-fats">Fats</div>
               <div className="macro-value" style={{ color: 'var(--accent-secondary)' }}>{totalMacros.fat}g</div>
             </div>
           </div>
@@ -218,120 +252,125 @@ const MealCreator = ({ onMealCreated, onClose }) => {
       )}
 
       <form onSubmit={handleSubmit}>
-        {/* Meal Name */}
-        <div className="form-group">
-          <label className="form-label">Meal Name</label>
-          <input
-            type="text"
-            className="form-input"
-            value={mealName}
-            onChange={(e) => setMealName(e.target.value)}
-            required
-          />
-        </div>
-
-        {/* Food Search */}
-        <div className="form-group">
-          <label className="form-label">
-            Search Foods
-          </label>
-          <input
-            type="text"
-            className="form-input"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-
-        {/* Sorting Controls */}
-        <div className="form-group">
-          <div className="flex gap-4 items-center">
-            <div className="flex-1">
-              <label className="form-label">Sort by</label>
-              <select
+        {/* Layout with form groups on left and food lists on right */}
+        <div className="meal-creator-layout">
+          <div className="meal-creator-left">
+            {/* Meal Name */}
+            <div className="form-group">
+              <label className="form-label">Meal Name</label>
+              <input
+                type="text"
                 className="form-input"
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-              >
-                <option value="frequency">Frequency</option>
-                <option value="calories">Calories</option>
-                <option value="protein">Protein</option>
-                <option value="carbohydrates">Carbs</option>
-                <option value="fat">Fat</option>
-              </select>
+                value={mealName}
+                onChange={(e) => setMealName(e.target.value)}
+                required
+              />
             </div>
-            <div className="flex-1">
-              <label className="form-label">Order</label>
-              <div className="sort-order-container">
-                <select
-                  className="form-input"
-                  value={sortOrder}
-                  onChange={(e) => setSortOrder(e.target.value)}
-                >
-                  <option value="desc">Descending</option>
-                  <option value="asc">Ascending</option>
-                </select>
-                <button
-                  type="button"
-                  className="sort-order-btn"
-                  onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-                >
-                  {sortOrder === 'asc' ? '↑' : '↓'}
-                </button>
+
+            {/* Food Search */}
+            <div className="form-group">
+              <label className="form-label">
+                Search Foods
+              </label>
+              <input
+                type="text"
+                className="form-input"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+            {/* Sorting Controls */}
+            <div className="form-group">
+              <div className="flex gap-4 items-center">
+                <div className="flex-1">
+                  <label className="form-label">Sort by</label>
+                  <select
+                    className="form-input"
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value)}
+                  >
+                    <option value="frequency">Frequency</option>
+                    <option value="calories">Calories</option>
+                    <option value="protein">Protein</option>
+                    <option value="carbohydrates">Carbs</option>
+                    <option value="fat">Fat</option>
+                  </select>
+                </div>
+                <div className="flex-1">
+                  <label className="form-label">Order</label>
+                  <div className="sort-order-container">
+                    <select
+                      className="form-input"
+                      value={sortOrder}
+                      onChange={(e) => setSortOrder(e.target.value)}
+                    >
+                      <option value="desc">Descending</option>
+                      <option value="asc">Ascending</option>
+                    </select>
+                    <button
+                      type="button"
+                      className="sort-order-btn"
+                      onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+                    >
+                      {sortOrder === 'asc' ? '↑' : '↓'}
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-
-        {/* Available Foods */}
-        {searchTerm && (
-          <div className="food-list card" style={{ background: 'var(--bg-tertiary)', maxHeight: '200px', overflowY: 'auto', marginBottom: 'var(--space-2)' }}>
-            {loadingFoods ? (
-              <div className="loading">
-                <div className="spinner"></div>
-              </div>
-            ) : availableFoods.length > 0 ? (
-              availableFoods.map(food => (
-                <div key={food.food_id} className="food-item" onClick={() => addFood(food)}>
-                  <div className="food-item-content">
-                    <div className="food-main-info">
-                      <div className="food-name">{food.food_name}</div>
-                      <div className="food-details">
-                        {food.brand && `${food.brand} • `}
-                        {food.serving_size}{food.unit} • {food.food_group}
+          
+          <div className="meal-creator-right">
+            <div className="food-list card" style={{ background: 'var(--bg-secondary)', maxHeight: '400px', overflowY: 'auto', marginBottom: 'var(--space-2)' }}>
+              <h3 className="text-sm font-medium mb-3">AVAILABLE FOODS</h3>
+              {loadingFoods ? (
+                <div className="loading">
+                  <div className="spinner"></div>
+                </div>
+              ) : availableFoods.length > 0 ? (
+                availableFoods.map(food => (
+                  <div key={food.food_id} className="food-item" onClick={() => addFood(food)}>
+                    <div className="food-item-content">
+                      <div className="food-main-info">
+                        <div className="food-name">{food.food_name}</div>
+                        <div className="food-details">
+                          {food.brand && `${food.brand} • `}
+                          {food.serving_size}{food.unit} • {food.food_group}
+                        </div>
                       </div>
-                    </div>
-                    
-                    <div className="food-metadata">
-                      <div className="metadata-grid">
-                        <div className="metadata-item">
-                          <span className="metadata-label">Calories</span>
-                          <span className="metadata-value">{food.macro_preview?.calories || 0}</span>
-                        </div>
-                        <div className="metadata-item">
-                          <span className="metadata-label">Protein</span>
-                          <span className="metadata-value">{food.macro_preview?.protein || 0}g</span>
-                        </div>
-                        <div className="metadata-item">
-                          <span className="metadata-label">Carbs</span>
-                          <span className="metadata-value">{food.macro_preview?.carbohydrates || 0}g</span>
-                        </div>
-                        <div className="metadata-item">
-                          <span className="metadata-label">Fat</span>
-                          <span className="metadata-value">{food.macro_preview?.fat || 0}g</span>
+                      
+                      <div className="food-metadata">
+                        <div className="metadata-grid">
+                          <div className="metadata-item">
+                            <span className="metadata-label">Calories</span>
+                            <span className="metadata-value">{food.macro_preview?.calories || 0}</span>
+                          </div>
+                          <div className="metadata-item">
+                            <span className="metadata-label macro-label-protein">Protein</span>
+                            <span className="metadata-value">{food.macro_preview?.protein || 0}g</span>
+                          </div>
+                          <div className="metadata-item">
+                            <span className="metadata-label macro-label-carbohydrates">Carbohydrates</span>
+                            <span className="metadata-value">{food.macro_preview?.carbohydrates || 0}g</span>
+                          </div>
+                          <div className="metadata-item">
+                            <span className="metadata-label macro-label-fats">Fats</span>
+                            <span className="metadata-value">{food.macro_preview?.fat || 0}g</span>
+                          </div>
                         </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              ))
-            ) : (
-              <p className="text-tertiary text-sm text-center">No foods found</p>
-            )}
+                ))
+              ) : (
+                <p className="text-tertiary text-sm text-center">No foods found</p>
+              )}
+            </div>
+            
           </div>
-        )}
+        </div>
 
-        {/* Selected Foods */}
+        {/* Selected Foods - Span across entire meal-creator-card */}
         {selectedFoods.length > 0 && (
           <div className="selected-foods">
             <h3 className="text-sm font-medium mb-3">FOODS IN MEAL ({selectedFoods.length})</h3>
@@ -353,15 +392,15 @@ const MealCreator = ({ onMealCreated, onClose }) => {
                         <span className="metadata-value">{(food.macro_preview?.calories * food.servings).toFixed(0)}</span>
                       </div>
                       <div className="metadata-item">
-                        <span className="metadata-label">Protein</span>
+                        <span className="metadata-label macro-label-protein">Protein</span>
                         <span className="metadata-value">{(food.macro_preview?.protein * food.servings).toFixed(1)}g</span>
                       </div>
                       <div className="metadata-item">
-                        <span className="metadata-label">Carbs</span>
+                        <span className="metadata-label macro-label-carbohydrates">Carbohydrates</span>
                         <span className="metadata-value">{(food.macro_preview?.carbohydrates * food.servings).toFixed(1)}g</span>
                       </div>
                       <div className="metadata-item">
-                        <span className="metadata-label">Fat</span>
+                        <span className="metadata-label macro-label-fats">Fats</span>
                         <span className="metadata-value">{(food.macro_preview?.fat * food.servings).toFixed(1)}g</span>
                       </div>
                     </div>
@@ -397,47 +436,28 @@ const MealCreator = ({ onMealCreated, onClose }) => {
           </div>
         )}
 
-        {/* Create and Log Option */}
-        <div className="form-group">
-          <label className="checkbox-container">
-            <input
-              type="checkbox"
-              checked={createAndLog}
-              onChange={(e) => setCreateAndLog(e.target.checked)}
-              className="checkbox-input"
-            />
-            <span className="checkbox-custom"></span>
-            <span className="checkbox-label">
-              <svg className="icon icon-sm" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
-              </svg>
-              Log all foods immediately after creation
-            </span>
-          </label>
-        </div>
-
-        {/* Actions */}
-        <div className="flex gap-4 mt-6">
-          <button 
-            type="submit" 
-            className="btn btn-success" 
-            disabled={loading || selectedFoods.length === 0}
-          >
-            <svg className="icon icon-md" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-            </svg>
-            {loading ? 'Creating...' : 'Create Meal'}
-          </button>
-          
-          {onClose && (
-            <button type="button" className="btn btn-secondary" onClick={onClose}>
-              Cancel
-            </button>
-          )}
-        </div>
       </form>
 
       <style jsx>{`
+        .meal-creator-layout {
+          display: grid;
+          grid-template-columns: 40% 60%;
+          gap: var(--space-6);
+          margin-bottom: var(--space-6);
+        }
+
+        .meal-creator-left {
+          display: flex;
+          flex-direction: column;
+          gap: var(--space-4);
+        }
+
+        .meal-creator-right {
+          display: flex;
+          flex-direction: column;
+          gap: var(--space-4);
+        }
+
         .macro-preview {
           border-left: 4px solid var(--accent-secondary);
         }
@@ -615,9 +635,11 @@ const MealCreator = ({ onMealCreated, onClose }) => {
           padding: var(--space-2);
           border: 1px solid var(--border-primary);
           border-radius: var(--radius-sm);
-          background: var(--bg-primary);
+          background: var(--bg-secondary);
           color: var(--text-primary);
           text-align: center;
+          font-family: var(--font-primary);
+          transition: all 0.2s var(--ease-out-cubic);
         }
 
         .btn-remove-food {
@@ -664,6 +686,7 @@ const MealCreator = ({ onMealCreated, onClose }) => {
           gap: var(--space-3);
           cursor: pointer;
           user-select: none;
+          padding: var(--space-2);
         }
 
         .checkbox-input {
@@ -690,13 +713,14 @@ const MealCreator = ({ onMealCreated, onClose }) => {
         .checkbox-input:checked + .checkbox-custom::after {
           content: '';
           position: absolute;
-          left: 6px;
-          top: 2px;
+          left: 5px;
+          top: 1px;
           width: 6px;
           height: 10px;
           border: solid white;
           border-width: 0 2px 2px 0;
           transform: rotate(45deg);
+          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
         }
 
         .checkbox-label {

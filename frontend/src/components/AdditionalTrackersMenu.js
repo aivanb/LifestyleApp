@@ -121,7 +121,7 @@ const AdditionalTrackersMenu = () => {
 
   if (loading) {
     return (
-      <div className="form-container flex items-center justify-center">
+      <div className="loading-container flex items-center justify-center">
         <div 
           className="animate-spin rounded-full h-16 w-16 border-b-2" 
           style={{ borderColor: 'var(--accent-color)' }}
@@ -131,7 +131,7 @@ const AdditionalTrackersMenu = () => {
   }
 
   return (
-    <div className="form-container">
+    <div className="additional-trackers-container">
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center justify-between">
@@ -160,7 +160,7 @@ const AdditionalTrackersMenu = () => {
       </div>
 
       {/* Tracker Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-8">
+      <div className="tracker-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
           {trackers.map((tracker) => {
             const Icon = tracker.icon;
             const streak = streaks[tracker.id] || 0;
@@ -169,7 +169,7 @@ const AdditionalTrackersMenu = () => {
               <div
                 key={tracker.id}
                 onClick={() => handleTrackerClick(tracker)}
-                className="p-4 rounded-lg cursor-pointer transition-all duration-200 hover:transform hover:scale-105 group"
+                className="tracker-card cursor-pointer transition-all duration-200 hover:transform hover:scale-105 group"
                 style={{ 
                   backgroundColor: 'var(--bg-secondary)', 
                   border: '1px solid var(--border-color)',
@@ -177,14 +177,14 @@ const AdditionalTrackersMenu = () => {
                 }}
               >
                 <div className="flex items-start justify-between mb-3">
-                  <div className="p-2 rounded-md" style={{ backgroundColor: 'var(--bg-tertiary)' }}>
+                  <div className="icon-container" style={{ backgroundColor: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)' }}>
                     <Icon 
-                      className="h-6 w-6" 
+                      className="tracker-icon" 
                       style={{
-                        width: '24px',
-                        height: '24px',
-                        minWidth: '24px',
-                        minHeight: '24px',
+                        width: '48px',
+                        height: '48px',
+                        minWidth: '48px',
+                        minHeight: '48px',
                         color: 'var(--accent-color)'
                       }}
                     />
@@ -241,7 +241,7 @@ const AdditionalTrackersMenu = () => {
       </div>
 
       {/* Info Section */}
-      <div className="p-6 rounded-lg" style={{ 
+      <div className="insights-section" style={{ 
         backgroundColor: 'var(--bg-secondary)', 
         border: '1px solid var(--border-color)',
         borderRadius: 'var(--radius-lg)'
@@ -263,7 +263,7 @@ const AdditionalTrackersMenu = () => {
             progress over time.
           </p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-left">
-            <div className="p-4 rounded-lg" style={{ backgroundColor: 'var(--bg-tertiary)', borderRadius: 'var(--radius-lg)' }}>
+            <div className="insight-card" style={{ backgroundColor: 'var(--bg-tertiary)', borderRadius: 'var(--radius-lg)' }}>
               <div className="text-2xl mb-2">📊</div>
               <h3 className="font-semibold mb-2" style={{ 
                 color: 'var(--text-primary)', 
@@ -279,7 +279,7 @@ const AdditionalTrackersMenu = () => {
                 View trends and patterns in your health data with comprehensive tracking.
               </p>
             </div>
-            <div className="p-4 rounded-lg" style={{ backgroundColor: 'var(--bg-tertiary)', borderRadius: 'var(--radius-lg)' }}>
+            <div className="insight-card" style={{ backgroundColor: 'var(--bg-tertiary)', borderRadius: 'var(--radius-lg)' }}>
               <div className="text-2xl mb-2">🎯</div>
               <h3 className="font-semibold mb-2" style={{ 
                 color: 'var(--text-primary)', 
@@ -295,7 +295,7 @@ const AdditionalTrackersMenu = () => {
                 Set and monitor progress toward your health and fitness objectives.
               </p>
             </div>
-            <div className="p-4 rounded-lg" style={{ backgroundColor: 'var(--bg-tertiary)', borderRadius: 'var(--radius-lg)' }}>
+            <div className="insight-card" style={{ backgroundColor: 'var(--bg-tertiary)', borderRadius: 'var(--radius-lg)' }}>
               <div className="text-2xl mb-2">📈</div>
               <h3 className="font-semibold mb-2" style={{ 
                 color: 'var(--text-primary)', 
@@ -319,3 +319,56 @@ const AdditionalTrackersMenu = () => {
 };
 
 export default AdditionalTrackersMenu;
+
+// CSS Styling - moved to component styling
+  /*
+  .additional-trackers-container {
+    padding: var(--space-6);
+  }
+
+  .loading-container {
+    min-height: 400px;
+  }
+
+  .tracker-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-6);
+  }
+
+  @media (max-width: 1024px) {
+    .tracker-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (max-width: 768px) {
+    .tracker-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .tracker-card {
+    padding: var(--space-6);
+    border-radius: var(--radius-lg);
+    transition: all 0.2s var(--ease-out-cubic);
+  }
+
+  .icon-container {
+    padding: var(--space-3);
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .insights-section {
+    padding: var(--space-6);
+    border-radius: var(--radius-lg);
+  }
+
+  .insight-card {
+    padding: var(--space-4);
+    border-radius: var(--radius-lg);
+  }
+  */

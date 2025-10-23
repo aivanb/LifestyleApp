@@ -391,3 +391,6 @@ WORKOUT LOGGER:
 - Autofill workout fields (weight, reps, RIR, attributes) from the most recent log if the workout was done previously.
 - Include description for RIR (reps in reserve).
 - Show message: "Progressive overload should be done if not in a caloric deficit."
+
+
+=== UI Fixes ==

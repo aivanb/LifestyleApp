@@ -16,7 +16,7 @@ export const CircularProgressBar = ({
   label, 
   color = 'var(--accent-primary)',
   size = 120,
-  strokeWidth = 8,
+  strokeWidth = 12,
   showValues = true 
 }) => {
   const percentage = target > 0 ? (current / target) * 100 : 0;
@@ -82,7 +82,7 @@ export const CircularProgressBar = ({
         <div className="progress-label">{label}</div>
       </div>
 
-      <style jsx>{`
+      <style>{`
         .circular-progress {
           position: relative;
           display: flex;
@@ -136,7 +136,7 @@ export const CircularProgressBar = ({
         }
 
         .progress-circle {
-          filter: drop-shadow(0 0 4px rgba(59, 130, 246, 0.3));
+          /* Removed blue glow filter */
         }
       `}</style>
     </div>
@@ -159,7 +159,7 @@ export const LinearProgressBar = ({
   label, 
   unit = '',
   color = 'var(--accent-primary)',
-  height = 8,
+  height = 12,
   showValues = true,
   showRemaining = true
 }) => {
@@ -225,7 +225,7 @@ export const LinearProgressBar = ({
         </div>
       )}
 
-      <style jsx>{`
+      <style>{`
         .linear-progress {
           width: 100%;
         }
@@ -321,7 +321,8 @@ export const ProgressGrid = ({ goals, consumed, className = '' }) => {
     { key: 'calories', goalKey: 'calories_goal', label: 'Calories', color: 'var(--accent-primary)' },
     { key: 'protein', goalKey: 'protein_goal', label: 'Protein', color: 'var(--accent-secondary)' },
     { key: 'fat', goalKey: 'fat_goal', label: 'Fat', color: 'var(--accent-warning)' },
-    { key: 'carbohydrates', goalKey: 'carbohydrates_goal', label: 'Carbs', color: 'var(--accent-info)' }
+    { key: 'carbohydrates', goalKey: 'carbohydrates_goal', label: 'Carbs', color: 'var(--accent-info)' },
+    { key: 'sodium', goalKey: 'sodium_goal', label: 'Sodium', color: 'var(--accent-success)' }
   ];
 
   return (
@@ -333,12 +334,12 @@ export const ProgressGrid = ({ goals, consumed, className = '' }) => {
           target={goals ? (goals[macro.goalKey] || 0) : 0}
           label={macro.label}
           color={macro.color}
-          size={100}
-          strokeWidth={6}
+          size={120}
+          strokeWidth={12}
         />
       ))}
       
-      <style jsx>{`
+      <style>{`
         .progress-grid {
           display: grid;
           grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
@@ -382,7 +383,8 @@ export const ExpandedProgressView = ({ goals, consumed, onClose }) => {
     { key: 'vitamin_a', goalKey: 'vitamin_a_goal', label: 'Vitamin A', unit: 'mcg', color: 'var(--accent-secondary)' },
     { key: 'vitamin_c', goalKey: 'vitamin_c_goal', label: 'Vitamin C', unit: 'mg', color: 'var(--accent-info)' },
     { key: 'vitamin_d', goalKey: 'vitamin_d_goal', label: 'Vitamin D', unit: 'mcg', color: 'var(--accent-primary)' },
-    { key: 'caffeine', goalKey: 'caffeine_goal', label: 'Caffeine', unit: 'mg', color: 'var(--accent-purple)' }
+    { key: 'caffeine', goalKey: 'caffeine_goal', label: 'Caffeine', unit: 'mg', color: 'var(--accent-warning)' },
+    { key: 'cost', goalKey: 'cost_goal', label: 'Cost', unit: '$', color: 'var(--accent-warning)' }
   ];
 
   return (
@@ -407,18 +409,18 @@ export const ExpandedProgressView = ({ goals, consumed, onClose }) => {
             label={macro.label}
             unit={macro.unit}
             color={macro.color}
-            height={6}
+            height={10}
             showValues={true}
             showRemaining={true}
           />
         ))}
       </div>
 
-      <style jsx>{`
+      <style>{`
         .expanded-progress {
           position: relative;
-          max-width: 600px;
-          margin: 0 auto;
+          width: 100%;
+          margin: 0;
         }
 
         .expanded-progress-header {

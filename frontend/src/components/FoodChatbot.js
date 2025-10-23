@@ -40,11 +40,17 @@ const FoodChatbot = ({ onFoodsLogged }) => {
 
   const loadAiStats = async () => {
     try {
-      // This would need to be implemented in the backend
-      // For now, we'll use placeholder data
-      setAiStats({ tokens: 1250, prompts: 15 });
+      const response = await api.get('/openai/usage/');
+      if (response.data && response.data.data) {
+        setAiStats({
+          tokens: response.data.data.total_tokens || 0,
+          prompts: response.data.data.total_requests || 0
+        });
+      }
     } catch (err) {
       console.error('Failed to load AI stats:', err);
+      // Set default values if API fails
+      setAiStats({ tokens: 0, prompts: 0 });
     }
   };
 
@@ -58,12 +64,9 @@ const FoodChatbot = ({ onFoodsLogged }) => {
     setError('');
 
     try {
-      const response = await api.post('/openai/parse-food/', {
-        input_text: inputText,
-        create_meal: createMeal
-      });
+      const response = await api.parseFoodInput(inputText, createMeal);
 
-      const result = response.data.data;
+      const result = response.data.data || response.data;
 
       // Add to history
       const historyEntry = {
@@ -92,7 +95,7 @@ const FoodChatbot = ({ onFoodsLogged }) => {
           onFoodsLogged();
         }
       } else {
-        setError(result.errors.join(', '));
+        setError(result.errors ? result.errors.join(', ') : 'Failed to parse food input');
       }
 
     } catch (err) {
@@ -121,90 +124,94 @@ const FoodChatbot = ({ onFoodsLogged }) => {
 
   return (
     <div className="food-chatbot">
-      <div className="card">
+      <div className="chatbot-layout">
+        {/* Text Input Card - 80% of left side */}
+        <div className="chatbot-input-card">
+          <div className="card">
+            {error && (
+              <div className="error-message mb-4">
+                <svg className="icon icon-sm" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                </svg>
+                {error}
+              </div>
+            )}
 
-        {error && (
-          <div className="error-message mb-4">
-            <svg className="icon icon-sm" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-            </svg>
-            {error}
+            {/* Voice Input */}
+            {showVoice && (
+              <div className="mb-4 animate-slide-in-up">
+                <VoiceRecorder onTranscriptionComplete={handleVoiceTranscription} />
+              </div>
+            )}
+
+            {/* Text Input */}
+            <div className="form-group">
+              <label className="form-label">Describe your food</label>
+              <textarea
+                className="form-input"
+                value={inputText}
+                onChange={(e) => setInputText(e.target.value)}
+                rows="3"
+                disabled={loading}
+              />
+            </div>
+
+            {/* Create Meal Option */}
+            <div className="form-group">
+              <label className="checkbox-container">
+                <input
+                  type="checkbox"
+                  checked={createMeal}
+                  onChange={(e) => setCreateMeal(e.target.checked)}
+                  className="checkbox-input"
+                />
+                <span className="checkbox-custom"></span>
+                <span className="checkbox-label">
+                  Create this as a meal
+                </span>
+              </label>
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-6 justify-center">
+              <button
+                className="btn btn-icon-only"
+                onClick={() => setShowVoice(!showVoice)}
+                disabled={loading}
+                title={showVoice ? 'Hide Voice Input' : 'Voice Input'}
+              >
+                <svg className="icon icon-lg" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8a1 1 0 10-2 0A5 5 0 015 8a1 1 0 00-2 0 7.001 7.001 0 006 6.93V17H6a1 1 0 100 2h8a1 1 0 100-2h-3v-2.07z" clipRule="evenodd" />
+                </svg>
+              </button>
+
+              <button
+                className="btn btn-icon-only btn-primary"
+                onClick={handleSubmit}
+                disabled={loading || !inputText.trim()}
+                title={loading ? 'Parsing...' : 'Send'}
+              >
+                <svg className="icon icon-lg" viewBox="0 0 20 20" fill="currentColor">
+                  <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
+                </svg>
+              </button>
+            </div>
           </div>
-        )}
-
-        {/* Voice Input */}
-        {showVoice && (
-          <div className="mb-4 animate-slide-in-up">
-            <VoiceRecorder onTranscriptionComplete={handleVoiceTranscription} />
-          </div>
-        )}
-
-        {/* Text Input */}
-        <div className="form-group">
-          <label className="form-label">Describe your food</label>
-          <textarea
-            className="form-input"
-            value={inputText}
-            onChange={(e) => setInputText(e.target.value)}
-            rows="3"
-            disabled={loading}
-          />
         </div>
 
-        {/* Create Meal Option */}
-        <div className="form-group">
-          <label className="checkbox-container">
-            <input
-              type="checkbox"
-              checked={createMeal}
-              onChange={(e) => setCreateMeal(e.target.checked)}
-              className="checkbox-input"
-            />
-            <span className="checkbox-custom"></span>
-            <span className="checkbox-label">
-              Create this as a meal
-            </span>
-          </label>
-        </div>
-
-        {/* Actions */}
-        <div className="flex gap-6 justify-center">
-          <button
-            className="btn btn-icon-only"
-            onClick={() => setShowVoice(!showVoice)}
-            disabled={loading}
-            title={showVoice ? 'Hide Voice Input' : 'Voice Input'}
-          >
-            <svg className="icon icon-lg" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8a1 1 0 10-2 0A5 5 0 015 8a1 1 0 00-2 0 7.001 7.001 0 006 6.93V17H6a1 1 0 100 2h8a1 1 0 100-2h-3v-2.07z" clipRule="evenodd" />
-            </svg>
-          </button>
-
-          <button
-            className="btn btn-icon-only btn-primary"
-            onClick={handleSubmit}
-            disabled={loading || !inputText.trim()}
-            title={loading ? 'Parsing...' : 'Send'}
-          >
-            <svg className="icon icon-lg" viewBox="0 0 20 20" fill="currentColor">
-              <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
-            </svg>
-          </button>
-        </div>
-      </div>
-
-
-      {/* AI Usage Statistics */}
-      <div className="card">
-
-        <div className="ai-stats-grid">
-          <div className="stat-item">
-            <div className="stat-label">Prompts Sent</div>
-            <div className="stat-value">{aiStats.prompts}</div>
-          </div>
-          <div className="stat-item">
-            <div className="stat-label">Tokens Used</div>
-            <div className="stat-value">{aiStats.tokens.toLocaleString()}</div>
+        {/* AI Usage Statistics - 20% of right side */}
+        <div className="chatbot-stats-card">
+          <div className="card">
+            <div className="ai-stats-grid">
+              <div className="stat-item">
+                <div className="stat-label">Prompts Sent (past 10 days)</div>
+                <div className="stat-value">{aiStats.prompts}</div>
+              </div>
+              <div className="stat-item">
+                <div className="stat-label">Tokens Used (past 10 days)</div>
+                <div className="stat-value">{aiStats.tokens.toLocaleString()}</div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -212,7 +219,6 @@ const FoodChatbot = ({ onFoodsLogged }) => {
       {/* Recent Interactions */}
       {history.length > 0 && (
         <div className="card">
-
           <div className="history-list">
             {history.map((entry) => (
               <div key={entry.id} className="history-item card animate-slide-in-left" style={{ background: 'var(--bg-tertiary)', marginBottom: 'var(--space-2)', padding: 'var(--space-3)' }}>
@@ -284,35 +290,23 @@ const FoodChatbot = ({ onFoodsLogged }) => {
                     <div className="metadata-grid">
                       <div className="metadata-item">
                         <span className="metadata-label">Calories</span>
-                        <span className="metadata-value">{Math.round(food.consumed_macros?.calories || 0)}</span>
+                        <span className="metadata-value">{Math.round(food.macro_preview?.calories || 0)}</span>
                       </div>
                       <div className="metadata-item">
-                        <span className="metadata-label">Protein</span>
-                        <span className="metadata-value">{Math.round(food.consumed_macros?.protein || 0)}g</span>
+                        <span className="metadata-label macro-label-protein">Protein</span>
+                        <span className="metadata-value">{Math.round(food.macro_preview?.protein || 0)}g</span>
                       </div>
                       <div className="metadata-item">
-                        <span className="metadata-label">Carbs</span>
-                        <span className="metadata-value">{Math.round(food.consumed_macros?.carbohydrates || 0)}g</span>
+                        <span className="metadata-label macro-label-carbohydrates">Carbohydrates</span>
+                        <span className="metadata-value">{Math.round(food.macro_preview?.carbohydrates || 0)}g</span>
                       </div>
                       <div className="metadata-item">
-                        <span className="metadata-label">Fat</span>
-                        <span className="metadata-value">{Math.round(food.consumed_macros?.fat || 0)}g</span>
+                        <span className="metadata-label macro-label-fats">Fats</span>
+                        <span className="metadata-value">{Math.round(food.macro_preview?.fat || 0)}g</span>
                       </div>
                       <div className="metadata-item">
-                        <span className="metadata-label">Fiber</span>
-                        <span className="metadata-value">{Math.round(food.consumed_macros?.fiber || 0)}g</span>
-                      </div>
-                      <div className="metadata-item">
-                        <span className="metadata-label">Sugar</span>
-                        <span className="metadata-value">{Math.round(food.consumed_macros?.sugar || 0)}g</span>
-                      </div>
-                      <div className="metadata-item">
-                        <span className="metadata-label">Sodium</span>
-                        <span className="metadata-value">{Math.round(food.consumed_macros?.sodium || 0)}mg</span>
-                      </div>
-                      <div className="metadata-item">
-                        <span className="metadata-label">Servings</span>
-                        <span className="metadata-value">{food.servings}</span>
+                        <span className="metadata-label">Serving Size</span>
+                        <span className="metadata-value">{food.serving_size || 1} {food.unit || 'serving'}</span>
                       </div>
                     </div>
                   </div>
@@ -323,8 +317,24 @@ const FoodChatbot = ({ onFoodsLogged }) => {
         </div>
       )}
 
-
       <style jsx>{`
+        .chatbot-layout {
+          display: grid;
+          grid-template-columns: 80% 20%;
+          gap: var(--space-4);
+          margin-bottom: var(--space-6);
+        }
+
+        .chatbot-input-card {
+          display: flex;
+          flex-direction: column;
+        }
+
+        .chatbot-stats-card {
+          display: flex;
+          flex-direction: column;
+        }
+
         .checkbox-container {
           display: flex;
           align-items: center;
@@ -357,13 +367,14 @@ const FoodChatbot = ({ onFoodsLogged }) => {
         .checkbox-input:checked + .checkbox-custom::after {
           content: '';
           position: absolute;
-          left: 6px;
-          top: 2px;
+          left: 5px;
+          top: 1px;
           width: 6px;
           height: 10px;
           border: solid white;
           border-width: 0 2px 2px 0;
           transform: rotate(45deg);
+          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
         }
 
         .checkbox-label {
@@ -510,4 +521,3 @@ const FoodChatbot = ({ onFoodsLogged }) => {
 };
 
 export default FoodChatbot;
-

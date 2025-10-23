@@ -1,24 +1,16 @@
 import React, { useState } from 'react';
 import WorkoutAdder from '../components/WorkoutAdder';
-import MusclePriority from '../components/MusclePriority';
-import SplitCreator from '../components/SplitCreator';
 import WorkoutLogger from '../components/WorkoutLogger';
 import WorkoutLog from '../components/WorkoutLog';
 
 const WorkoutTracker = () => {
-  const [activeTab, setActiveTab] = useState('muscle-priority');
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [refreshKey, setRefreshKey] = useState(0);
-
-  const tabs = [
-    { id: 'muscle-priority', label: 'Muscle Priority', icon: '🎯' },
-    { id: 'workout-adder', label: 'Workout Adder', icon: '🏋️' },
-    { id: 'split-creator', label: 'Split Creator', icon: '📅' },
-    { id: 'workout-logger', label: 'Workout Logger', icon: '📝' },
-    { id: 'workout-log', label: 'Workout Log', icon: '📊' }
-  ];
+  const [showWorkoutAdder, setShowWorkoutAdder] = useState(false);
+  const [showWorkoutLogger, setShowWorkoutLogger] = useState(false);
 
   const handleWorkoutAdded = () => {
+    setShowWorkoutAdder(false);
     // Refresh data if needed
   };
 
@@ -26,91 +18,88 @@ const WorkoutTracker = () => {
     // Refresh data if needed
   };
 
-  const handleSplitCreated = () => {
-    // Refresh data if needed
-  };
-
-  const handleSplitUpdated = () => {
-    // Refresh data if needed
-  };
-
-  const handlePrioritiesUpdated = () => {
-    // Refresh data if needed
-  };
-
   const handleWorkoutLogged = () => {
+    setShowWorkoutLogger(false);
     // Refresh workout log data by updating the key
     setRefreshKey(prev => prev + 1);
   };
 
-  const renderActiveTab = () => {
-    switch (activeTab) {
-      case 'muscle-priority':
-        return <MusclePriority onPrioritiesUpdated={handlePrioritiesUpdated} />;
-      case 'workout-adder':
-        return (
-          <WorkoutAdder 
-            onWorkoutAdded={handleWorkoutAdded}
-            onWorkoutUpdated={handleWorkoutUpdated}
-          />
-        );
-      case 'split-creator':
-        return (
-          <SplitCreator 
-            onSplitCreated={handleSplitCreated}
-            onSplitUpdated={handleSplitUpdated}
-          />
-        );
-      case 'workout-logger':
-        return (
-          <WorkoutLogger 
-            selectedDate={selectedDate}
-            onWorkoutLogged={handleWorkoutLogged}
-          />
-        );
-      case 'workout-log':
-        return (
+  return (
+    <div className="workout-tracker-page">
+      <div className="container mx-auto px-4 py-6">
+        <h1 className="text-3xl font-bold mb-6">Workout Log</h1>
+        
+        {/* Action Buttons */}
+        <div className="mb-6">
+          <div className="flex flex-wrap gap-4">
+            <button
+              onClick={() => setShowWorkoutAdder(true)}
+              className="btn btn-primary flex items-center space-x-2"
+            >
+              <span>🏋️</span>
+              <span>Add New Workout</span>
+            </button>
+            <button
+              onClick={() => setShowWorkoutLogger(true)}
+              className="btn btn-secondary flex items-center space-x-2"
+            >
+              <span>📝</span>
+              <span>Log Workout</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Main Content */}
+        <div className="tab-content">
           <WorkoutLog 
             selectedDate={selectedDate}
             onDateChange={setSelectedDate}
             onWorkoutLogged={handleWorkoutLogged}
             refreshTrigger={refreshKey}
           />
-        );
-      default:
-        return <MusclePriority onPrioritiesUpdated={handlePrioritiesUpdated} />;
-    }
-  };
+        </div>
 
-  return (
-    <div className="workout-tracker-page">
-      <div className="container mx-auto px-4 py-6">
-        <h1 className="text-3xl font-bold mb-6">Workout Tracker</h1>
-        
-        {/* Tab Navigation */}
-        <div className="mb-6">
-          <div className="flex flex-wrap gap-2">
-            {tabs.map(tab => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`btn ${
-                  activeTab === tab.id 
-                    ? 'btn-primary' 
-                    : 'btn-secondary'
-                } flex items-center space-x-2`}
-              >
-                <span>{tab.icon}</span>
-                <span>{tab.label}</span>
-              </button>
-            ))}
+        {/* Modal for Workout Adder */}
+        {showWorkoutAdder && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-2xl font-bold">Add New Workout</h2>
+                <button
+                  onClick={() => setShowWorkoutAdder(false)}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  ✕
+                </button>
+              </div>
+              <WorkoutAdder 
+                onWorkoutAdded={handleWorkoutAdded}
+                onWorkoutUpdated={handleWorkoutUpdated}
+              />
+            </div>
           </div>
-        </div>
+        )}
 
-        {/* Tab Content */}
-        <div className="tab-content">
-          {renderActiveTab()}
-        </div>
+        {/* Modal for Workout Logger */}
+        {showWorkoutLogger && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-2xl font-bold">Log Workout</h2>
+                <button
+                  onClick={() => setShowWorkoutLogger(false)}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  ✕
+                </button>
+              </div>
+              <WorkoutLogger 
+                selectedDate={selectedDate}
+                onWorkoutLogged={handleWorkoutLogged}
+              />
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

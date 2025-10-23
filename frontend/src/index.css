@@ -32,6 +32,7 @@
   
   --accent-primary-alpha: rgba(59, 130, 246, 0.1);
   --accent-secondary-alpha: rgba(16, 185, 129, 0.1);
+  --accent-danger-alpha: rgba(239, 68, 68, 0.1);
 
   /* Typography */
   --font-primary: 'Roboto Mono', monospace;
@@ -425,11 +426,13 @@ main {
   font-family: var(--font-primary);
   font-size: var(--text-base);
   color: var(--text-primary);
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-primary);
+  background: #f8f8f8;
+  border: 1px solid #ccc;
   border-radius: var(--radius-md);
   transition: all 0.2s var(--ease-out-cubic);
 }
+
+/* Macro label colors - removed as requested */
 
 .form-input:focus,
 .form-select:focus,
@@ -778,8 +781,7 @@ textarea.form-textarea {
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(4px);
+  background: transparent;
   z-index: var(--z-modal-bg);
   animation: fadeIn 0.2s var(--ease-out-cubic);
 }
@@ -1212,4 +1214,52 @@ textarea.form-textarea {
 
 @media (min-width: 1025px) {
   .show-tablet { display: none !important; }
+}
+
+/* ==================== Number Input Stepping Removal ==================== */
+
+/* Remove number input spinners/steppers */
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Firefox */
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+/* ==================== Form Input Color Formatting ==================== */
+
+/* Enhanced form input colors for better contrast */
+.form-input,
+.form-input-small,
+.date-input,
+.servings-input {
+  background: var(--bg-secondary) !important;
+  border: 1px solid var(--border-primary) !important;
+  color: var(--text-primary) !important;
+}
+
+.form-input:focus,
+.form-input-small:focus,
+.date-input:focus,
+.servings-input:focus {
+  background: var(--bg-tertiary) !important;
+  border-color: var(--accent-primary) !important;
+  color: var(--text-primary) !important;
+  outline: none !important;
+  box-shadow: 0 0 0 3px var(--accent-primary-alpha) !important;
+}
+
+.form-input::placeholder,
+.form-input-small::placeholder,
+.date-input::placeholder,
+.servings-input::placeholder {
+  color: var(--text-tertiary) !important;
 }

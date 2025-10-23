@@ -20,14 +20,29 @@ const FoodLoggingDashboard = () => {
   const [goals, setGoals] = useState({});
   const [consumed, setConsumed] = useState({});
   const [foodLogs, setFoodLogs] = useState([]);
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [selectedDate, setSelectedDate] = useState(() => {
+    // Use EST timezone for date calculation
+    const now = new Date();
+    // Get the date in EST timezone
+    const estDate = new Date(now.toLocaleString("en-US", {timeZone: "America/New_York"}));
+    // Format as YYYY-MM-DD
+    const year = estDate.getFullYear();
+    const month = String(estDate.getMonth() + 1).padStart(2, '0');
+    const day = String(estDate.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  });
+  const [showCustomCalendar, setShowCustomCalendar] = useState(false);
+  const [currentMonth, setCurrentMonth] = useState(new Date());
   const [showFoodLogger, setShowFoodLogger] = useState(false);
   const [showFoodCreator, setShowFoodCreator] = useState(false);
   const [showMealCreator, setShowMealCreator] = useState(false);
   const [showFoodChatbot, setShowFoodChatbot] = useState(false);
-  const [showExpandedProgress, setShowExpandedProgress] = useState(true);
+  const [showExpandedProgress, setShowExpandedProgress] = useState(false); // Default to condensed view
   const [loading, setLoading] = useState(true);
   const [, setError] = useState('');
+  const [logStreak, setLogStreak] = useState(0);
+  const [sortOrder] = useState('descending'); // 'ascending' or 'descending'
+  const [editingTime, setEditingTime] = useState(null);
 
   const loadUserGoals = useCallback(async () => {
     try {
@@ -95,19 +110,77 @@ const FoodLoggingDashboard = () => {
     }
   }, [selectedDate]);
 
+  const calculateLogStreak = useCallback(async () => {
+    try {
+      // Calculate streak by checking consecutive days with food logs
+      let streak = 0;
+      const now = new Date();
+      
+      for (let i = 0; i < 30; i++) { // Check up to 30 days back
+        const checkDate = new Date(now);
+        checkDate.setDate(now.getDate() - i);
+        
+        // Convert to EST timezone
+        const estDate = new Date(checkDate.toLocaleString("en-US", {timeZone: "America/New_York"}));
+        const year = estDate.getFullYear();
+        const month = String(estDate.getMonth() + 1).padStart(2, '0');
+        const day = String(estDate.getDate()).padStart(2, '0');
+        const dateStr = `${year}-${month}-${day}`;
+        
+        const startDate = `${dateStr}T00:00:00Z`;
+        const endDate = `${dateStr}T23:59:59Z`;
+        
+        const response = await api.getFoodLogs({
+          start_date: startDate,
+          end_date: endDate,
+          page_size: 1
+        });
+        
+        if (response.data.data && response.data.data.logs && response.data.data.logs.length > 0) {
+          streak++;
+        } else {
+          break;
+        }
+      }
+      
+      setLogStreak(streak);
+    } catch (err) {
+      console.error('Failed to calculate log streak:', err);
+    }
+  }, []);
+
   useEffect(() => {
     loadUserGoals();
     loadDailyProgress();
     loadFoodLogs();
   }, [selectedDate, loadUserGoals, loadDailyProgress, loadFoodLogs]);
 
+  useEffect(() => {
+    calculateLogStreak();
+  }, [calculateLogStreak]);
+
   const handleDateChange = (newDate) => {
     setSelectedDate(newDate);
   };
 
-  const handleFoodLogged = () => {
-    loadDailyProgress();
+
+  const getSortedFoodLogs = () => {
+    const sorted = [...foodLogs].sort((a, b) => {
+      const dateA = new Date(a.date_time);
+      const dateB = new Date(b.date_time);
+      return dateB - dateA; // Sort descending (latest first)
+    });
+    return sorted;
+  };
+
+  const handleFoodLogged = async () => {
     setShowFoodLogger(false);
+    // Refresh data immediately with a small delay to ensure API call completes
+    setTimeout(async () => {
+      await loadFoodLogs();
+      await loadDailyProgress();
+      calculateLogStreak();
+    }, 500);
   };
 
   const handleFoodCreated = (food) => {
@@ -135,9 +208,40 @@ const FoodLoggingDashboard = () => {
     }
   };
 
+  const updateFoodLogTime = async (logId, newTime) => {
+    try {
+      // Parse the new time and create a new datetime
+      const [hours, minutes] = newTime.split(':');
+      const logDate = new Date(selectedDate);
+      logDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+      
+      // Update the food log with new time
+      await api.updateFoodLog(logId, {
+        date_time: logDate.toISOString()
+      });
+      
+      loadFoodLogs();
+      loadDailyProgress();
+      setEditingTime(null);
+    } catch (err) {
+      console.error('Failed to update food log time:', err);
+    }
+  };
+
   const formatTime = (dateString) => {
     const date = new Date(dateString);
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    // Use UTC methods to avoid timezone conversion
+    const hours = String(date.getUTCHours()).padStart(2, '0');
+    const minutes = String(date.getUTCMinutes()).padStart(2, '0');
+    return `${hours}:${minutes}`;
+  };
+
+  const getTimeForInput = (dateString) => {
+    const date = new Date(dateString);
+    // Use UTC methods to avoid timezone conversion
+    const hours = String(date.getUTCHours()).padStart(2, '0');
+    const minutes = String(date.getUTCMinutes()).padStart(2, '0');
+    return `${hours}:${minutes}`;
   };
 
   const getTimeSeparator = (time) => {
@@ -161,8 +265,60 @@ const FoodLoggingDashboard = () => {
       dairy: '🥛',
       other: '🍽️'
     };
-    return icons[foodGroup] || icons.other;
+    
+    // Handle case where foodGroup might be undefined or null
+    if (!foodGroup) {
+      return icons.other;
+    }
+    
+    // Convert to lowercase to handle case variations
+    const normalizedGroup = foodGroup.toLowerCase();
+    
+    return icons[normalizedGroup] || icons.other;
   };
+
+  const getCalendarDays = () => {
+    const year = currentMonth.getFullYear();
+    const month = currentMonth.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const startDate = new Date(firstDay);
+    startDate.setDate(startDate.getDate() - firstDay.getDay());
+    
+    const days = [];
+    const currentDate = new Date(startDate);
+    
+    for (let i = 0; i < 42; i++) {
+      const dateString = currentDate.toISOString().split('T')[0];
+      days.push({
+        day: currentDate.getDate(),
+        date: dateString,
+        isCurrentMonth: currentDate.getMonth() === month
+      });
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+    
+    return days;
+  };
+
+  const handleCustomDateSelect = (date) => {
+    setSelectedDate(date);
+    setShowCustomCalendar(false);
+    handleDateChange(date);
+  };
+
+  // Close calendar when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showCustomCalendar && !event.target.closest('.custom-date-picker')) {
+        setShowCustomCalendar(false);
+      }
+    };
+
+    if (showCustomCalendar) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showCustomCalendar]);
 
   const isMobile = window.innerWidth <= 768;
 
@@ -180,54 +336,94 @@ const FoodLoggingDashboard = () => {
       {/* Header */}
       <div className="dashboard-header">
           <div className="header-content">
-            <div className="header-title">
+            {/* Left side - Calendar */}
+            <div className="header-left">
+              <div className="controls-section">
+                <div className="custom-date-picker">
+                  <input
+                    type="text"
+                    value={selectedDate}
+                    readOnly
+                    className="form-input date-input"
+                    onClick={() => setShowCustomCalendar(!showCustomCalendar)}
+                    title="Click to open calendar"
+                  />
+                  {showCustomCalendar && (
+                    <div className="custom-calendar-popup">
+                      <div className="calendar-header">
+                        <button onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1))}>
+                          ←
+                        </button>
+                        <span>{currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</span>
+                        <button onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1))}>
+                          →
+                        </button>
+                      </div>
+                      <div className="calendar-grid">
+                        <div className="calendar-day-header">Sun</div>
+                        <div className="calendar-day-header">Mon</div>
+                        <div className="calendar-day-header">Tue</div>
+                        <div className="calendar-day-header">Wed</div>
+                        <div className="calendar-day-header">Thu</div>
+                        <div className="calendar-day-header">Fri</div>
+                        <div className="calendar-day-header">Sat</div>
+                        {getCalendarDays().map((day, index) => (
+                          <button
+                            key={index}
+                            className={`calendar-day ${day.isCurrentMonth ? 'current-month' : 'other-month'} ${day.date === selectedDate ? 'selected' : ''}`}
+                            onClick={() => handleCustomDateSelect(day.date)}
+                            disabled={!day.isCurrentMonth}
+                          >
+                            {day.day}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Center - Title and Streak */}
+            <div className="header-center">
+              <div className="header-title">
+                <div className="streak-counter">
+                  <span className="streak-number">{logStreak}</span>
+                  <span className="streak-label">Day Streak</span>
+                </div>
+              </div>
             </div>
             
-            {/* Action Buttons */}
+            {/* Right side - Action Buttons */}
             <div className="header-actions">
               <button
-                className="btn-icon-header"
+                className="btn-primary-header"
                 onClick={() => setShowFoodCreator(true)}
                 title="Create Food"
               >
-                <svg className="icon icon-md" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
-                </svg>
+                <span className="icon icon-lg">🍽️</span>
                 <span>Create Food</span>
               </button>
               
               <button
-                className="btn-icon-header"
+                className="btn-primary-header"
                 onClick={() => setShowMealCreator(true)}
                 title="Create Meal"
               >
-                <svg className="icon icon-md" viewBox="0 0 20 20" fill="currentColor">
-                  <path d="M3 1a1 1 0 000 2h1.22l.305 1.222a.997.997 0 00.01.042l1.358 5.43-.893.892C3.74 11.846 4.632 14 6.414 14H15a1 1 0 000-2H6.414l1-1H14a1 1 0 00.894-.553l3-6A1 1 0 0017 3H6.28l-.31-1.243A1 1 0 005 1H3zM16 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM6.5 18a1.5 1.5 0 100-3 1.5 1.5 0 000 3z" />
-                </svg>
+                <span className="icon icon-lg">🍴</span>
                 <span>Create Meal</span>
               </button>
               
               <button
-                className="btn-icon-header"
+                className="btn-primary-header"
                 onClick={() => setShowFoodChatbot(true)}
                 title="AI Logger"
               >
-                <svg className="icon icon-md" viewBox="0 0 20 20" fill="currentColor">
+                <svg className="icon icon-lg" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clipRule="evenodd" />
                 </svg>
                 <span>AI Logger</span>
               </button>
-            </div>
-            
-            {/* Date Selector */}
-            <div className="date-selector">
-              <input
-                type="date"
-                value={selectedDate}
-                onChange={(e) => handleDateChange(e.target.value)}
-                className="form-input"
-                style={{ width: 'auto' }}
-              />
             </div>
           </div>
       </div>
@@ -241,17 +437,6 @@ const FoodLoggingDashboard = () => {
             <div className="dashboard-left">
               {/* Goal Progress */}
               <div className="goal-progress-section card">
-                {!showExpandedProgress && (
-                  <div className="view-all-button">
-                    <button 
-                      className="btn-text"
-                      onClick={() => setShowExpandedProgress(true)}
-                    >
-                      View All
-                    </button>
-                  </div>
-                )}
-
                 {showExpandedProgress ? (
                   <ExpandedProgressView
                     goals={goals}
@@ -259,34 +444,48 @@ const FoodLoggingDashboard = () => {
                     onClose={() => setShowExpandedProgress(false)}
                   />
                 ) : (
-                  <ProgressGrid
-                    goals={goals}
-                    consumed={consumed}
-                  />
+                  <>
+                    <ProgressGrid
+                      goals={goals}
+                      consumed={consumed}
+                    />
+                    <div className="view-all-button">
+                      <button 
+                        className="btn-primary"
+                        onClick={() => setShowExpandedProgress(true)}
+                      >
+                        View All
+                      </button>
+                    </div>
+                  </>
                 )}
               </div>
 
               {/* Food Log List */}
               <div className="food-log-section card">
 
-                <div className="food-log-list">
-                  {foodLogs.length === 0 ? (
-                    <div className="empty-state">
-                      <svg className="icon icon-xl" viewBox="0 0 20 20" fill="var(--text-tertiary)">
-                        <path fillRule="evenodd" d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11.707 4.707a1 1 0 00-1.414-1.414L10 9.586 8.707 8.293a1 1 0 00-1.414 0l-2 2a1 1 0 101.414 1.414L8 10.414l1.293 1.293a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                      </svg>
-                      <p className="text-tertiary">No food logged today</p>
-                      <p className="text-sm text-tertiary">Start logging your meals!</p>
-                    </div>
-                  ) : (
+              <div className="food-log-list">
+                {getSortedFoodLogs().length === 0 ? (
+                  <div className="empty-time-separators">
+                    {['12am', '6am', '9am', '12pm', '3pm', '6pm', '9pm'].map((separator, index) => (
+                      <div key={separator} className="time-separator">
+                        <div className="separator-line"></div>
+                        <span className="separator-text">{separator}</span>
+                        <div className="separator-line"></div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
                     <div className="food-log-items">
-                      {foodLogs.map((log, index) => {
-                        const time = formatTime(log.date_time);
-                        const separator = getTimeSeparator(time);
-                        const prevLog = index > 0 ? foodLogs[index - 1] : null;
-                        const prevTime = prevLog ? formatTime(prevLog.date_time) : '';
-                        const prevSeparator = getTimeSeparator(prevTime);
-                        const showSeparator = separator && separator !== prevSeparator;
+                      {(() => {
+                        const sortedLogs = getSortedFoodLogs();
+                        return sortedLogs.map((log, index) => {
+                          const time = formatTime(log.date_time);
+                          const separator = getTimeSeparator(time);
+                          const prevLog = index > 0 ? sortedLogs[index - 1] : null;
+                          const prevTime = prevLog ? formatTime(prevLog.date_time) : '';
+                          const prevSeparator = getTimeSeparator(prevTime);
+                          const showSeparator = separator && separator !== prevSeparator;
 
                         return (
                           <React.Fragment key={log.macro_log_id}>
@@ -300,11 +499,48 @@ const FoodLoggingDashboard = () => {
                             <div className="food-log-item">
                               <div className="food-info">
                                 <div className="food-icon">
-                                  {getFoodGroupIcon(log.food_group)}
+                                  {getFoodGroupIcon(log.food_details?.food_group)}
                                 </div>
                                 <div className="food-details">
                                   <div className="food-name">{log.food_name}</div>
-                                  <div className="food-time">{time}</div>
+                                  <div className="food-time">
+                                    {editingTime === log.macro_log_id ? (
+                                      <div className="time-edit-container">
+                                        <input
+                                          type="time"
+                                          defaultValue={getTimeForInput(log.date_time)}
+                                          className="time-input"
+                                          onBlur={(e) => {
+                                            if (e.target.value) {
+                                              updateFoodLogTime(log.macro_log_id, e.target.value);
+                                            } else {
+                                              setEditingTime(null);
+                                            }
+                                          }}
+                                          onKeyDown={(e) => {
+                                            if (e.key === 'Enter') {
+                                              if (e.target.value) {
+                                                updateFoodLogTime(log.macro_log_id, e.target.value);
+                                              } else {
+                                                setEditingTime(null);
+                                              }
+                                            } else if (e.key === 'Escape') {
+                                              setEditingTime(null);
+                                            }
+                                          }}
+                                          autoFocus
+                                        />
+                                      </div>
+                                    ) : (
+                                      <span 
+                                        className="time-display"
+                                        onClick={() => setEditingTime(log.macro_log_id)}
+                                        title="Click to edit time"
+                                      >
+                                        {time}
+                                      </span>
+                                    )}
+                                  </div>
                                 </div>
                               </div>
                               <div className="food-macros">
@@ -343,7 +579,8 @@ const FoodLoggingDashboard = () => {
                             </div>
                           </React.Fragment>
                         );
-                      })}
+                        });
+                      })()}
                     </div>
                   )}
                 </div>
@@ -355,6 +592,7 @@ const FoodLoggingDashboard = () => {
               <FoodLogger
                 onFoodLogged={handleFoodLogged}
                 showAsPanel={true}
+                selectedDate={selectedDate}
               />
               
             </div>
@@ -366,17 +604,6 @@ const FoodLoggingDashboard = () => {
           <div className="dashboard-layout-mobile">
             {/* Goal Progress */}
             <div className="goal-progress-section card">
-              {!showExpandedProgress && (
-                <div className="view-all-button">
-                  <button 
-                    className="btn-text"
-                    onClick={() => setShowExpandedProgress(true)}
-                  >
-                    View All
-                  </button>
-                </div>
-              )}
-              
               {showExpandedProgress ? (
                 <ExpandedProgressView
                   goals={goals}
@@ -384,10 +611,20 @@ const FoodLoggingDashboard = () => {
                   onClose={() => setShowExpandedProgress(false)}
                 />
               ) : (
-                <ProgressGrid
-                  goals={goals}
-                  consumed={consumed}
-                />
+                <>
+                  <ProgressGrid
+                    goals={goals}
+                    consumed={consumed}
+                  />
+                  <div className="view-all-button">
+                    <button 
+                      className="btn-primary"
+                      onClick={() => setShowExpandedProgress(true)}
+                    >
+                      View All
+                    </button>
+                  </div>
+                </>
               )}
             </div>
 
@@ -408,9 +645,7 @@ const FoodLoggingDashboard = () => {
                 onClick={() => setShowFoodCreator(true)}
                 title="Create Food"
               >
-                <svg className="icon icon-lg" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
-                </svg>
+                <span className="icon icon-lg">🍽️</span>
               </button>
               
               <button
@@ -418,9 +653,7 @@ const FoodLoggingDashboard = () => {
                 onClick={() => setShowMealCreator(true)}
                 title="Create Meal"
               >
-                <svg className="icon icon-lg" viewBox="0 0 20 20" fill="currentColor">
-                  <path d="M3 1a1 1 0 000 2h1.22l.305 1.222a.997.997 0 00.01.042l1.358 5.43-.893.892C3.74 11.846 4.632 14 6.414 14H15a1 1 0 000-2H6.414l1-1H14a1 1 0 00.894-.553l3-6A1 1 0 0017 3H6.28l-.31-1.243A1 1 0 005 1H3zM16 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM6.5 18a1.5 1.5 0 100-3 1.5 1.5 0 000 3z" />
-                </svg>
+                <span className="icon icon-lg">🍴</span>
               </button>
               
               <button
@@ -439,21 +672,26 @@ const FoodLoggingDashboard = () => {
 
               <div className="food-log-list">
                 {foodLogs.length === 0 ? (
-                  <div className="empty-state">
-                    <svg className="icon icon-xl" viewBox="0 0 20 20" fill="var(--text-tertiary)">
-                      <path fillRule="evenodd" d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11.707 4.707a1 1 0 00-1.414-1.414L10 9.586 8.707 8.293a1 1 0 00-1.414 0l-2 2a1 1 0 101.414 1.414L8 10.414l1.293 1.293a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                    </svg>
-                    <p className="text-tertiary">No food logged today</p>
+                  <div className="empty-time-separators">
+                    {['12am', '6am', '9am', '12pm', '3pm', '6pm', '9pm'].map((separator, index) => (
+                      <div key={separator} className="time-separator">
+                        <div className="separator-line"></div>
+                        <span className="separator-text">{separator}</span>
+                        <div className="separator-line"></div>
+                      </div>
+                    ))}
                   </div>
                 ) : (
                   <div className="food-log-items">
-                    {foodLogs.map((log, index) => {
-                      const time = formatTime(log.date_time);
-                      const separator = getTimeSeparator(time);
-                      const prevLog = index > 0 ? foodLogs[index - 1] : null;
-                      const prevTime = prevLog ? formatTime(prevLog.date_time) : '';
-                      const prevSeparator = getTimeSeparator(prevTime);
-                      const showSeparator = separator && separator !== prevSeparator;
+                    {(() => {
+                      const sortedLogs = getSortedFoodLogs();
+                      return sortedLogs.map((log, index) => {
+                        const time = formatTime(log.date_time);
+                        const separator = getTimeSeparator(time);
+                        const prevLog = index > 0 ? sortedLogs[index - 1] : null;
+                        const prevTime = prevLog ? formatTime(prevLog.date_time) : '';
+                        const prevSeparator = getTimeSeparator(prevTime);
+                        const showSeparator = separator && separator !== prevSeparator;
 
                       return (
                         <React.Fragment key={log.macro_log_id}>
@@ -467,11 +705,48 @@ const FoodLoggingDashboard = () => {
                           <div className="food-log-item mobile">
                             <div className="food-info">
                               <div className="food-icon">
-                                {getFoodGroupIcon(log.food_group)}
+                                {getFoodGroupIcon(log.food_details?.food_group)}
                               </div>
                               <div className="food-details">
                                 <div className="food-name">{log.food_name}</div>
-                                <div className="food-time">{time}</div>
+                                <div className="food-time">
+                                  {editingTime === log.macro_log_id ? (
+                                    <div className="time-edit-container">
+                                      <input
+                                        type="time"
+                                        defaultValue={getTimeForInput(log.date_time)}
+                                        className="time-input"
+                                        onBlur={(e) => {
+                                          if (e.target.value) {
+                                            updateFoodLogTime(log.macro_log_id, e.target.value);
+                                          } else {
+                                            setEditingTime(null);
+                                          }
+                                        }}
+                                        onKeyDown={(e) => {
+                                          if (e.key === 'Enter') {
+                                            if (e.target.value) {
+                                              updateFoodLogTime(log.macro_log_id, e.target.value);
+                                            } else {
+                                              setEditingTime(null);
+                                            }
+                                          } else if (e.key === 'Escape') {
+                                            setEditingTime(null);
+                                          }
+                                        }}
+                                        autoFocus
+                                      />
+                                    </div>
+                                  ) : (
+                                    <span 
+                                      className="time-display"
+                                      onClick={() => setEditingTime(log.macro_log_id)}
+                                      title="Click to edit time"
+                                    >
+                                      {time}
+                                    </span>
+                                  )}
+                                </div>
                               </div>
                             </div>
                             <div className="food-macros">
@@ -499,7 +774,8 @@ const FoodLoggingDashboard = () => {
                           </div>
                         </React.Fragment>
                       );
-                    })}
+                      });
+                    })()}
                   </div>
                 )}
               </div>
@@ -596,29 +872,52 @@ const FoodLoggingDashboard = () => {
         </>
       )}
 
-      <style jsx>{`
+      <style>{`
         .food-logging-dashboard {
           min-height: 100vh;
           background: var(--bg-primary);
+          width: 100vw;
+          margin: 0;
+          padding: 0;
+          position: absolute;
+          left: 0;
+          right: 0;
+          top: 0;
         }
 
         .dashboard-header {
           background: var(--bg-secondary);
           border-bottom: 1px solid var(--border-primary);
-          padding: var(--space-6) 0;
-          width: 100vw;
-          margin-left: calc(-50vw + 50%);
-          margin-right: calc(-50vw + 50%);
+          padding: 0 0 var(--space-6) 0;
+          width: 100%;
+          margin: 0 0 var(--space-6) 0;
         }
 
         .header-content {
           display: flex;
           justify-content: space-between;
-          align-items: center;
+          align-items: flex-start;
           width: 100%;
           margin: 0;
-          padding: 0 var(--space-4);
+          padding: var(--space-6) var(--space-6) 0 var(--space-6);
           gap: var(--space-4);
+        }
+
+        .header-left {
+          flex: 0 0 auto;
+        }
+
+        .header-center {
+          flex: 1;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+        }
+
+        .header-actions {
+          flex: 0 0 auto;
+          display: flex;
+          gap: var(--space-3);
         }
 
         .header-title {
@@ -633,46 +932,371 @@ const FoodLoggingDashboard = () => {
           font-weight: var(--font-weight-bold);
         }
 
+        .streak-counter {
+          display: flex;
+          align-items: center;
+          gap: var(--space-2);
+          background: var(--bg-tertiary);
+          padding: var(--space-2) var(--space-4);
+          border-radius: var(--radius-lg);
+          border: 1px solid var(--border-primary);
+        }
+
+        .streak-number {
+          font-size: var(--text-2xl);
+          font-weight: var(--font-weight-bold);
+          color: var(--accent-primary);
+        }
+
+        .streak-label {
+          font-size: var(--text-sm);
+          color: orange;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+        }
+
         .header-actions {
           display: flex;
           gap: var(--space-2);
         }
 
-        .btn-icon-header {
-          padding: var(--space-2) var(--space-3);
-          border: 1px solid var(--border-primary);
+        .btn-primary-header {
+          padding: var(--space-3) var(--space-6);
+          border: 1px solid #2C4A73;
           border-radius: var(--radius-md);
-          background: var(--bg-tertiary);
-          color: var(--text-secondary);
+          background: #2C4A73;
+          color: white;
           cursor: pointer;
           transition: all 0.2s var(--ease-out-cubic);
           display: flex;
           align-items: center;
           justify-content: center;
-          gap: var(--space-1);
-          font-size: var(--text-sm);
+          gap: var(--space-2);
+          font-size: var(--text-base);
           font-weight: var(--font-weight-medium);
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          box-shadow: var(--shadow-sm);
+          font-family: var(--font-primary);
         }
 
-        .btn-icon-header:hover {
-          background: var(--bg-secondary);
-          color: var(--text-primary);
-          border-color: var(--accent-primary);
+        .btn-primary-header:hover {
+          background: #1A3A5A;
+          border-color: #1A3A5A;
+          transform: translateY(-1px);
+          box-shadow: var(--shadow-md);
         }
+
+        .controls-section {
+          display: flex;
+          align-items: center;
+          gap: var(--space-3);
+          justify-content: flex-start;
+        }
+
+        .date-input {
+          padding: var(--space-2) var(--space-3);
+          border: 1px solid var(--border-primary);
+          border-radius: var(--radius-md);
+          background: var(--bg-secondary);
+          font-size: var(--text-sm);
+          color: var(--text-primary);
+          transition: all 0.2s var(--ease-out-cubic);
+          font-family: var(--font-primary);
+          min-width: 182px; /* 30% larger than 140px */
+          height: 47px; /* 30% larger than 36px */
+          font-weight: 500;
+          cursor: pointer;
+          text-align: center; /* Center the date text */
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .date-input:focus {
+          outline: none;
+          border-color: var(--accent-primary);
+          box-shadow: 0 0 0 3px var(--accent-primary-alpha);
+          background: var(--bg-secondary);
+        }
+
+        .date-input::-webkit-calendar-picker-indicator {
+          filter: invert(1);
+          cursor: pointer;
+          opacity: 0.8;
+        }
+
+        .date-input::-webkit-calendar-picker-indicator:hover {
+          opacity: 1;
+        }
+
+        /* Calendar popup styling */
+        .date-input::-webkit-calendar-picker-indicator {
+          background: transparent;
+          bottom: 0;
+          color: transparent;
+          cursor: pointer;
+          height: auto;
+          left: 0;
+          position: absolute;
+          right: 0;
+          top: 0;
+          width: auto;
+        }
+
+        /* Style the calendar popup */
+        input[type="date"]::-webkit-calendar-picker-indicator {
+          filter: invert(1);
+          cursor: pointer;
+          opacity: 0.8;
+        }
+
+        input[type="date"]::-webkit-calendar-picker-indicator:hover {
+          opacity: 1;
+        }
+
+        /* Calendar popup content styling */
+        input[type="date"]::-webkit-datetime-edit {
+          color: var(--text-primary);
+        }
+
+        input[type="date"]::-webkit-datetime-edit-fields-wrapper {
+          background: var(--bg-tertiary);
+        }
+
+        input[type="date"]::-webkit-datetime-edit-text {
+          color: var(--text-primary);
+        }
+
+        input[type="date"]::-webkit-datetime-edit-month-field,
+        input[type="date"]::-webkit-datetime-edit-day-field,
+        input[type="date"]::-webkit-datetime-edit-year-field {
+          color: var(--text-primary);
+          background: var(--bg-tertiary);
+        }
+
+        /* Calendar popup dropdown styling */
+        input[type="date"]::-webkit-calendar-picker-indicator {
+          background: var(--bg-tertiary);
+          border-radius: var(--radius-sm);
+          padding: var(--space-1);
+        }
+
+        /* Custom date picker container */
+        .custom-date-picker {
+          position: relative;
+          display: inline-block;
+          margin-left: 60px;
+        }
+
+        /* Custom calendar popup */
+        .custom-calendar-popup {
+          position: absolute;
+          top: 100%;
+          left: 0;
+          background: var(--bg-secondary);
+          border: 1px solid var(--border-primary);
+          border-radius: var(--radius-md);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+          z-index: 1000;
+          padding: var(--space-5);
+          min-width: 350px;
+          max-width: 400px;
+          margin-top: var(--space-2);
+        }
+
+        /* Adjust positioning if calendar would go off screen */
+        @media (max-width: 400px) {
+          .custom-calendar-popup {
+            left: 0;
+            transform: none;
+            right: 0;
+            width: calc(100vw - 2rem);
+            margin: var(--space-2) 1rem 0 1rem;
+          }
+        }
+
+        .calendar-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: var(--space-3);
+          padding-bottom: var(--space-2);
+          border-bottom: 1px solid var(--border-primary);
+        }
+
+        .calendar-header button {
+          background: var(--bg-tertiary);
+          border: 1px solid var(--border-primary);
+          border-radius: var(--radius-sm);
+          color: var(--text-primary);
+          padding: var(--space-1) var(--space-2);
+          cursor: pointer;
+          font-size: var(--text-sm);
+          transition: all 0.2s var(--ease-out-cubic);
+        }
+
+        .calendar-header button:hover {
+          background: var(--accent-primary);
+          color: white;
+        }
+
+        .calendar-header span {
+          font-size: var(--text-base);
+          font-weight: 600;
+          color: var(--text-primary);
+        }
+
+        .calendar-grid {
+          display: grid;
+          grid-template-columns: repeat(7, 1fr);
+          gap: 4px;
+        }
+
+        .calendar-day-header {
+          text-align: center;
+          font-size: var(--text-sm);
+          font-weight: 600;
+          color: var(--text-secondary);
+          padding: var(--space-2);
+        }
+
+        .calendar-day {
+          background: var(--bg-tertiary);
+          border: 1px solid var(--border-primary);
+          border-radius: var(--radius-sm);
+          color: var(--text-primary);
+          padding: var(--space-3);
+          cursor: pointer;
+          font-size: var(--text-base);
+          transition: all 0.2s var(--ease-out-cubic);
+          min-height: 40px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .calendar-day:hover {
+          background: var(--accent-primary);
+          color: white;
+        }
+
+        .calendar-day.selected {
+          background: var(--accent-primary);
+          color: white;
+          font-weight: 600;
+        }
+
+        .calendar-day.other-month {
+          color: var(--text-secondary);
+          opacity: 0.5;
+        }
+
+        .calendar-day.other-month:hover {
+          opacity: 0.8;
+        }
+
+        .calendar-day:disabled {
+          cursor: not-allowed;
+          opacity: 0.3;
+        }
+
+        .calendar-day:disabled:hover {
+          background: var(--bg-tertiary);
+          color: var(--text-primary);
+        }
+
+        /* Calendar popup styling - match application theme */
+        input[type="date"] {
+          font-size: 5px !important;
+          zoom: 1.5 !important; /* This should make the popup larger */
+        }
+
+        /* Make the calendar popup itself larger with dark theme */
+        input[type="date"]::-webkit-calendar-picker-indicator {
+          font-size: 18px !important;
+          width: 20px !important;
+          height: 20px !important;
+          filter: invert(1) !important; /* Make icon white for dark theme */
+        }
+
+        /* Style calendar popup to match dark theme */
+        input[type="date"]::-webkit-datetime-edit {
+          font-size: 14px !important;
+          padding: 4px !important;
+          font-weight: 500 !important;
+          color: var(--text-primary) !important;
+          background: var(--bg-secondary) !important;
+        }
+
+        input[type="date"]::-webkit-datetime-edit-fields-wrapper {
+          font-size: 14px !important;
+          padding: 4px !important;
+          background: var(--bg-secondary) !important;
+        }
+
+        input[type="date"]::-webkit-datetime-edit-text {
+          font-size: 14px !important;
+          padding: 2px !important;
+          color: var(--text-primary) !important;
+        }
+
+        input[type="date"]::-webkit-datetime-edit-month-field,
+        input[type="date"]::-webkit-datetime-edit-day-field,
+        input[type="date"]::-webkit-datetime-edit-year-field {
+          font-size: 14px !important;
+          padding: 2px !important;
+          min-width: 40px !important;
+          font-weight: 500 !important;
+          color: var(--text-primary) !important;
+          background: var(--bg-secondary) !important;
+        }
+
+        /* Calendar popup background and styling */
+        input[type="date"]::-webkit-calendar-picker-dropdown {
+          background: var(--bg-secondary) !important;
+          border: 1px solid var(--border-primary) !important;
+          border-radius: var(--radius-md) !important;
+        }
+
+        /* Calendar popup month/year header */
+        input[type="date"]::-webkit-calendar-picker-dropdown::-webkit-calendar-picker-month-field,
+        input[type="date"]::-webkit-calendar-picker-dropdown::-webkit-calendar-picker-year-field {
+          color: var(--text-primary) !important;
+          background: var(--bg-secondary) !important;
+          font-weight: 600 !important;
+        }
+
+        /* Calendar popup day cells */
+        input[type="date"]::-webkit-calendar-picker-dropdown::-webkit-calendar-picker-day-cell {
+          color: var(--text-primary) !important;
+          background: var(--bg-secondary) !important;
+        }
+
+        /* Calendar popup day cells hover */
+        input[type="date"]::-webkit-calendar-picker-dropdown::-webkit-calendar-picker-day-cell:hover {
+          background: var(--accent-primary) !important;
+          color: white !important;
+        }
+
+        /* Calendar popup today highlight */
+        input[type="date"]::-webkit-calendar-picker-dropdown::-webkit-calendar-picker-day-cell.today {
+          background: var(--accent-primary) !important;
+          color: white !important;
+          font-weight: bold !important;
+        }
+
 
         .dashboard-content {
-          width: 100vw;
-          max-width: none;
+          width: 100%;
           margin: 0;
-          padding: var(--space-6) var(--space-6);
-          margin-left: calc(-50vw + 50%);
-          margin-right: calc(-50vw + 50%);
+          padding: 0 var(--space-4);
         }
 
         /* PC Layout */
         .dashboard-layout-pc {
           display: grid;
-          grid-template-columns: 65% 35%;
+          grid-template-columns: 60% 40%;
           gap: var(--space-6);
           align-items: start;
           width: 100%;
@@ -681,7 +1305,7 @@ const FoodLoggingDashboard = () => {
         .dashboard-left {
           display: flex;
           flex-direction: column;
-          gap: var(--space-6);
+          gap: var(--space-1);
         }
 
         .dashboard-right {
@@ -690,6 +1314,7 @@ const FoodLoggingDashboard = () => {
           gap: var(--space-4);
           position: sticky;
           top: var(--space-6);
+          padding-right: var(--space-8);
         }
 
         /* Mobile Layout */
@@ -732,24 +1357,34 @@ const FoodLoggingDashboard = () => {
         .view-all-button {
           display: flex;
           justify-content: flex-end;
-          margin-bottom: var(--space-2);
+          margin-top: var(--space-4);
+          padding-top: var(--space-4);
+          border-top: 1px solid var(--border-primary);
         }
 
-        .view-all-button .btn-text {
-          background: none;
-          border: none;
-          color: var(--accent-primary);
-          font-size: var(--text-sm);
+        .view-all-button .btn-primary {
+          background: var(--accent-primary);
+          border: 1px solid var(--accent-primary);
+          color: white;
+          font-size: var(--text-xs);
           font-weight: var(--font-weight-medium);
           cursor: pointer;
-          padding: var(--space-1) var(--space-2);
-          border-radius: var(--radius-sm);
+          padding: var(--space-1) var(--space-3);
+          border-radius: var(--radius-md);
           transition: all 0.2s var(--ease-out-cubic);
+          box-shadow: var(--shadow-sm);
+          font-family: var(--font-primary);
+          min-height: 32px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
         }
 
-        .view-all-button .btn-text:hover {
-          background: var(--bg-secondary);
-          color: var(--accent-primary-dark);
+        .view-all-button .btn-primary:hover {
+          background: var(--accent-primary-dark);
+          border-color: var(--accent-primary-dark);
+          transform: translateY(-1px);
+          box-shadow: var(--shadow-md);
         }
 
         /* Goal Progress */
@@ -770,6 +1405,7 @@ const FoodLoggingDashboard = () => {
         /* Food Log */
         .food-log-section {
           background: var(--bg-secondary);
+          padding: var(--space-2);
         }
 
         .food-log-list {
@@ -803,14 +1439,18 @@ const FoodLoggingDashboard = () => {
           font-weight: var(--font-weight-medium);
         }
 
+        .empty-time-separators {
+          padding: var(--space-2);
+        }
+
         .food-log-item {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          padding: var(--space-4);
+          padding: var(--space-2);
           background: var(--bg-tertiary);
           border-radius: var(--radius-md);
-          margin-bottom: var(--space-3);
+          margin-bottom: 8px;
           transition: all 0.2s var(--ease-out-cubic);
         }
 
@@ -833,9 +1473,9 @@ const FoodLoggingDashboard = () => {
         }
 
         .food-icon {
-          font-size: var(--text-xl);
-          width: 32px;
-          height: 32px;
+          font-size: var(--text-2xl);
+          width: 40px;
+          height: 40px;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -851,18 +1491,23 @@ const FoodLoggingDashboard = () => {
           font-weight: var(--font-weight-medium);
           color: var(--text-primary);
           margin-bottom: var(--space-1);
+          font-size: var(--text-base);
         }
 
         .food-time {
-          font-size: var(--text-xs);
+          font-size: var(--text-sm);
           color: var(--text-tertiary);
         }
 
         .food-macros {
           display: flex;
-          gap: var(--space-2);
+          gap: var(--space-3);
           align-items: center;
+          justify-content: center;
           flex-wrap: wrap;
+          flex: 1;
+          padding: 0;
+          margin: 0;
         }
 
         .macro-item {
@@ -870,35 +1515,38 @@ const FoodLoggingDashboard = () => {
           flex-direction: column;
           align-items: center;
           gap: var(--space-1);
+          text-align: center;
         }
 
         .macro-value {
           font-weight: var(--font-weight-bold);
           color: var(--text-primary);
-          font-size: var(--text-sm);
+          font-size: var(--text-base);
         }
 
         .macro-label {
-          font-size: var(--text-xs);
+          font-size: var(--text-sm);
           color: var(--text-tertiary);
           text-transform: uppercase;
           letter-spacing: 0.05em;
+          font-weight: var(--font-weight-medium);
         }
 
         .food-actions {
           display: flex;
           align-items: center;
           gap: var(--space-2);
+          margin-left: var(--space-4);
         }
 
         .btn-icon-delete {
-          width: 32px;
-          height: 32px;
+          width: 36px;
+          height: 36px;
           padding: 0;
-          border: 1px solid var(--border-primary);
+          border: 1px solid var(--accent-danger);
           border-radius: var(--radius-sm);
-          background: var(--bg-secondary);
-          color: var(--text-secondary);
+          background: var(--accent-danger);
+          color: white;
           cursor: pointer;
           transition: all 0.2s var(--ease-out-cubic);
           display: flex;
@@ -907,9 +1555,10 @@ const FoodLoggingDashboard = () => {
         }
 
         .btn-icon-delete:hover {
-          background: var(--accent-danger-alpha);
-          color: var(--accent-danger);
-          border-color: var(--accent-danger);
+          background: #dc2626;
+          color: white;
+          border-color: #dc2626;
+          transform: translateY(-1px);
         }
 
         .food-servings {
@@ -918,6 +1567,39 @@ const FoodLoggingDashboard = () => {
           background: var(--bg-secondary);
           padding: var(--space-1) var(--space-2);
           border-radius: var(--radius-sm);
+        }
+
+        .time-display {
+          cursor: pointer;
+          padding: var(--space-1);
+          border-radius: var(--radius-sm);
+          transition: all 0.2s var(--ease-out-cubic);
+        }
+
+        .time-display:hover {
+          background: var(--bg-secondary);
+          color: var(--accent-primary);
+        }
+
+        .time-edit-container {
+          display: inline-block;
+        }
+
+        .time-input {
+          background: var(--bg-secondary);
+          border: 1px solid var(--accent-primary);
+          border-radius: var(--radius-sm);
+          color: var(--text-primary);
+          font-size: var(--text-sm);
+          padding: var(--space-1) var(--space-2);
+          font-family: var(--font-primary);
+          transition: all 0.2s var(--ease-out-cubic);
+        }
+
+        .time-input:focus {
+          outline: none;
+          border-color: var(--accent-primary);
+          box-shadow: 0 0 0 2px var(--accent-primary-alpha);
         }
 
 
@@ -930,11 +1612,11 @@ const FoodLoggingDashboard = () => {
             flex-direction: column;
             gap: var(--space-4);
             align-items: flex-start;
-            padding: 0 4px;
+            padding: var(--space-6) 4px 0 4px;
           }
 
           .dashboard-content {
-            padding: var(--space-4) 4px;
+            padding: 0;
           }
         }
 
@@ -951,7 +1633,7 @@ const FoodLoggingDashboard = () => {
           left: 0;
           right: 0;
           bottom: 0;
-          background: rgba(0, 0, 0, 0.5);
+          background: transparent;
           display: flex;
           align-items: center;
           justify-content: center;

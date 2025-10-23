@@ -18,7 +18,7 @@ const SleepTracker = () => {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingLog, setEditingLog] = useState(null);
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  // const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   
   const [formData, setFormData] = useState({
     date_time: new Date().toISOString().split('T')[0],
@@ -194,7 +194,7 @@ const SleepTracker = () => {
 
   if (loading) {
     return (
-      <div className="form-container flex items-center justify-center">
+      <div className="loading-container flex items-center justify-center">
         <div 
           className="animate-spin rounded-full h-16 w-16 border-b-2" 
           style={{ borderColor: 'var(--accent-color)' }}
@@ -204,7 +204,7 @@ const SleepTracker = () => {
   }
 
   return (
-    <div className="form-container">
+    <div className="sleep-tracker-container">
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center justify-between">
@@ -254,12 +254,17 @@ const SleepTracker = () => {
           </div>
           <button
             onClick={() => setShowForm(true)}
-            className="flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors"
+            className="add-sleep-button"
             style={{ 
-              backgroundColor: 'var(--accent-color)', 
+              backgroundColor: 'var(--accent-primary)', 
               color: 'white',
               borderRadius: 'var(--radius-lg)',
-              fontFamily: 'var(--font-primary)'
+              fontFamily: 'var(--font-primary)',
+              padding: 'var(--space-4) var(--space-6)',
+              fontSize: 'var(--text-sm)',
+              fontWeight: 'var(--font-weight-medium)',
+              border: '1px solid var(--accent-primary)',
+              boxShadow: 'var(--shadow-sm)'
             }}
           >
             <PlusIcon 
@@ -656,8 +661,15 @@ const SleepTracker = () => {
                       <div className="flex items-center space-x-2">
                         <button
                           onClick={() => handleEdit(log)}
-                          className="p-2 rounded-lg transition-colors"
-                          style={{ borderRadius: 'var(--radius-lg)' }}
+                          className="edit-button"
+                          style={{ 
+                            borderRadius: 'var(--radius-lg)',
+                            padding: 'var(--space-2)',
+                            backgroundColor: 'var(--bg-secondary)',
+                            border: '1px solid var(--border-primary)',
+                            color: 'var(--text-primary)',
+                            transition: 'all 0.2s var(--ease-out-cubic)'
+                          }}
                         >
                           <PencilIcon 
                             className="h-4 w-4" 
@@ -672,8 +684,15 @@ const SleepTracker = () => {
                         </button>
                         <button
                           onClick={() => handleDelete(log.sleep_log_id)}
-                          className="p-2 rounded-lg transition-colors"
-                          style={{ borderRadius: 'var(--radius-lg)' }}
+                          className="edit-button"
+                          style={{ 
+                            borderRadius: 'var(--radius-lg)',
+                            padding: 'var(--space-2)',
+                            backgroundColor: 'var(--bg-secondary)',
+                            border: '1px solid var(--border-primary)',
+                            color: 'var(--text-primary)',
+                            transition: 'all 0.2s var(--ease-out-cubic)'
+                          }}
                         >
                           <TrashIcon 
                             className="h-4 w-4" 
@@ -700,3 +719,53 @@ const SleepTracker = () => {
 };
 
 export default SleepTracker;
+
+// CSS Styling - moved to component styling
+  /*
+  .sleep-tracker-container {
+    padding: 0;
+    margin: 0;
+  }
+
+  .loading-container {
+    min-height: 400px;
+  }
+
+  .add-sleep-button {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    transition: all 0.2s var(--ease-out-cubic);
+  }
+
+  .add-sleep-button:hover {
+    background: var(--accent-primary-dark);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+  }
+
+  .edit-button:hover {
+    background: var(--bg-hover);
+    border-color: var(--accent-primary);
+    color: var(--accent-primary);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .form-input {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-primary);
+    color: var(--text-primary);
+    font-family: var(--font-primary);
+  }
+
+  .form-input:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 3px rgba(var(--accent-primary-rgb), 0.1);
+  }
+
+  .form-input::placeholder {
+    color: var(--text-tertiary);
+  }
+  */

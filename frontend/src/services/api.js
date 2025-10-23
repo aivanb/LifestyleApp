@@ -123,6 +123,25 @@ class ApiService {
     return this.get('/openai/usage/');
   }
 
+  parseFoodInput(inputText, createMeal = false) {
+    return this.post('/openai/parse-food/', {
+      input_text: inputText,
+      create_meal: createMeal
+    });
+  }
+
+  generateMetadata(foodId) {
+    return this.post('/openai/generate-metadata/', { food_id: foodId });
+  }
+
+  transcribeAudio(audioData) {
+    return this.post('/openai/transcribe/', { audio_data: audioData });
+  }
+
+  getTranscriptionStatus() {
+    return this.get('/openai/transcription-status/');
+  }
+
   // User methods
   getUserProfile() {
     return this.get('/users/profile/');

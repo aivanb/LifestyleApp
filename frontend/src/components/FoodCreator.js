@@ -53,14 +53,14 @@ const FoodCreator = ({ onFoodCreated, onClose }) => {
     });
   };
 
-  const calculateMacros = () => {
-    const calories = parseFloat(formData.calories) || 0;
-    const protein = parseFloat(formData.protein) || 0;
-    const carbs = parseFloat(formData.carbohydrates) || 0;
-    const fat = parseFloat(formData.fat) || 0;
+  // const calculateMacros = () => {
+  //   const calories = parseFloat(formData.calories) || 0;
+  //   const protein = parseFloat(formData.protein) || 0;
+  //   const carbs = parseFloat(formData.carbohydrates) || 0;
+  //   const fat = parseFloat(formData.fat) || 0;
 
-    return { calories, protein, carbs, fat };
-  };
+  //   return { calories, protein, carbs, fat };
+  // };
 
   const handleGenerateMetadata = async () => {
     if (!formData.food_name) {
@@ -183,8 +183,6 @@ const FoodCreator = ({ onFoodCreated, onClose }) => {
     }
   };
 
-  const macros = calculateMacros();
-
   return (
     <div className="food-creator card">
       <div className="card-header">
@@ -256,26 +254,25 @@ const FoodCreator = ({ onFoodCreated, onClose }) => {
 
         {/* Basic Information */}
         <div className="form-section">
-          <h3 className="section-title">Basic Information</h3>
           <div className="form-grid-2">
-            <div className="form-group">
+            <div className="form-group-small">
               <label className="form-label">Food Name</label>
               <input
                 type="text"
                 name="food_name"
-                className="form-input"
+                className="form-input-small"
                 value={formData.food_name}
                 onChange={handleChange}
                 required
               />
             </div>
 
-            <div className="form-group">
+            <div className="form-group-small">
               <label className="form-label">Brand</label>
               <input
                 type="text"
                 name="brand"
-                className="form-input"
+                className="form-input-small"
                 value={formData.brand}
                 onChange={handleChange}
               />
@@ -283,12 +280,12 @@ const FoodCreator = ({ onFoodCreated, onClose }) => {
           </div>
 
           <div className="form-grid-3">
-            <div className="form-group">
+            <div className="form-group-small">
               <label className="form-label">Serving Size</label>
               <input
                 type="number"
                 name="serving_size"
-                className="form-input"
+                className="form-input-small"
                 value={formData.serving_size}
                 onChange={handleChange}
                 step="0.01"
@@ -296,9 +293,9 @@ const FoodCreator = ({ onFoodCreated, onClose }) => {
               />
             </div>
 
-            <div className="form-group">
+            <div className="form-group-small">
               <label className="form-label">Unit</label>
-              <select name="unit" className="form-input" value={formData.unit} onChange={handleChange}>
+              <select name="unit" className="form-input-small" value={formData.unit} onChange={handleChange}>
                 <option value="g">Grams (g)</option>
                 <option value="oz">Ounces (oz)</option>
                 <option value="ml">Milliliters (ml)</option>
@@ -310,9 +307,9 @@ const FoodCreator = ({ onFoodCreated, onClose }) => {
               </select>
             </div>
 
-            <div className="form-group">
+            <div className="form-group-small">
               <label className="form-label">Food Group</label>
-              <select name="food_group" className="form-input" value={formData.food_group} onChange={handleChange}>
+              <select name="food_group" className="form-input-small" value={formData.food_group} onChange={handleChange}>
                 <option value="protein">Protein</option>
                 <option value="fruit">Fruit</option>
                 <option value="vegetable">Vegetable</option>
@@ -324,29 +321,32 @@ const FoodCreator = ({ onFoodCreated, onClose }) => {
           </div>
         </div>
 
-        {/* Macronutrients */}
+        {/* AI Generate Missing Data Button - Moved to top */}
         <div className="form-section">
-          <div className="section-header">
-            <h3 className="section-title">Macronutrients</h3>
-            <button
-              type="button"
-              className="btn btn-secondary btn-sm"
-              onClick={handleGenerateMetadata}
-              disabled={generatingMetadata || !formData.food_name}
-            >
-              <svg className="icon icon-sm" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd" />
-              </svg>
-              {generatingMetadata ? 'Generating...' : 'AI Generate Missing Data'}
-            </button>
-          </div>
+          <button
+            type="button"
+            className="btn btn-secondary btn-sm"
+            onClick={handleGenerateMetadata}
+            disabled={generatingMetadata || !formData.food_name}
+          >
+            <svg className="icon icon-sm" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd" />
+            </svg>
+            {generatingMetadata ? 'Generating...' : 'AI Generate Missing Data'}
+          </button>
+        </div>
+
+        {/* Horizontal Form Sections */}
+        <div className="form-sections-horizontal">
+          {/* Macronutrients */}
+          <div className="form-section">
           <div className="form-grid-4">
-            <div className="form-group">
+            <div className="form-group-small">
               <label className="form-label">Calories</label>
               <input
                 type="number"
                 name="calories"
-                className="form-input"
+                className="form-input-small"
                 value={formData.calories}
                 onChange={handleChange}
                 step="0.01"
@@ -354,12 +354,12 @@ const FoodCreator = ({ onFoodCreated, onClose }) => {
               />
             </div>
 
-            <div className="form-group">
+            <div className="form-group-small">
               <label className="form-label">Protein (g)</label>
               <input
                 type="number"
                 name="protein"
-                className="form-input"
+                className="form-input-small"
                 value={formData.protein}
                 onChange={handleChange}
                 step="0.01"
@@ -367,12 +367,12 @@ const FoodCreator = ({ onFoodCreated, onClose }) => {
               />
             </div>
 
-            <div className="form-group">
+            <div className="form-group-small">
               <label className="form-label">Carbohydrates (g)</label>
               <input
                 type="number"
                 name="carbohydrates"
-                className="form-input"
+                className="form-input-small"
                 value={formData.carbohydrates}
                 onChange={handleChange}
                 step="0.01"
@@ -380,12 +380,12 @@ const FoodCreator = ({ onFoodCreated, onClose }) => {
               />
             </div>
 
-            <div className="form-group">
+            <div className="form-group-small">
               <label className="form-label">Fat (g)</label>
               <input
                 type="number"
                 name="fat"
-                className="form-input"
+                className="form-input-small"
                 value={formData.fat}
                 onChange={handleChange}
                 step="0.01"
@@ -393,48 +393,48 @@ const FoodCreator = ({ onFoodCreated, onClose }) => {
               />
             </div>
 
-            <div className="form-group">
+            <div className="form-group-small">
               <label className="form-label">Fiber (g)</label>
               <input
                 type="number"
                 name="fiber"
-                className="form-input"
+                className="form-input-small"
                 value={formData.fiber}
                 onChange={handleChange}
                 step="0.01"
               />
             </div>
 
-            <div className="form-group">
+            <div className="form-group-small">
               <label className="form-label">Sugar (g)</label>
               <input
                 type="number"
                 name="sugar"
-                className="form-input"
+                className="form-input-small"
                 value={formData.sugar}
                 onChange={handleChange}
                 step="0.01"
               />
             </div>
 
-            <div className="form-group">
+            <div className="form-group-small">
               <label className="form-label">Saturated Fat (g)</label>
               <input
                 type="number"
                 name="saturated_fat"
-                className="form-input"
+                className="form-input-small"
                 value={formData.saturated_fat}
                 onChange={handleChange}
                 step="0.01"
               />
             </div>
 
-            <div className="form-group">
+            <div className="form-group-small">
               <label className="form-label">Trans Fat (g)</label>
               <input
                 type="number"
                 name="trans_fat"
-                className="form-input"
+                className="form-input-small"
                 value={formData.trans_fat}
                 onChange={handleChange}
                 step="0.01"
@@ -445,50 +445,49 @@ const FoodCreator = ({ onFoodCreated, onClose }) => {
 
         {/* Minerals */}
         <div className="form-section">
-          <h3 className="section-title">Minerals</h3>
-          <div className="form-grid-4">
-            <div className="form-group">
+          <div className="form-grid-horizontal">
+            <div className="form-group-small">
               <label className="form-label">Sodium (mg)</label>
               <input
                 type="number"
                 name="sodium"
-                className="form-input"
+                className="form-input-small"
                 value={formData.sodium}
                 onChange={handleChange}
                 step="0.01"
               />
             </div>
 
-            <div className="form-group">
+            <div className="form-group-small">
               <label className="form-label">Calcium (mg)</label>
               <input
                 type="number"
                 name="calcium"
-                className="form-input"
+                className="form-input-small"
                 value={formData.calcium}
                 onChange={handleChange}
                 step="0.01"
               />
             </div>
 
-            <div className="form-group">
+            <div className="form-group-small">
               <label className="form-label">Iron (mg)</label>
               <input
                 type="number"
                 name="iron"
-                className="form-input"
+                className="form-input-small"
                 value={formData.iron}
                 onChange={handleChange}
                 step="0.01"
               />
             </div>
 
-            <div className="form-group">
+            <div className="form-group-small">
               <label className="form-label">Magnesium (mg)</label>
               <input
                 type="number"
                 name="magnesium"
-                className="form-input"
+                className="form-input-small"
                 value={formData.magnesium}
                 onChange={handleChange}
                 step="0.01"
@@ -499,74 +498,73 @@ const FoodCreator = ({ onFoodCreated, onClose }) => {
 
         {/* Vitamins */}
         <div className="form-section">
-          <h3 className="section-title">Vitamins</h3>
-          <div className="form-grid-4">
-            <div className="form-group">
+          <div className="form-grid-horizontal">
+            <div className="form-group-small">
               <label className="form-label">Vitamin A (mcg)</label>
               <input
                 type="number"
                 name="vitamin_a"
-                className="form-input"
+                className="form-input-small"
                 value={formData.vitamin_a}
                 onChange={handleChange}
                 step="0.01"
               />
             </div>
 
-            <div className="form-group">
+            <div className="form-group-small">
               <label className="form-label">Vitamin C (mg)</label>
               <input
                 type="number"
                 name="vitamin_c"
-                className="form-input"
+                className="form-input-small"
                 value={formData.vitamin_c}
                 onChange={handleChange}
                 step="0.01"
               />
             </div>
 
-            <div className="form-group">
+            <div className="form-group-small">
               <label className="form-label">Vitamin D (mcg)</label>
               <input
                 type="number"
                 name="vitamin_d"
-                className="form-input"
+                className="form-input-small"
                 value={formData.vitamin_d}
                 onChange={handleChange}
                 step="0.01"
               />
             </div>
 
-            <div className="form-group">
+            <div className="form-group-small">
               <label className="form-label">Cholesterol (mg)</label>
               <input
                 type="number"
                 name="cholesterol"
-                className="form-input"
+                className="form-input-small"
                 value={formData.cholesterol}
                 onChange={handleChange}
                 step="0.01"
               />
             </div>
 
-            <div className="form-group">
+            <div className="form-group-small">
               <label className="form-label">Caffeine (mg)</label>
               <input
                 type="number"
                 name="caffeine"
-                className="form-input"
+                className="form-input-small"
                 value={formData.caffeine}
                 onChange={handleChange}
                 step="0.01"
               />
             </div>
 
-            <div className="form-group">
+            <div className="form-group-small">
               <label className="form-label">Cost ($)</label>
               <input
                 type="number"
                 name="cost"
-                className="form-input"
+                className="form-input-small"
                 value={formData.cost}
                 onChange={handleChange}
                 step="0.01"
@@ -575,18 +573,19 @@ const FoodCreator = ({ onFoodCreated, onClose }) => {
             </div>
           </div>
         </div>
+        </div>
 
         {/* Servings for Logging */}
         {formData.create_and_log && (
           <div className="form-section">
             <h3 className="section-title">Logging Options</h3>
             <div className="form-grid-1">
-              <div className="form-group">
+              <div className="form-group-small">
                 <label className="form-label">Servings to Log</label>
                 <input
                   type="number"
                   name="servings"
-                  className="form-input"
+                  className="form-input-small"
                   value={formData.servings}
                   onChange={handleChange}
                   step="0.1"
@@ -619,10 +618,27 @@ const FoodCreator = ({ onFoodCreated, onClose }) => {
         }
 
         .form-section {
-          margin-bottom: var(--space-6);
+          margin-bottom: var(--space-4);
           padding: var(--space-4);
           background: var(--bg-tertiary);
           border-radius: var(--radius-lg);
+        }
+
+        .form-sections-container {
+          display: flex;
+          flex-direction: column;
+          gap: var(--space-4);
+        }
+
+        .form-sections-horizontal {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+          gap: var(--space-4);
+        }
+
+        .form-section:first-child .form-input-small {
+          width: 100%;
+          min-width: 250px;
         }
 
         .section-header {
@@ -739,19 +755,52 @@ const FoodCreator = ({ onFoodCreated, onClose }) => {
         }
 
         .checkbox-input:checked + .checkbox-custom::after {
-          content: '✓';
+          content: '';
           position: absolute;
-          top: 50%;
-          left: 50%;
-          transform: translate(-50%, -50%);
-          color: white;
-          font-size: 12px;
-          font-weight: bold;
+          left: 5px;
+          top: 1px;
+          width: 6px;
+          height: 10px;
+          border: solid white;
+          border-width: 0 2px 2px 0;
+          transform: rotate(45deg);
+          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
         }
 
         .checkbox-label {
           font-size: var(--text-sm);
           color: var(--text-primary);
+        }
+
+        .form-grid-horizontal {
+          display: flex;
+          flex-wrap: wrap;
+          gap: var(--space-4);
+        }
+
+        .form-group-small {
+          display: flex;
+          flex-direction: column;
+          gap: var(--space-1);
+        }
+
+        .form-input-small {
+          width: 120px;
+          max-width: 120px;
+          padding: var(--space-2) var(--space-3);
+          font-family: var(--font-primary);
+          font-size: var(--text-sm);
+          color: var(--text-primary);
+          background: var(--bg-secondary);
+          border: 1px solid var(--border-primary);
+          border-radius: var(--radius-md);
+          transition: all 0.2s var(--ease-out-cubic);
+        }
+
+        .form-input-small:focus {
+          outline: none;
+          border-color: var(--accent-primary);
+          box-shadow: 0 0 0 3px var(--accent-primary-alpha);
         }
       `}</style>
     </div>
