@@ -394,3 +394,8 @@ WORKOUT LOGGER:
 
 
 === UI Fixes ==
+The following fixes should be made to the http://localhost:3000/workout-tracker page 
+Follow all of your rules at all times
+Ensure all requested changes are made
+Make UI changes to the desktop version of the website not mobile
+    

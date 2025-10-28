@@ -270,6 +270,10 @@ class ApiService {
     return this.post('/workouts/logs/', logData);
   }
 
+  deleteWorkoutLog(logId) {
+    return this.delete(`/workouts/logs/${logId}/`);
+  }
+
   // Split management
   getSplits() {
     return this.get('/workouts/splits/');
@@ -300,8 +304,13 @@ class ApiService {
   }
 
   // Statistics and utilities
-  getWorkoutStats() {
-    return this.get('/workouts/stats/');
+  getWorkoutStats(params = {}) {
+    const queryParams = new URLSearchParams();
+    if (params.date_from) queryParams.append('date_from', params.date_from);
+    if (params.date_to) queryParams.append('date_to', params.date_to);
+    
+    const url = queryParams.toString() ? `/workouts/stats/?${queryParams.toString()}` : '/workouts/stats/';
+    return this.get(url);
   }
 
   getRecentlyLoggedWorkouts() {

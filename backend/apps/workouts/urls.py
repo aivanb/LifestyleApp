@@ -16,6 +16,7 @@ urlpatterns = [
     
     # Workout logging
     path('logs/', views.workout_logs, name='workout_logs'),
+    path('logs/<int:log_id>/', views.workout_log_detail, name='workout_log_detail'),
     
     # Split management
     path('splits/', views.splits, name='splits'),

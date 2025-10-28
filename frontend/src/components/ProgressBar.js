@@ -183,7 +183,7 @@ export const LinearProgressBar = ({
   return (
     <div className="linear-progress">
       <div className="progress-header">
-        <span className="progress-label">{label}</span>
+        <span className="progress-label" style={{ color }}>{label}</span>
         {showValues && (
           <span className="progress-percentage" style={{ color: getProgressColor() }}>
             {Math.round(percentage)}%

@@ -22,6 +22,7 @@ const VoiceRecorder = ({ onTranscriptionComplete }) => {
   const [error, setError] = useState('');
 
   const timerRef = useRef(null);
+  // eslint-disable-next-line no-unused-vars
   const recognitionRef = useRef(null);
 
   useEffect(() => {

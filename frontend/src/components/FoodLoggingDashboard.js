@@ -41,6 +41,7 @@ const FoodLoggingDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [, setError] = useState('');
   const [logStreak, setLogStreak] = useState(0);
+  // eslint-disable-next-line no-unused-vars
   const [sortOrder] = useState('descending'); // 'ascending' or 'descending'
   const [editingTime, setEditingTime] = useState(null);
 

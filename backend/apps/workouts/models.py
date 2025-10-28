@@ -93,6 +93,7 @@ class WorkoutLog(models.Model):
         help_text="Reps in reserve 0-10"
     )
     attributes = models.JSONField(default=list, blank=True)
+    attribute_inputs = models.JSONField(default=dict, blank=True, help_text="Input values for attributes")
     rest_time = models.IntegerField(null=True, blank=True, help_text="Rest time in seconds")
     date_time = models.DateTimeField()
     created_at = models.DateTimeField(auto_now_add=True)

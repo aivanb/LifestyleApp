@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import api from '../services/api';
-import { CalendarIcon, ChartBarIcon, ClockIcon, PlayIcon, PauseIcon, PlusIcon } from '@heroicons/react/24/outline';
+import { CalendarIcon, ChartBarIcon, ClockIcon, PlayIcon, PauseIcon, PlusIcon, InformationCircleIcon } from '@heroicons/react/24/outline';
 
 const WorkoutLog = ({ selectedDate, onDateChange, onWorkoutLogged, refreshTrigger }) => {
   const [workoutLogs, setWorkoutLogs] = useState([]);
@@ -846,6 +846,9 @@ const WorkoutLog = ({ selectedDate, onDateChange, onWorkoutLogged, refreshTrigge
                     borderRadius: 'var(--border-radius)'
                   }}
                 />
+                <div className="text-xs mt-1" style={{ color: 'var(--text-tertiary)', fontFamily: 'var(--font-primary)' }}>
+                  How many more reps you could have done (0-10)
+                </div>
               </div>
 
               {/* Rest Time */}
@@ -918,6 +921,25 @@ const WorkoutLog = ({ selectedDate, onDateChange, onWorkoutLogged, refreshTrigge
                       )}
                     </div>
                   ))}
+                </div>
+              </div>
+
+              {/* Progressive Overload Message */}
+              <div className="p-3 rounded-lg" style={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-color)' }}>
+                <div className="flex items-center space-x-2">
+                  <InformationCircleIcon 
+                    className="h-4 w-4"
+                    style={{
+                      width: '16px',
+                      height: '16px',
+                      minWidth: '16px',
+                      minHeight: '16px',
+                      color: 'var(--accent-color)'
+                    }}
+                  />
+                  <span style={{ color: 'var(--text-secondary)', fontSize: 'var(--text-sm)', fontFamily: 'var(--font-primary)' }}>
+                    Progressive overload should be done if not in a caloric deficit.
+                  </span>
                 </div>
               </div>
 

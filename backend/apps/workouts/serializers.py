@@ -54,6 +54,7 @@ class WorkoutSerializer(serializers.ModelSerializer):
                     'last_rir': recent_log.rir,
                     'last_rest_time': recent_log.rest_time,
                     'last_attributes': recent_log.attributes,
+                    'last_attribute_inputs': recent_log.attribute_inputs,
                     'last_date': recent_log.date_time
                 }
             return None
@@ -100,7 +101,7 @@ class WorkoutLogSerializer(serializers.ModelSerializer):
         model = WorkoutLog
         fields = [
             'workout_log_id', 'workout', 'workout_name', 'weight', 'reps',
-            'rir', 'attributes', 'rest_time', 'date_time', 'created_at'
+            'rir', 'attributes', 'attribute_inputs', 'rest_time', 'date_time', 'created_at'
         ]
         read_only_fields = ['workout_log_id', 'created_at']
 
@@ -112,7 +113,7 @@ class WorkoutLogCreateSerializer(serializers.ModelSerializer):
         model = WorkoutLog
         fields = [
             'workout', 'weight', 'reps', 'rir', 'attributes',
-            'rest_time', 'date_time'
+            'attribute_inputs', 'rest_time', 'date_time'
         ]
 
 

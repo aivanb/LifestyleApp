@@ -202,6 +202,25 @@ def workout_logs(request):
         }, status=status.HTTP_400_BAD_REQUEST)
 
 
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def workout_log_detail(request, log_id):
+    """Delete a specific workout log"""
+    try:
+        log = WorkoutLog.objects.get(workout_log_id=log_id, user=request.user)
+    except WorkoutLog.DoesNotExist:
+        return Response({
+            'success': False,
+            'error': {'message': 'Workout log not found'}
+        }, status=status.HTTP_404_NOT_FOUND)
+    
+    log.delete()
+    return Response({
+        'success': True,
+        'message': 'Workout log deleted successfully'
+    }, status=status.HTTP_200_OK)
+
+
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated])
 def splits(request):
@@ -402,8 +421,18 @@ def workout_stats(request):
     """Get workout statistics for the user"""
     user = request.user
     
+    # Get date filters from query parameters
+    date_from = request.GET.get('date_from')
+    date_to = request.GET.get('date_to')
+    
     # Get workout logs for stats calculation
     workout_logs = WorkoutLog.objects.filter(user=user)
+    
+    # Apply date filtering if provided
+    if date_from:
+        workout_logs = workout_logs.filter(date_time__date__gte=date_from)
+    if date_to:
+        workout_logs = workout_logs.filter(date_time__date__lte=date_to)
     
     # Calculate stats from workout logs
     total_sets = workout_logs.count()
