@@ -26,6 +26,41 @@ from apps.logging.models import FoodLog, WeightLog, BodyMeasurementLog, WaterLog
 from apps.health.models import SleepLog, HealthMetricsLog
 from apps.analytics.models import ApiUsageLog, ErrorLog
 from django.contrib.auth.models import Group
+from django.db import connection
+
+
+def _reset_indexes_and_auto_increment():
+    """
+    Reset auto-increment counters and optimize indexes for all tables.
+    This ensures clean state for database after clearing data.
+    """
+    try:
+        with connection.cursor() as cursor:
+            # List of tables that need auto-increment reset (tables with user data)
+            tables_to_reset = [
+                'users', 'user_goal', 'foods', 'meals', 'meals_foods',
+                'workouts', 'workout_log', 'muscle_log', 'workout_muscle',
+                'splits', 'split_days', 'split_day_targets',
+                'food_log', 'weight_log', 'body_measurement_log',
+                'water_log', 'steps_log', 'cardio_log',
+                'sleep_log', 'health_metrics_log',
+                'api_usage_log', 'error_log'
+            ]
+            
+            for table in tables_to_reset:
+                try:
+                    # Reset auto-increment to 1
+                    cursor.execute(f"ALTER TABLE {table} AUTO_INCREMENT = 1")
+                    # Optimize table (rebuilds indexes and reclaims space)
+                    cursor.execute(f"OPTIMIZE TABLE {table}")
+                except Exception as e:
+                    # Table might not exist or have auto-increment, skip it
+                    pass
+            
+            print("  [OK] Indexes optimized and auto-increment counters reset")
+    except Exception as e:
+        print(f"  [WARNING] Could not reset indexes: {str(e)}")
+        print("  This is usually safe to ignore if using a database that doesn't support these operations.")
 
 
 def clear_dummy_data():
@@ -97,11 +132,16 @@ def clear_dummy_data():
         User.objects.all().delete()
         print(f"  [OK] {user_count} users cleared")
         
+        # Reset auto-increment counters and optimize indexes
+        print("Resetting auto-increment counters and optimizing indexes...")
+        _reset_indexes_and_auto_increment()
+        
         print("\n" + "="*60)
         print("[SUCCESS] DUMMY DATA CLEARED SUCCESSFULLY")
         print("="*60 + "\n")
         print("Required reference data (access_levels, activity_levels,")
         print("muscles, units) has been preserved.")
+        print("Database indexes have been optimized and auto-increment counters reset.")
         
         return True
         

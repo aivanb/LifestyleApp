@@ -15,23 +15,43 @@ from apps.logging.serializers import (
     WeightLogSerializer, BodyMeasurementLogSerializer, WaterLogSerializer,
     StepsLogSerializer, CardioLogSerializer
 )
+from apps.logging.pagination import LargeResultsSetPagination
 
 
 # --- Weight Log Views ---
 class WeightLogListCreateView(generics.ListCreateAPIView):
     serializer_class = WeightLogSerializer
     permission_classes = [IsAuthenticated]
+    pagination_class = LargeResultsSetPagination
 
     def get_queryset(self):
         user = self.request.user
-        queryset = WeightLog.objects.filter(user=user).order_by('-created_at')
+        queryset = WeightLog.objects.filter(user=user).order_by('-date_time')
         
-        # Filter by date if provided
+        # Filter by date range if provided
+        start_date_param = self.request.query_params.get('start_date')
+        end_date_param = self.request.query_params.get('end_date')
+        
+        if start_date_param:
+            try:
+                start_date = date.fromisoformat(start_date_param)
+                queryset = queryset.filter(date_time__date__gte=start_date)
+            except ValueError:
+                pass
+        
+        if end_date_param:
+            try:
+                end_date = date.fromisoformat(end_date_param)
+                queryset = queryset.filter(date_time__date__lte=end_date)
+            except ValueError:
+                pass
+        
+        # Backward compatibility: Filter by single date if provided
         date_param = self.request.query_params.get('date')
-        if date_param:
+        if date_param and not start_date_param and not end_date_param:
             try:
                 log_date = date.fromisoformat(date_param)
-                queryset = queryset.filter(created_at__date=log_date)
+                queryset = queryset.filter(date_time__date=log_date)
             except ValueError:
                 pass
         
@@ -60,7 +80,7 @@ def get_weight_streak(request):
     # Check backwards from today
     for i in range(365):  # Max 1 year back
         check_date = today - timedelta(days=i)
-        if WeightLog.objects.filter(user=user, created_at__date=check_date).exists():
+        if WeightLog.objects.filter(user=user, date_time__date=check_date).exists():
             streak += 1
         else:
             break
@@ -72,17 +92,36 @@ def get_weight_streak(request):
 class BodyMeasurementLogListCreateView(generics.ListCreateAPIView):
     serializer_class = BodyMeasurementLogSerializer
     permission_classes = [IsAuthenticated]
+    pagination_class = LargeResultsSetPagination
 
     def get_queryset(self):
         user = self.request.user
-        queryset = BodyMeasurementLog.objects.filter(user=user).order_by('-created_at')
+        queryset = BodyMeasurementLog.objects.filter(user=user).order_by('-date_time')
         
-        # Filter by date if provided
+        # Filter by date range if provided
+        start_date_param = self.request.query_params.get('start_date')
+        end_date_param = self.request.query_params.get('end_date')
+        
+        if start_date_param:
+            try:
+                start_date = date.fromisoformat(start_date_param)
+                queryset = queryset.filter(date_time__date__gte=start_date)
+            except ValueError:
+                pass
+        
+        if end_date_param:
+            try:
+                end_date = date.fromisoformat(end_date_param)
+                queryset = queryset.filter(date_time__date__lte=end_date)
+            except ValueError:
+                pass
+        
+        # Backward compatibility: Filter by single date if provided
         date_param = self.request.query_params.get('date')
-        if date_param:
+        if date_param and not start_date_param and not end_date_param:
             try:
                 log_date = date.fromisoformat(date_param)
-                queryset = queryset.filter(created_at__date=log_date)
+                queryset = queryset.filter(date_time__date=log_date)
             except ValueError:
                 pass
         
@@ -111,7 +150,7 @@ def get_body_measurement_streak(request):
     # Check backwards from today
     for i in range(365):  # Max 1 year back
         check_date = today - timedelta(days=i)
-        if BodyMeasurementLog.objects.filter(user=user, created_at__date=check_date).exists():
+        if BodyMeasurementLog.objects.filter(user=user, date_time__date=check_date).exists():
             streak += 1
         else:
             break
@@ -123,17 +162,18 @@ def get_body_measurement_streak(request):
 class WaterLogListCreateView(generics.ListCreateAPIView):
     serializer_class = WaterLogSerializer
     permission_classes = [IsAuthenticated]
+    pagination_class = LargeResultsSetPagination
 
     def get_queryset(self):
         user = self.request.user
-        queryset = WaterLog.objects.filter(user=user).order_by('-created_at')
+        queryset = WaterLog.objects.filter(user=user).order_by('-date_time')
         
         # Filter by date if provided
         date_param = self.request.query_params.get('date')
         if date_param:
             try:
                 log_date = date.fromisoformat(date_param)
-                queryset = queryset.filter(created_at__date=log_date)
+                queryset = queryset.filter(date_time__date=log_date)
             except ValueError:
                 pass
         
@@ -162,7 +202,7 @@ def get_water_streak(request):
     # Check backwards from today
     for i in range(365):  # Max 1 year back
         check_date = today - timedelta(days=i)
-        if WaterLog.objects.filter(user=user, created_at__date=check_date).exists():
+        if WaterLog.objects.filter(user=user, date_time__date=check_date).exists():
             streak += 1
         else:
             break
@@ -174,14 +214,33 @@ def get_water_streak(request):
 class StepsLogListCreateView(generics.ListCreateAPIView):
     serializer_class = StepsLogSerializer
     permission_classes = [IsAuthenticated]
+    pagination_class = LargeResultsSetPagination
 
     def get_queryset(self):
         user = self.request.user
         queryset = StepsLog.objects.filter(user=user).order_by('-date_time')
         
-        # Filter by date if provided
+        # Filter by date range if provided
+        start_date_param = self.request.query_params.get('start_date')
+        end_date_param = self.request.query_params.get('end_date')
+        
+        if start_date_param:
+            try:
+                start_date = date.fromisoformat(start_date_param)
+                queryset = queryset.filter(date_time__date__gte=start_date)
+            except ValueError:
+                pass
+        
+        if end_date_param:
+            try:
+                end_date = date.fromisoformat(end_date_param)
+                queryset = queryset.filter(date_time__date__lte=end_date)
+            except ValueError:
+                pass
+        
+        # Backward compatibility: Filter by single date if provided
         date_param = self.request.query_params.get('date')
-        if date_param:
+        if date_param and not start_date_param and not end_date_param:
             try:
                 log_date = date.fromisoformat(date_param)
                 queryset = queryset.filter(date_time__date=log_date)
@@ -225,14 +284,33 @@ def get_steps_streak(request):
 class CardioLogListCreateView(generics.ListCreateAPIView):
     serializer_class = CardioLogSerializer
     permission_classes = [IsAuthenticated]
+    pagination_class = LargeResultsSetPagination
 
     def get_queryset(self):
         user = self.request.user
         queryset = CardioLog.objects.filter(user=user).order_by('-date_time')
         
-        # Filter by date if provided
+        # Filter by date range if provided
+        start_date_param = self.request.query_params.get('start_date')
+        end_date_param = self.request.query_params.get('end_date')
+        
+        if start_date_param:
+            try:
+                start_date = date.fromisoformat(start_date_param)
+                queryset = queryset.filter(date_time__date__gte=start_date)
+            except ValueError:
+                pass
+        
+        if end_date_param:
+            try:
+                end_date = date.fromisoformat(end_date_param)
+                queryset = queryset.filter(date_time__date__lte=end_date)
+            except ValueError:
+                pass
+        
+        # Backward compatibility: Filter by single date if provided
         date_param = self.request.query_params.get('date')
-        if date_param:
+        if date_param and not start_date_param and not end_date_param:
             try:
                 log_date = date.fromisoformat(date_param)
                 queryset = queryset.filter(date_time__date=log_date)

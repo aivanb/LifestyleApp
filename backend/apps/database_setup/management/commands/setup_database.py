@@ -21,6 +21,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(
 
 from database_setup.required_data import populate_required_data
 from database_setup.dummy_data import populate_dummy_data, DUMMY_USER_CREDENTIALS
+from database_setup.comprehensive_dummy_data import populate_comprehensive_dummy_data
 from database_setup.reset_database import clear_dummy_data, reset_database, full_reset_and_populate
 
 
@@ -37,6 +38,11 @@ class Command(BaseCommand):
             '--dummy',
             action='store_true',
             help='Populate dummy test data (2 users with 6 months of data)',
+        )
+        parser.add_argument(
+            '--comprehensive-dummy',
+            action='store_true',
+            help='Populate comprehensive dummy data (1 user: dummyUser, 4/15/2025-10/31/2025)',
         )
         parser.add_argument(
             '--full',
@@ -63,7 +69,7 @@ class Command(BaseCommand):
         """Execute the appropriate database setup operation."""
         
         # Check that at least one option is specified
-        if not any([options['required'], options['dummy'], options['full'], 
+        if not any([options['required'], options['dummy'], options['comprehensive_dummy'], options['full'], 
                    options['clear'], options['reset'], options['reset_full']]):
             self.stdout.write(self.style.WARNING(
                 'Please specify an option. Use --help for available options.'
@@ -137,6 +143,19 @@ class Command(BaseCommand):
             if not populate_required_data():
                 success = False
                 self.stdout.write(self.style.ERROR('✗ Failed to populate required data'))
+        
+        if options['comprehensive_dummy']:
+            self.stdout.write('\nPopulating comprehensive dummy data...')
+            if not populate_comprehensive_dummy_data():
+                success = False
+                self.stdout.write(self.style.ERROR('✗ Failed to populate comprehensive dummy data'))
+            else:
+                self.stdout.write(self.style.SUCCESS('\nDummy User Credentials:'))
+                self.stdout.write('-' * 40)
+                self.stdout.write('  Username: dummyUser')
+                self.stdout.write('  Password: dummypass123')
+                self.stdout.write('  Email:    dummyuser@example.com')
+                self.stdout.write('')
         
         if options['full'] or options['dummy']:
             self.stdout.write('\nPopulating dummy test data...')

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { BeakerIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import api from '../services/api';
 import { ExpandedProgressView, ProgressGrid } from './ProgressBar';
 import FoodLogger from './FoodLogger';
@@ -37,6 +38,9 @@ const FoodLoggingDashboard = () => {
   const [showFoodCreator, setShowFoodCreator] = useState(false);
   const [showMealCreator, setShowMealCreator] = useState(false);
   const [showFoodChatbot, setShowFoodChatbot] = useState(false);
+  const [showWaterLogger, setShowWaterLogger] = useState(false);
+  const [waterFormData, setWaterFormData] = useState({ amount: '', unit: 'oz' });
+  const [submittingWater, setSubmittingWater] = useState(false);
   const [showExpandedProgress, setShowExpandedProgress] = useState(false); // Default to condensed view
   const [loading, setLoading] = useState(true);
   const [, setError] = useState('');
@@ -197,6 +201,35 @@ const FoodLoggingDashboard = () => {
   const handleFoodsLogged = () => {
     loadDailyProgress();
     setShowFoodChatbot(false);
+  };
+
+  const handleWaterInputChange = (e) => {
+    const { name, value } = e.target;
+    setWaterFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleWaterSubmit = async (e) => {
+    e.preventDefault();
+    setSubmittingWater(true);
+    
+    try {
+      const logData = {
+        amount: parseFloat(waterFormData.amount),
+        unit: waterFormData.unit
+      };
+      
+      await api.createWaterLog(logData);
+      setWaterFormData({ amount: '', unit: 'oz' });
+      setShowWaterLogger(false);
+    } catch (error) {
+      console.error('Error saving water log:', error);
+      alert('Error saving water entry. Please try again.');
+    } finally {
+      setSubmittingWater(false);
+    }
   };
 
   const deleteFoodLog = async (logId) => {
@@ -424,6 +457,15 @@ const FoodLoggingDashboard = () => {
                   <path fillRule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clipRule="evenodd" />
                 </svg>
                 <span>AI Logger</span>
+              </button>
+
+              <button
+                className="btn-primary-header"
+                onClick={() => setShowWaterLogger(true)}
+                title="Log Water"
+              >
+                <BeakerIcon className="icon icon-lg" style={{ width: '20px', height: '20px' }} />
+                <span>Water</span>
               </button>
             </div>
           </div>
@@ -666,6 +708,14 @@ const FoodLoggingDashboard = () => {
                   <path fillRule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clipRule="evenodd" />
                 </svg>
               </button>
+
+              <button
+                className="btn-icon-mobile"
+                onClick={() => setShowWaterLogger(true)}
+                title="Log Water"
+              >
+                <BeakerIcon style={{ width: '24px', height: '24px' }} />
+              </button>
             </div>
 
             {/* Food Log List */}
@@ -832,6 +882,140 @@ const FoodLoggingDashboard = () => {
               </div>
             </div>
           )}
+
+          {showWaterLogger && (
+            <div className="modal-backdrop" onClick={() => setShowWaterLogger(false)}>
+              <div className="modal" style={{ maxWidth: '400px' }} onClick={(e) => e.stopPropagation()}>
+                <div style={{ padding: 'var(--space-6)', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-lg)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-6)' }}>
+                    <h2 style={{ fontSize: 'var(--text-xl)', fontWeight: 'var(--font-weight-bold)', color: 'var(--text-primary)', fontFamily: 'var(--font-primary)' }}>
+                      Log Water
+                    </h2>
+                    <button
+                      onClick={() => setShowWaterLogger(false)}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', padding: 'var(--space-2)', borderRadius: 'var(--radius-md)', transition: 'background 0.2s ease' }}
+                      onMouseEnter={(e) => e.target.style.background = 'var(--bg-hover)'}
+                      onMouseLeave={(e) => e.target.style.background = 'none'}
+                    >
+                      <XMarkIcon style={{ width: '24px', height: '24px' }} />
+                    </button>
+                  </div>
+                  
+                  <form onSubmit={handleWaterSubmit}>
+                    <div style={{ marginBottom: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+                      <label style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--font-weight-medium)', color: 'var(--text-primary)', fontFamily: 'var(--font-primary)' }}>
+                        Amount
+                      </label>
+                      <input
+                        type="number"
+                        name="amount"
+                        value={waterFormData.amount}
+                        onChange={handleWaterInputChange}
+                        required
+                        style={{
+                          width: '100%',
+                          padding: 'var(--space-3) var(--space-4)',
+                          fontSize: 'var(--text-base)',
+                          fontFamily: 'var(--font-primary)',
+                          color: 'var(--text-primary)',
+                          background: 'var(--bg-tertiary)',
+                          border: '1px solid var(--border-primary)',
+                          borderRadius: 'var(--radius-md)',
+                          transition: 'all 0.2s ease'
+                        }}
+                        step="0.1"
+                        onFocus={(e) => {
+                          e.target.style.outline = 'none';
+                          e.target.style.borderColor = 'var(--accent-primary)';
+                          e.target.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
+                          e.target.style.background = 'var(--bg-primary)';
+                        }}
+                      />
+                    </div>
+                    
+                    <div style={{ marginBottom: 'var(--space-6)', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+                      <label style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--font-weight-medium)', color: 'var(--text-primary)', fontFamily: 'var(--font-primary)' }}>
+                        Unit
+                      </label>
+                      <select
+                        name="unit"
+                        value={waterFormData.unit}
+                        onChange={handleWaterInputChange}
+                        style={{
+                          padding: 'var(--space-3) var(--space-4)',
+                          fontSize: 'var(--text-base)',
+                          fontFamily: 'var(--font-primary)',
+                          color: 'var(--text-primary)',
+                          background: 'var(--bg-tertiary)',
+                          border: '1px solid var(--border-primary)',
+                          borderRadius: 'var(--radius-md)',
+                          transition: 'all 0.2s ease'
+                        }}
+                      >
+                        <option value="oz">oz</option>
+                        <option value="ml">ml</option>
+                      </select>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: 'var(--space-3)', justifyContent: 'flex-end' }}>
+                      <button
+                        type="button"
+                        onClick={() => setShowWaterLogger(false)}
+                        style={{
+                          background: 'var(--bg-tertiary)',
+                          color: 'var(--text-primary)',
+                          border: '1px solid var(--border-primary)',
+                          borderRadius: 'var(--radius-md)',
+                          padding: 'var(--space-3) var(--space-6)',
+                          fontSize: 'var(--text-base)',
+                          fontWeight: 'var(--font-weight-medium)',
+                          fontFamily: 'var(--font-primary)',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease'
+                        }}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={submittingWater}
+                        style={{
+                          background: 'var(--accent-primary)',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: 'var(--radius-md)',
+                          padding: 'var(--space-3) var(--space-6)',
+                          fontSize: 'var(--text-base)',
+                          fontWeight: 'var(--font-weight-medium)',
+                          fontFamily: 'var(--font-primary)',
+                          cursor: submittingWater ? 'not-allowed' : 'pointer',
+                          transition: 'all 0.2s ease',
+                          boxShadow: 'var(--shadow-sm)',
+                          opacity: submittingWater ? '0.5' : '1'
+                        }}
+                        onMouseEnter={(e) => {
+                          if (!submittingWater) {
+                            e.target.style.filter = 'brightness(1.1)';
+                            e.target.style.transform = 'translateY(-1px)';
+                            e.target.style.boxShadow = 'var(--shadow-md)';
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (!submittingWater) {
+                            e.target.style.filter = 'none';
+                            e.target.style.transform = 'none';
+                            e.target.style.boxShadow = 'var(--shadow-sm)';
+                          }
+                        }}
+                      >
+                        {submittingWater ? 'Saving...' : 'Save Entry'}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+          )}
         </>
       )}
 
@@ -867,6 +1051,140 @@ const FoodLoggingDashboard = () => {
                   onFoodsLogged={handleFoodsLogged}
                   onClose={() => setShowFoodChatbot(false)}
                 />
+              </div>
+            </div>
+          )}
+
+          {showWaterLogger && (
+            <div className="modal-backdrop" onClick={() => setShowWaterLogger(false)}>
+              <div className="modal" style={{ maxWidth: '400px' }} onClick={(e) => e.stopPropagation()}>
+                <div style={{ padding: 'var(--space-6)', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-lg)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-6)' }}>
+                    <h2 style={{ fontSize: 'var(--text-xl)', fontWeight: 'var(--font-weight-bold)', color: 'var(--text-primary)', fontFamily: 'var(--font-primary)' }}>
+                      Log Water
+                    </h2>
+                    <button
+                      onClick={() => setShowWaterLogger(false)}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', padding: 'var(--space-2)', borderRadius: 'var(--radius-md)', transition: 'background 0.2s ease' }}
+                      onMouseEnter={(e) => e.target.style.background = 'var(--bg-hover)'}
+                      onMouseLeave={(e) => e.target.style.background = 'none'}
+                    >
+                      <XMarkIcon style={{ width: '24px', height: '24px' }} />
+                    </button>
+                  </div>
+                  
+                  <form onSubmit={handleWaterSubmit}>
+                    <div style={{ marginBottom: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+                      <label style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--font-weight-medium)', color: 'var(--text-primary)', fontFamily: 'var(--font-primary)' }}>
+                        Amount
+                      </label>
+                      <input
+                        type="number"
+                        name="amount"
+                        value={waterFormData.amount}
+                        onChange={handleWaterInputChange}
+                        required
+                        style={{
+                          width: '100%',
+                          padding: 'var(--space-3) var(--space-4)',
+                          fontSize: 'var(--text-base)',
+                          fontFamily: 'var(--font-primary)',
+                          color: 'var(--text-primary)',
+                          background: 'var(--bg-tertiary)',
+                          border: '1px solid var(--border-primary)',
+                          borderRadius: 'var(--radius-md)',
+                          transition: 'all 0.2s ease'
+                        }}
+                        step="0.1"
+                        onFocus={(e) => {
+                          e.target.style.outline = 'none';
+                          e.target.style.borderColor = 'var(--accent-primary)';
+                          e.target.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
+                          e.target.style.background = 'var(--bg-primary)';
+                        }}
+                      />
+                    </div>
+                    
+                    <div style={{ marginBottom: 'var(--space-6)', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+                      <label style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--font-weight-medium)', color: 'var(--text-primary)', fontFamily: 'var(--font-primary)' }}>
+                        Unit
+                      </label>
+                      <select
+                        name="unit"
+                        value={waterFormData.unit}
+                        onChange={handleWaterInputChange}
+                        style={{
+                          padding: 'var(--space-3) var(--space-4)',
+                          fontSize: 'var(--text-base)',
+                          fontFamily: 'var(--font-primary)',
+                          color: 'var(--text-primary)',
+                          background: 'var(--bg-tertiary)',
+                          border: '1px solid var(--border-primary)',
+                          borderRadius: 'var(--radius-md)',
+                          transition: 'all 0.2s ease'
+                        }}
+                      >
+                        <option value="oz">oz</option>
+                        <option value="ml">ml</option>
+                      </select>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: 'var(--space-3)', justifyContent: 'flex-end' }}>
+                      <button
+                        type="button"
+                        onClick={() => setShowWaterLogger(false)}
+                        style={{
+                          background: 'var(--bg-tertiary)',
+                          color: 'var(--text-primary)',
+                          border: '1px solid var(--border-primary)',
+                          borderRadius: 'var(--radius-md)',
+                          padding: 'var(--space-3) var(--space-6)',
+                          fontSize: 'var(--text-base)',
+                          fontWeight: 'var(--font-weight-medium)',
+                          fontFamily: 'var(--font-primary)',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease'
+                        }}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={submittingWater}
+                        style={{
+                          background: 'var(--accent-primary)',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: 'var(--radius-md)',
+                          padding: 'var(--space-3) var(--space-6)',
+                          fontSize: 'var(--text-base)',
+                          fontWeight: 'var(--font-weight-medium)',
+                          fontFamily: 'var(--font-primary)',
+                          cursor: submittingWater ? 'not-allowed' : 'pointer',
+                          transition: 'all 0.2s ease',
+                          boxShadow: 'var(--shadow-sm)',
+                          opacity: submittingWater ? '0.5' : '1'
+                        }}
+                        onMouseEnter={(e) => {
+                          if (!submittingWater) {
+                            e.target.style.filter = 'brightness(1.1)';
+                            e.target.style.transform = 'translateY(-1px)';
+                            e.target.style.boxShadow = 'var(--shadow-md)';
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (!submittingWater) {
+                            e.target.style.filter = 'none';
+                            e.target.style.transform = 'none';
+                            e.target.style.boxShadow = 'var(--shadow-sm)';
+                          }
+                        }}
+                      >
+                        {submittingWater ? 'Saving...' : 'Save Entry'}
+                      </button>
+                    </div>
+                  </form>
+                </div>
               </div>
             </div>
           )}

@@ -8,20 +8,40 @@ from datetime import date, timedelta
 
 from apps.health.models import SleepLog, HealthMetricsLog
 from apps.health.serializers import SleepLogSerializer, HealthMetricsLogSerializer
+from apps.logging.pagination import LargeResultsSetPagination
 
 
 # --- Sleep Log Views ---
 class SleepLogListCreateView(generics.ListCreateAPIView):
     serializer_class = SleepLogSerializer
     permission_classes = [IsAuthenticated]
+    pagination_class = LargeResultsSetPagination
 
     def get_queryset(self):
         user = self.request.user
         queryset = SleepLog.objects.filter(user=user).order_by('-date_time')
         
-        # Filter by date if provided
+        # Filter by date range if provided
+        start_date_param = self.request.query_params.get('start_date')
+        end_date_param = self.request.query_params.get('end_date')
+        
+        if start_date_param:
+            try:
+                start_date = date.fromisoformat(start_date_param)
+                queryset = queryset.filter(date_time__gte=start_date)
+            except ValueError:
+                pass
+        
+        if end_date_param:
+            try:
+                end_date = date.fromisoformat(end_date_param)
+                queryset = queryset.filter(date_time__lte=end_date)
+            except ValueError:
+                pass
+        
+        # Backward compatibility: Filter by single date if provided
         date_param = self.request.query_params.get('date')
-        if date_param:
+        if date_param and not start_date_param and not end_date_param:
             try:
                 log_date = date.fromisoformat(date_param)
                 queryset = queryset.filter(date_time=log_date)
@@ -65,14 +85,33 @@ def get_sleep_streak(request):
 class HealthMetricsLogListCreateView(generics.ListCreateAPIView):
     serializer_class = HealthMetricsLogSerializer
     permission_classes = [IsAuthenticated]
+    pagination_class = LargeResultsSetPagination
 
     def get_queryset(self):
         user = self.request.user
         queryset = HealthMetricsLog.objects.filter(user=user).order_by('-date_time')
         
-        # Filter by date if provided
+        # Filter by date range if provided
+        start_date_param = self.request.query_params.get('start_date')
+        end_date_param = self.request.query_params.get('end_date')
+        
+        if start_date_param:
+            try:
+                start_date = date.fromisoformat(start_date_param)
+                queryset = queryset.filter(date_time__gte=start_date)
+            except ValueError:
+                pass
+        
+        if end_date_param:
+            try:
+                end_date = date.fromisoformat(end_date_param)
+                queryset = queryset.filter(date_time__lte=end_date)
+            except ValueError:
+                pass
+        
+        # Backward compatibility: Filter by single date if provided
         date_param = self.request.query_params.get('date')
-        if date_param:
+        if date_param and not start_date_param and not end_date_param:
             try:
                 log_date = date.fromisoformat(date_param)
                 queryset = queryset.filter(date_time=log_date)

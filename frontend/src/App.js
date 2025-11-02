@@ -87,24 +87,19 @@ function App() {
 // Add styles for the main content area
 const AppStyles = `
   .main-content {
-    padding: var(--space-6) var(--space-4) var(--space-4);
-    padding-left: calc(var(--space-4) + 60px); /* Account for hamburger button */
     max-width: 100%;
-    margin: 0 auto;
-    min-height: 100vh;
+    margin: var(--space-4);
+    padding: var(--space-6);
+    min-height: calc(100vh - calc(var(--space-4) * 2));
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
   }
 
-  @media (max-width: 768px) {
-    .main-content {
-      padding-left: calc(var(--space-4) + 52px); /* Smaller hamburger button on mobile */
-    }
-  }
-
-  @media (max-width: 480px) {
-    .main-content {
-      padding: var(--space-4) var(--space-2);
-      padding-left: calc(var(--space-2) + 52px);
-    }
+  .main-content > * {
+    width: 100%;
+    max-width: 100%;
   }
 `;
 

@@ -398,4 +398,81 @@ The following fixes should be made to the http://localhost:3000/workout-tracker 
 Follow all of your rules at all times
 Ensure all requested changes are made
 Make UI changes to the desktop version of the website not mobile
-    
+
+Dummy Data 
+Create a script to fill in the database with dummy data. 
+Reset the database to its base state using existing reset functionality. Update the functionality to ensure indexing also resets
+Data from the database should be wiped exepct default data such as access_levels, muscles, activity_levels, ect
+All Django databases should not be wiped. 
+Fill in a Dummy Database readme with an overview for the dummy data
+Read the database setup scripts and utility functions to create data that correctly matches the database schema
+The dummy data should be for one user. Username: dummyUser; Password; dummypass123
+The following specifications should be considered for the given tables. 
+All required tables should be filled for a functioning user. All values must be believable for a healthy adult male with reasonable fluctuations.
+create data for all dates spanning from 4/15/2025 - 10/31/2025
+api_usage_log:
+add 0-3 rows per day
+15% of requests should result in an error. 85% should result in a success.
+body_measurement_log:
+80% of days should have no logged data; 10% of days should have partially filled rows, 10% of days should have full rows
+values should slowly increase over time. Some days should be lower than previous days
+cardio_log:
+add 0-2 rows per day
+50% of rows should have an empty heart_rate field
+error_log:
+add 100 rows dispersed throughout the date range
+create 5 different error_type
+foods:
+create 50 unique types of foods
+create 5 duplicate food names with different brand values
+meals, meals_foods:
+meals include many types of foods to create a recipie
+meal foods assign foods to meals
+create 10 unique meals
+add 2-10 foods per unique meal
+food_log:
+add 5-15 rows per day
+the average calories per day should be: 2500 from 4/15/2025 - 7/25/2025; 3200 from 7/26/2025 - 10/31/2025. 
+average protein should be 180 g, carbohydrates: 200 g, fats: 50g
+all nutrients can fluctuation -10% - 10% each day
+10% of rows include a voice input, ai response, and tokens_used
+5% of days should include no rows
+health_metrics_log:
+70% of days should have one row, 30% no rows
+40% of rows should include partially filled data
+muscle_log:
+create one set of all muscles with 80 priority for all muscles. Log this on 4/15/2025
+create another set of all muscles with 60 priority for all leg muscles and 90 for all other muscles. Log this on 8/5/2025
+each set must contain all muscles found in muscles table
+sleep_log:
+70% of dates should include one row. 30% should include no rows
+40% of rows should include no values for time_in_light_sleep, time_in_deep_sleep, time_in_rem_sleep, and resting_heart_rate
+splits, split_days, split_day_targets:
+create 2 different splits: "PPL" and "Upper Lower"
+PPL should include four days: chest and triceps, back biceps forarms, leg, and rest. create an an average of 85 activation rating
+Upper Lower should include three days: upper body, lower body and abs, and rest. create an average of 100 activation rating
+both splits should include target activations for all muscles found in the muscles table
+no muscles should have activation ratings for multiple split days
+set the start_date for Upper Lower to 4/15/2025. set the start_date for PPL to 6/20/2025
+steps_log:
+add 0-3 rows per day
+the average total steps per day should be 10000
+user_goal:
+create a row with calories_goal of 2500 and weight goal of 165 at 4/15/2025 
+create a row with calories_goal of 3200 and weight goal of 195 at 7/26/2025 and different protein, fat, and carbohydrate goal
+water_log:
+add 0-10 rows per day
+the average total intake should be 3.5 liters
+weight_goal:
+add 0-2 rows per day
+4/15/2025 should have a value of 185 and slowly trend to 162 till 7/26/2025.
+7/26/2025 should have a value of 162 and slowly trend to 193 till 10/31/2025.
+Values can go up or down each day
+workouts, workout_muscle:
+workout_muscle relate muscles to workouts
+create 50 unique workouts
+workout_log:
+log 2-7 unique workouts per day with 1-4 sets
+rows should only include workouts with a majority of muscles that are related to the active split.
+workouts with muscles not related to the split day are allowed but should be minimized
+rest days should not include any workouts
