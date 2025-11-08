@@ -123,10 +123,11 @@ class ApiService {
     return this.get('/openai/usage/');
   }
 
-  parseFoodInput(inputText, createMeal = false) {
+  parseFoodInput(inputText, createMeal = false, previewOnly = false) {
     return this.post('/openai/parse-food/', {
       input_text: inputText,
-      create_meal: createMeal
+      create_meal: createMeal,
+      preview_only: previewOnly
     });
   }
 
@@ -177,6 +178,10 @@ class ApiService {
     return this.put(`/foods/${foodId}/`, foodData);
   }
 
+  getFoodAnalytics(foodId, timeRange = '1week') {
+    return this.get(`/foods/${foodId}/analytics/?time_range=${timeRange}`);
+  }
+
   deleteFood(foodId) {
     return this.delete(`/foods/${foodId}/`);
   }
@@ -206,6 +211,10 @@ class ApiService {
 
   createFoodLog(logData) {
     return this.post('/foods/logs/', logData);
+  }
+
+  updateFoodLog(logId, logData) {
+    return this.patch(`/foods/logs/${logId}/`, logData);
   }
 
   deleteFoodLog(logId) {

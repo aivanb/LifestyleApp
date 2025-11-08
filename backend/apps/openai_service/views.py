@@ -55,10 +55,17 @@ def send_prompt(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def usage_stats(request):
-    """Get user's OpenAI API usage statistics"""
+    """Get user's OpenAI API usage statistics (last 10 days)"""
     from apps.analytics.models import ApiUsageLog
+    from django.utils import timezone
+    from datetime import timedelta
     
-    user_logs = ApiUsageLog.objects.filter(user=request.user)
+    # Filter logs from the last 10 days
+    ten_days_ago = timezone.now() - timedelta(days=10)
+    user_logs = ApiUsageLog.objects.filter(
+        user=request.user,
+        created_at__gte=ten_days_ago
+    )
     
     total_tokens = sum(log.tokens_used for log in user_logs)
     total_cost = sum(float(log.cost) for log in user_logs)
@@ -104,6 +111,7 @@ def parse_food_input(request):
     """
     input_text = request.data.get('input_text', '').strip()
     create_meal = request.data.get('create_meal', False)
+    preview_only = request.data.get('preview_only', False)
     
     if not input_text:
         return Response({
@@ -112,7 +120,7 @@ def parse_food_input(request):
     
     try:
         parser = FoodParserService(user=request.user)
-        result = parser.parse_food_input(input_text, create_meal=create_meal)
+        result = parser.parse_food_input(input_text, create_meal=create_meal, preview_only=preview_only)
         
         if result['success']:
             return Response({

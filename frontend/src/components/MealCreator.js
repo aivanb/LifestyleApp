@@ -170,19 +170,21 @@ const MealCreator = ({ onMealCreated, onClose }) => {
 
   const totalMacros = calculateTotalMacros();
 
+  const handleStepServings = (foodId, direction) => {
+    const food = selectedFoods.find(f => f.food_id === foodId);
+    if (!food) return;
+    
+    const currentServings = food.servings || 1;
+    const step = 0.1;
+    const newServings = direction === 'up' 
+      ? currentServings + step 
+      : Math.max(0.1, currentServings - step);
+    
+    updateServings(foodId, newServings);
+  };
+
   return (
     <div className="meal-creator card">
-      <div className="card-header">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <svg className="icon icon-lg" viewBox="0 0 20 20" fill="var(--accent-secondary)">
-              <path d="M3 1a1 1 0 000 2h1.22l.305 1.222a.997.997 0 00.01.042l1.358 5.43-.893.892C3.74 11.846 4.632 14 6.414 14H15a1 1 0 000-2H6.414l1-1H14a1 1 0 00.894-.553l3-6A1 1 0 0017 3H6.28l-.31-1.243A1 1 0 005 1H3zM16 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM6.5 18a1.5 1.5 0 100-3 1.5 1.5 0 000 3z" />
-            </svg>
-            <h2 className="card-title">Create New Meal</h2>
-          </div>
-        </div>
-      </div>
-
       {error && (
         <div className="error-message">
           <svg className="icon icon-sm" viewBox="0 0 20 20" fill="currentColor">
@@ -192,66 +194,7 @@ const MealCreator = ({ onMealCreated, onClose }) => {
         </div>
       )}
 
-      {/* Actions - Moved to top */}
-      <div className="flex gap-4 mt-6">
-        <button 
-          type="submit" 
-          className="btn btn-success" 
-          disabled={loading || selectedFoods.length === 0}
-        >
-          <svg className="icon icon-md" viewBox="0 0 20 20" fill="currentColor">
-            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-          </svg>
-          {loading ? 'Creating...' : 'Create Meal'}
-        </button>
-        
-        {onClose && (
-          <button type="button" className="btn btn-secondary" onClick={onClose}>
-            Cancel
-          </button>
-        )}
-      </div>
-
-      {/* Log All Foods Option */}
-      <div className="form-group">
-        <label className="checkbox-container">
-          <input
-            type="checkbox"
-            checked={createAndLog}
-            onChange={(e) => setCreateAndLog(e.target.checked)}
-            className="checkbox-input"
-          />
-          <span className="checkbox-custom"></span>
-          <span className="checkbox-label">Log All Foods</span>
-        </label>
-      </div>
-
-      {/* Total Macro Preview */}
-      {selectedFoods.length > 0 && (
-        <div className="macro-preview card animate-scale-in" style={{ background: 'var(--accent-secondary-alpha)', marginBottom: 'var(--space-2)' }}>
-          <h3 className="text-sm font-medium mb-4" style={{ color: 'var(--accent-secondary)' }}>TOTAL MACROS</h3>
-          <div className="grid grid-cols-4 gap-4">
-            <div className="macro-item">
-              <div className="macro-label">Calories</div>
-              <div className="macro-value" style={{ color: 'var(--accent-secondary)' }}>{totalMacros.calories}</div>
-            </div>
-            <div className="macro-item">
-              <div className="macro-label macro-label-protein">Protein</div>
-              <div className="macro-value" style={{ color: 'var(--accent-secondary)' }}>{totalMacros.protein}g</div>
-            </div>
-            <div className="macro-item">
-              <div className="macro-label macro-label-carbohydrates">Carbohydrates</div>
-              <div className="macro-value" style={{ color: 'var(--accent-secondary)' }}>{totalMacros.carbs}g</div>
-            </div>
-            <div className="macro-item">
-              <div className="macro-label macro-label-fats">Fats</div>
-              <div className="macro-value" style={{ color: 'var(--accent-secondary)' }}>{totalMacros.fat}g</div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <form onSubmit={handleSubmit}>
+      <form id="meal-creator-form" onSubmit={handleSubmit}>
         {/* Layout with form groups on left and food lists on right */}
         <div className="meal-creator-layout">
           <div className="meal-creator-left">
@@ -260,7 +203,7 @@ const MealCreator = ({ onMealCreated, onClose }) => {
               <label className="form-label">Meal Name</label>
               <input
                 type="text"
-                className="form-input"
+                className="form-input form-input-large"
                 value={mealName}
                 onChange={(e) => setMealName(e.target.value)}
                 required
@@ -274,18 +217,17 @@ const MealCreator = ({ onMealCreated, onClose }) => {
               </label>
               <input
                 type="text"
-                className="form-input"
+                className="form-input form-input-large"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
             {/* Sorting Controls */}
-            <div className="form-group">
-              <div className="flex gap-4 items-center">
-                <div className="flex-1">
+            <div className="form-group sorting-controls-group">
                   <label className="form-label">Sort by</label>
+              <div className="sort-by-container">
                   <select
-                    className="form-input"
+                  className="form-input form-input-dropdown"
                     value={sortBy}
                     onChange={(e) => setSortBy(e.target.value)}
                   >
@@ -295,26 +237,21 @@ const MealCreator = ({ onMealCreated, onClose }) => {
                     <option value="carbohydrates">Carbs</option>
                     <option value="fat">Fat</option>
                   </select>
-                </div>
-                <div className="flex-1">
-                  <label className="form-label">Order</label>
                   <div className="sort-order-container">
-                    <select
-                      className="form-input"
-                      value={sortOrder}
-                      onChange={(e) => setSortOrder(e.target.value)}
-                    >
-                      <option value="desc">Descending</option>
-                      <option value="asc">Ascending</option>
-                    </select>
                     <button
                       type="button"
                       className="sort-order-btn"
                       onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-                    >
-                      {sortOrder === 'asc' ? '↑' : '↓'}
+                    title={sortOrder === 'asc' ? 'Switch to Descending' : 'Switch to Ascending'}
+                  >
+                    <svg className="icon icon-sm" viewBox="0 0 20 20" fill="currentColor">
+                      {sortOrder === 'desc' ? (
+                        <path fillRule="evenodd" d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z" clipRule="evenodd" />
+                      ) : (
+                        <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                      )}
+                    </svg>
                     </button>
-                  </div>
                 </div>
               </div>
             </div>
@@ -329,7 +266,7 @@ const MealCreator = ({ onMealCreated, onClose }) => {
                 </div>
               ) : availableFoods.length > 0 ? (
                 availableFoods.map(food => (
-                  <div key={food.food_id} className="food-item" onClick={() => addFood(food)}>
+                  <div key={food.food_id} className="food-item food-card" onClick={() => addFood(food)}>
                     <div className="food-item-content">
                       <div className="food-main-info">
                         <div className="food-name">{food.food_name}</div>
@@ -409,6 +346,12 @@ const MealCreator = ({ onMealCreated, onClose }) => {
                   <div className="food-controls">
                     <div className="servings-control">
                       <label className="servings-label">Servings</label>
+                      <div className="servings-input-with-steppers">
+                        <button 
+                          type="button" 
+                          className="stepper-btn" 
+                          onClick={() => handleStepServings(food.food_id, 'down')}
+                        >−</button>
                       <input
                         type="number"
                         value={food.servings}
@@ -417,6 +360,12 @@ const MealCreator = ({ onMealCreated, onClose }) => {
                         step="0.1"
                         min="0.1"
                       />
+                        <button 
+                          type="button" 
+                          className="stepper-btn" 
+                          onClick={() => handleStepServings(food.food_id, 'up')}
+                        >+</button>
+                      </div>
                     </div>
                     
                     <button
@@ -437,6 +386,67 @@ const MealCreator = ({ onMealCreated, onClose }) => {
         )}
 
       </form>
+
+      {/* Total Macro Preview - Moved to bottom */}
+      {selectedFoods.length > 0 && (
+        <div className="macro-preview card animate-scale-in" style={{ background: 'var(--accent-secondary-alpha)', marginTop: 'var(--space-6)' }}>
+          <h3 className="text-sm font-medium mb-4" style={{ color: 'var(--accent-secondary)' }}>TOTAL MACROS</h3>
+          <div className="grid grid-cols-4 gap-4">
+            <div className="macro-item">
+              <div className="macro-label">Calories</div>
+              <div className="macro-value" style={{ color: 'var(--accent-secondary)' }}>{totalMacros.calories}</div>
+            </div>
+            <div className="macro-item">
+              <div className="macro-label macro-label-protein">Protein</div>
+              <div className="macro-value" style={{ color: 'var(--accent-secondary)' }}>{totalMacros.protein}g</div>
+            </div>
+            <div className="macro-item">
+              <div className="macro-label macro-label-carbohydrates">Carbohydrates</div>
+              <div className="macro-value" style={{ color: 'var(--accent-secondary)' }}>{totalMacros.carbs}g</div>
+            </div>
+            <div className="macro-item">
+              <div className="macro-label macro-label-fats">Fats</div>
+              <div className="macro-value" style={{ color: 'var(--accent-secondary)' }}>{totalMacros.fat}g</div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Actions - Moved to bottom */}
+      <div className="meal-creator-actions">
+        <div className="form-group">
+          <label className="checkbox-container">
+            <input
+              type="checkbox"
+              checked={createAndLog}
+              onChange={(e) => setCreateAndLog(e.target.checked)}
+              className="checkbox-input"
+            />
+            <span className="checkbox-custom"></span>
+            <span className="checkbox-label">Log</span>
+          </label>
+        </div>
+
+        <div className="flex gap-4">
+          <button 
+            type="button"
+            className="btn btn-success" 
+            disabled={loading || selectedFoods.length === 0}
+            onClick={handleSubmit}
+          >
+            <svg className="icon icon-md" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+            </svg>
+            {loading ? 'Creating...' : 'Create Meal'}
+          </button>
+          
+          {onClose && (
+            <button type="button" className="btn btn-secondary" onClick={onClose}>
+              Cancel
+            </button>
+          )}
+        </div>
+      </div>
 
       <style jsx>{`
         .meal-creator-layout {
@@ -485,6 +495,10 @@ const MealCreator = ({ onMealCreated, onClose }) => {
           cursor: pointer;
           transition: all 0.2s var(--ease-out-cubic);
           margin-bottom: var(--space-3);
+        }
+
+        .food-card {
+          background: var(--bg-tertiary);
         }
 
         .food-item:hover {
@@ -630,6 +644,54 @@ const MealCreator = ({ onMealCreated, onClose }) => {
           color: var(--text-primary);
         }
 
+        .servings-input-with-steppers {
+          display: flex;
+          align-items: center;
+          gap: var(--space-2);
+        }
+
+        .servings-input-with-steppers .servings-input {
+          width: 80px;
+          padding: var(--space-2);
+          border: 1px solid var(--border-primary);
+          border-radius: var(--radius-sm);
+          background: var(--bg-secondary);
+          color: var(--text-primary);
+          text-align: center;
+          font-family: var(--font-primary);
+          transition: all 0.2s var(--ease-out-cubic);
+        }
+
+        .servings-input-with-steppers .stepper-btn {
+          width: 32px;
+          height: 32px;
+          padding: 0;
+          background: var(--bg-secondary);
+          border: 1px solid var(--border-primary);
+          border-radius: var(--radius-md);
+          color: var(--text-primary);
+          font-size: var(--text-lg);
+          font-weight: var(--font-weight-bold);
+          cursor: pointer;
+          transition: all 0.2s var(--ease-out-cubic);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+          opacity: 0.8;
+        }
+
+        .servings-input-with-steppers .stepper-btn:hover {
+          background: var(--accent-primary);
+          color: white;
+          border-color: var(--accent-primary);
+          opacity: 1;
+        }
+
+        .servings-input-with-steppers .stepper-btn:active {
+          transform: scale(0.95);
+        }
+
         .servings-input {
           width: 80px;
           padding: var(--space-2);
@@ -731,30 +793,81 @@ const MealCreator = ({ onMealCreated, onClose }) => {
           color: var(--text-primary);
         }
 
-        .sort-order-container {
-          position: relative;
+        .form-input-large {
+          padding: var(--space-3) var(--space-4);
+          font-size: var(--text-base);
+          width: 100%;
+        }
+
+        .sorting-controls-group {
+          width: 100%;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: var(--space-2);
+        }
+
+        .sort-by-container {
           display: flex;
           align-items: center;
+          gap: var(--space-3);
+          width: 100%;
+          max-width: 250px;
+        }
+
+        .sort-order-container {
+          display: flex;
+          gap: var(--space-1);
+          flex-shrink: 0;
         }
 
         .sort-order-btn {
-          position: absolute;
-          right: 8px;
-          width: 24px;
-          height: 24px;
-          border: none;
-          background: none;
+          width: auto;
+          min-height: 40px;
+          padding: var(--space-2) var(--space-3);
+          border: 1px solid var(--border-primary);
+          border-radius: var(--radius-md);
+          background: var(--bg-secondary);
           color: var(--text-secondary);
           cursor: pointer;
+          transition: all 0.2s var(--ease-out-cubic);
           display: flex;
           align-items: center;
           justify-content: center;
-          font-size: 14px;
-          font-weight: bold;
+          font-size: var(--text-sm);
+          box-sizing: border-box;
         }
 
         .sort-order-btn:hover {
-          color: var(--accent-primary);
+          background: var(--accent-primary);
+          color: white;
+          border-color: var(--accent-primary);
+          transform: translateY(-1px);
+        }
+
+        .form-input-dropdown {
+          padding: var(--space-2) var(--space-3);
+          font-size: var(--text-sm);
+          width: 100%;
+          box-sizing: border-box;
+          min-width: 0;
+          min-height: 40px;
+        }
+
+        .meal-creator-actions {
+          display: flex;
+          justify-content: flex-end;
+          align-items: center;
+          gap: var(--space-4);
+          margin-top: var(--space-6);
+          padding-top: var(--space-4);
+          border-top: 1px solid var(--border-primary);
+        }
+
+        .meal-creator-actions .form-group {
+          margin: 0;
+          display: flex;
+          align-items: center;
         }
       `}</style>
     </div>

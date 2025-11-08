@@ -53,7 +53,7 @@ class WaterLogSerializer(serializers.ModelSerializer):
     class Meta:
         model = WaterLog
         fields = [
-            'water_log_id', 'user', 'amount', 'unit', 'created_at'
+            'water_log_id', 'user', 'amount', 'unit', 'date_time', 'created_at'
         ]
         read_only_fields = ['water_log_id', 'user', 'created_at']
 

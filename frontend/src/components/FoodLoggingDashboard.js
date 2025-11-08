@@ -6,6 +6,7 @@ import FoodLogger from './FoodLogger';
 import FoodCreator from './FoodCreator';
 import MealCreator from './MealCreator';
 import FoodChatbot from './FoodChatbot';
+import FoodMetadataModal from './FoodMetadataModal';
 
 /**
  * FoodLoggingDashboard Component
@@ -39,7 +40,7 @@ const FoodLoggingDashboard = () => {
   const [showMealCreator, setShowMealCreator] = useState(false);
   const [showFoodChatbot, setShowFoodChatbot] = useState(false);
   const [showWaterLogger, setShowWaterLogger] = useState(false);
-  const [waterFormData, setWaterFormData] = useState({ amount: '', unit: 'oz' });
+  const [waterFormData, setWaterFormData] = useState({ amount: '', unit: 'oz', date_time: '' });
   const [submittingWater, setSubmittingWater] = useState(false);
   const [showExpandedProgress, setShowExpandedProgress] = useState(false); // Default to condensed view
   const [loading, setLoading] = useState(true);
@@ -48,6 +49,7 @@ const FoodLoggingDashboard = () => {
   // eslint-disable-next-line no-unused-vars
   const [sortOrder] = useState('descending'); // 'ascending' or 'descending'
   const [editingTime, setEditingTime] = useState(null);
+  const [metadataModalLog, setMetadataModalLog] = useState(null);
 
   const loadUserGoals = useCallback(async () => {
     try {
@@ -221,8 +223,15 @@ const FoodLoggingDashboard = () => {
         unit: waterFormData.unit
       };
       
+      // Add date_time if provided
+      if (waterFormData.date_time) {
+        // Convert datetime-local format to ISO string
+        const dateTime = new Date(waterFormData.date_time);
+        logData.date_time = dateTime.toISOString();
+      }
+      
       await api.createWaterLog(logData);
-      setWaterFormData({ amount: '', unit: 'oz' });
+      setWaterFormData({ amount: '', unit: 'oz', date_time: '' });
       setShowWaterLogger(false);
     } catch (error) {
       console.error('Error saving water log:', error);
@@ -244,10 +253,14 @@ const FoodLoggingDashboard = () => {
 
   const updateFoodLogTime = async (logId, newTime) => {
     try {
-      // Parse the new time and create a new datetime
+      // Parse the new time and create a new datetime in UTC
       const [hours, minutes] = newTime.split(':');
-      const logDate = new Date(selectedDate);
-      logDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+      
+      // Parse the selected date
+      const [year, month, day] = selectedDate.split('-').map(Number);
+      
+      // Create new date with UTC time to avoid timezone issues
+      const logDate = new Date(Date.UTC(year, month - 1, day, parseInt(hours), parseInt(minutes), 0, 0));
       
       // Update the food log with new time
       await api.updateFoodLog(logId, {
@@ -451,21 +464,27 @@ const FoodLoggingDashboard = () => {
               <button
                 className="btn-primary-header"
                 onClick={() => setShowFoodChatbot(true)}
-                title="AI Logger"
+                title="Voice Logger"
               >
                 <svg className="icon icon-lg" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clipRule="evenodd" />
+                  <path fillRule="evenodd" d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8a1 1 0 10-2 0A5 5 0 015 8a1 1 0 00-2 0 7.001 7.001 0 006 6.93V17H6a1 1 0 100 2h8a1 1 0 100-2h-3v-2.07z" clipRule="evenodd" />
                 </svg>
-                <span>AI Logger</span>
+                <span>Voice Logger</span>
               </button>
 
               <button
                 className="btn-primary-header"
-                onClick={() => setShowWaterLogger(true)}
+                onClick={() => {
+                  // Initialize date_time with current date/time
+                  const now = new Date();
+                  const localDateTime = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+                  setWaterFormData({ amount: '', unit: 'oz', date_time: localDateTime });
+                  setShowWaterLogger(true);
+                }}
                 title="Log Water"
               >
                 <BeakerIcon className="icon icon-lg" style={{ width: '20px', height: '20px' }} />
-                <span>Water</span>
+                <span>Log Water</span>
               </button>
             </div>
           </div>
@@ -479,7 +498,15 @@ const FoodLoggingDashboard = () => {
             {/* Left Column - Progress & Food List */}
             <div className="dashboard-left">
               {/* Goal Progress */}
-              <div className="goal-progress-section card">
+              <div 
+                className="goal-progress-section card"
+                onClick={(e) => {
+                  if (!showExpandedProgress && !e.target.closest('button')) {
+                    setShowExpandedProgress(true);
+                  }
+                }}
+                style={{ cursor: showExpandedProgress ? 'default' : 'pointer' }}
+              >
                 {showExpandedProgress ? (
                   <ExpandedProgressView
                     goals={goals}
@@ -487,20 +514,10 @@ const FoodLoggingDashboard = () => {
                     onClose={() => setShowExpandedProgress(false)}
                   />
                 ) : (
-                  <>
-                    <ProgressGrid
-                      goals={goals}
-                      consumed={consumed}
-                    />
-                    <div className="view-all-button">
-                      <button 
-                        className="btn-primary"
-                        onClick={() => setShowExpandedProgress(true)}
-                      >
-                        View All
-                      </button>
-                    </div>
-                  </>
+                  <ProgressGrid
+                    goals={goals}
+                    consumed={consumed}
+                  />
                 )}
               </div>
 
@@ -523,12 +540,12 @@ const FoodLoggingDashboard = () => {
                       {(() => {
                         const sortedLogs = getSortedFoodLogs();
                         return sortedLogs.map((log, index) => {
-                          const time = formatTime(log.date_time);
-                          const separator = getTimeSeparator(time);
-                          const prevLog = index > 0 ? sortedLogs[index - 1] : null;
-                          const prevTime = prevLog ? formatTime(prevLog.date_time) : '';
-                          const prevSeparator = getTimeSeparator(prevTime);
-                          const showSeparator = separator && separator !== prevSeparator;
+                        const time = formatTime(log.date_time);
+                        const separator = getTimeSeparator(time);
+                        const prevLog = index > 0 ? sortedLogs[index - 1] : null;
+                        const prevTime = prevLog ? formatTime(prevLog.date_time) : '';
+                        const prevSeparator = getTimeSeparator(prevTime);
+                        const showSeparator = separator && separator !== prevSeparator;
 
                         return (
                           <React.Fragment key={log.macro_log_id}>
@@ -588,27 +605,36 @@ const FoodLoggingDashboard = () => {
                               </div>
                               <div className="food-macros">
                                 <div className="macro-item">
+                                  <span className="macro-label">CAL:</span>
                                   <span className="macro-value">{Math.round(log.consumed_macros?.calories || 0)}</span>
-                                  <span className="macro-label">CAL</span>
                                 </div>
                                 <div className="macro-item">
+                                  <span className="macro-label">PRO:</span>
                                   <span className="macro-value">{Math.round(log.consumed_macros?.protein || 0)}</span>
-                                  <span className="macro-label">PRO</span>
                                 </div>
                                 <div className="macro-item">
+                                  <span className="macro-label">CAR:</span>
                                   <span className="macro-value">{Math.round(log.consumed_macros?.carbohydrates || 0)}</span>
-                                  <span className="macro-label">CAR</span>
                                 </div>
                                 <div className="macro-item">
+                                  <span className="macro-label">FAT:</span>
                                   <span className="macro-value">{Math.round(log.consumed_macros?.fat || 0)}</span>
-                                  <span className="macro-label">FAT</span>
                                 </div>
                                 <div className="macro-item">
+                                  <span className="macro-label">SER:</span>
                                   <span className="macro-value">{log.servings}</span>
-                                  <span className="macro-label">SER</span>
                                 </div>
                               </div>
                               <div className="food-actions">
+                                <button
+                                  className="btn-icon-info"
+                                  onClick={() => setMetadataModalLog(log.food_details ? log : null)}
+                                  title="View metadata"
+                                >
+                                  <svg className="icon icon-sm" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                                  </svg>
+                                </button>
                                 <button
                                   className="btn-icon-delete"
                                   onClick={() => deleteFoodLog(log.macro_log_id)}
@@ -646,28 +672,29 @@ const FoodLoggingDashboard = () => {
         {isMobile && (
           <div className="dashboard-layout-mobile">
             {/* Goal Progress */}
-            <div className="goal-progress-section card">
+            <div 
+              className="goal-progress-section card"
+              onClick={(e) => {
+                if (!showExpandedProgress && !e.target.closest('button')) {
+                  setShowExpandedProgress(true);
+                }
+              }}
+              style={{ cursor: showExpandedProgress ? 'default' : 'pointer' }}
+            >
               {showExpandedProgress ? (
                 <ExpandedProgressView
                   goals={goals}
                   consumed={consumed}
-                  onClose={() => setShowExpandedProgress(false)}
+                  onClose={(e) => {
+                    if (e) e.stopPropagation();
+                    setShowExpandedProgress(false);
+                  }}
                 />
               ) : (
-                <>
-                  <ProgressGrid
-                    goals={goals}
-                    consumed={consumed}
-                  />
-                  <div className="view-all-button">
-                    <button 
-                      className="btn-primary"
-                      onClick={() => setShowExpandedProgress(true)}
-                    >
-                      View All
-                    </button>
-                  </div>
-                </>
+                <ProgressGrid
+                  goals={goals}
+                  consumed={consumed}
+                />
               )}
             </div>
 
@@ -711,7 +738,13 @@ const FoodLoggingDashboard = () => {
 
               <button
                 className="btn-icon-mobile"
-                onClick={() => setShowWaterLogger(true)}
+                onClick={() => {
+                  // Initialize date_time with current date/time
+                  const now = new Date();
+                  const localDateTime = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+                  setWaterFormData({ amount: '', unit: 'oz', date_time: localDateTime });
+                  setShowWaterLogger(true);
+                }}
                 title="Log Water"
               >
                 <BeakerIcon style={{ width: '24px', height: '24px' }} />
@@ -737,12 +770,12 @@ const FoodLoggingDashboard = () => {
                     {(() => {
                       const sortedLogs = getSortedFoodLogs();
                       return sortedLogs.map((log, index) => {
-                        const time = formatTime(log.date_time);
-                        const separator = getTimeSeparator(time);
+                      const time = formatTime(log.date_time);
+                      const separator = getTimeSeparator(time);
                         const prevLog = index > 0 ? sortedLogs[index - 1] : null;
-                        const prevTime = prevLog ? formatTime(prevLog.date_time) : '';
-                        const prevSeparator = getTimeSeparator(prevTime);
-                        const showSeparator = separator && separator !== prevSeparator;
+                      const prevTime = prevLog ? formatTime(prevLog.date_time) : '';
+                      const prevSeparator = getTimeSeparator(prevTime);
+                      const showSeparator = separator && separator !== prevSeparator;
 
                       return (
                         <React.Fragment key={log.macro_log_id}>
@@ -802,25 +835,36 @@ const FoodLoggingDashboard = () => {
                             </div>
                             <div className="food-macros">
                               <div className="macro-item">
+                                <span className="macro-label">CAL:</span>
                                 <span className="macro-value">{Math.round(log.consumed_macros?.calories || 0)}</span>
-                                <span className="macro-label">CAL</span>
                               </div>
                               <div className="macro-item">
+                                <span className="macro-label">PRO:</span>
                                 <span className="macro-value">{Math.round(log.consumed_macros?.protein || 0)}</span>
-                                <span className="macro-label">PRO</span>
                               </div>
                               <div className="macro-item">
+                                <span className="macro-label">CAR:</span>
                                 <span className="macro-value">{Math.round(log.consumed_macros?.carbohydrates || 0)}</span>
-                                <span className="macro-label">CAR</span>
                               </div>
                               <div className="macro-item">
+                                <span className="macro-label">FAT:</span>
                                 <span className="macro-value">{Math.round(log.consumed_macros?.fat || 0)}</span>
-                                <span className="macro-label">FAT</span>
                               </div>
                               <div className="macro-item">
+                                <span className="macro-label">SER:</span>
                                 <span className="macro-value">{log.servings}</span>
-                                <span className="macro-label">SER</span>
                               </div>
+                            </div>
+                            <div className="food-actions">
+                              <button
+                                className="btn-icon-info"
+                                onClick={() => setMetadataModalLog(log.food_details ? log : null)}
+                                title="View metadata"
+                              >
+                                <svg className="icon icon-sm" viewBox="0 0 20 20" fill="currentColor">
+                                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                                </svg>
+                              </button>
                             </div>
                           </div>
                         </React.Fragment>
@@ -852,7 +896,7 @@ const FoodLoggingDashboard = () => {
 
           {showFoodCreator && (
             <div className="modal-backdrop" onClick={() => setShowFoodCreator(false)}>
-              <div className="modal" onClick={(e) => e.stopPropagation()}>
+              <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '800px' }}>
                 <FoodCreator
                   onFoodCreated={handleFoodCreated}
                   onClose={() => setShowFoodCreator(false)}
@@ -892,10 +936,9 @@ const FoodLoggingDashboard = () => {
                       Log Water
                     </h2>
                     <button
+                      className="btn-close"
                       onClick={() => setShowWaterLogger(false)}
-                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', padding: 'var(--space-2)', borderRadius: 'var(--radius-md)', transition: 'background 0.2s ease' }}
-                      onMouseEnter={(e) => e.target.style.background = 'var(--bg-hover)'}
-                      onMouseLeave={(e) => e.target.style.background = 'none'}
+                      aria-label="Close"
                     >
                       <XMarkIcon style={{ width: '24px', height: '24px' }} />
                     </button>
@@ -933,7 +976,7 @@ const FoodLoggingDashboard = () => {
                       />
                     </div>
                     
-                    <div style={{ marginBottom: 'var(--space-6)', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+                    <div style={{ marginBottom: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
                       <label style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--font-weight-medium)', color: 'var(--text-primary)', fontFamily: 'var(--font-primary)' }}>
                         Unit
                       </label>
@@ -955,6 +998,40 @@ const FoodLoggingDashboard = () => {
                         <option value="oz">oz</option>
                         <option value="ml">ml</option>
                       </select>
+                    </div>
+                    
+                    <div style={{ marginBottom: 'var(--space-6)', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+                      <label style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--font-weight-medium)', color: 'var(--text-primary)', fontFamily: 'var(--font-primary)' }}>
+                        Date & Time
+                      </label>
+                      <input
+                        type="datetime-local"
+                        name="date_time"
+                        value={waterFormData.date_time}
+                        onChange={handleWaterInputChange}
+                        style={{
+                          width: '100%',
+                          padding: 'var(--space-3) var(--space-4)',
+                          fontSize: 'var(--text-base)',
+                          fontFamily: 'var(--font-primary)',
+                          color: 'var(--text-primary)',
+                          background: 'var(--bg-tertiary)',
+                          border: '1px solid var(--border-primary)',
+                          borderRadius: 'var(--radius-md)',
+                          transition: 'all 0.2s ease'
+                        }}
+                        onFocus={(e) => {
+                          e.target.style.outline = 'none';
+                          e.target.style.borderColor = 'var(--accent-primary)';
+                          e.target.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
+                          e.target.style.background = 'var(--bg-primary)';
+                        }}
+                        onBlur={(e) => {
+                          e.target.style.borderColor = 'var(--border-primary)';
+                          e.target.style.boxShadow = 'none';
+                          e.target.style.background = 'var(--bg-tertiary)';
+                        }}
+                      />
                     </div>
 
                     <div style={{ display: 'flex', gap: 'var(--space-3)', justifyContent: 'flex-end' }}>
@@ -1024,7 +1101,7 @@ const FoodLoggingDashboard = () => {
         <>
           {showFoodCreator && (
             <div className="modal-backdrop" onClick={() => setShowFoodCreator(false)}>
-              <div className="modal" onClick={(e) => e.stopPropagation()}>
+              <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '800px' }}>
                 <FoodCreator
                   onFoodCreated={handleFoodCreated}
                   onClose={() => setShowFoodCreator(false)}
@@ -1064,10 +1141,9 @@ const FoodLoggingDashboard = () => {
                       Log Water
                     </h2>
                     <button
+                      className="btn-close"
                       onClick={() => setShowWaterLogger(false)}
-                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', padding: 'var(--space-2)', borderRadius: 'var(--radius-md)', transition: 'background 0.2s ease' }}
-                      onMouseEnter={(e) => e.target.style.background = 'var(--bg-hover)'}
-                      onMouseLeave={(e) => e.target.style.background = 'none'}
+                      aria-label="Close"
                     >
                       <XMarkIcon style={{ width: '24px', height: '24px' }} />
                     </button>
@@ -1105,7 +1181,7 @@ const FoodLoggingDashboard = () => {
                       />
                     </div>
                     
-                    <div style={{ marginBottom: 'var(--space-6)', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+                    <div style={{ marginBottom: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
                       <label style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--font-weight-medium)', color: 'var(--text-primary)', fontFamily: 'var(--font-primary)' }}>
                         Unit
                       </label>
@@ -1127,6 +1203,40 @@ const FoodLoggingDashboard = () => {
                         <option value="oz">oz</option>
                         <option value="ml">ml</option>
                       </select>
+                    </div>
+                    
+                    <div style={{ marginBottom: 'var(--space-6)', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+                      <label style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--font-weight-medium)', color: 'var(--text-primary)', fontFamily: 'var(--font-primary)' }}>
+                        Date & Time
+                      </label>
+                      <input
+                        type="datetime-local"
+                        name="date_time"
+                        value={waterFormData.date_time}
+                        onChange={handleWaterInputChange}
+                        style={{
+                          width: '100%',
+                          padding: 'var(--space-3) var(--space-4)',
+                          fontSize: 'var(--text-base)',
+                          fontFamily: 'var(--font-primary)',
+                          color: 'var(--text-primary)',
+                          background: 'var(--bg-tertiary)',
+                          border: '1px solid var(--border-primary)',
+                          borderRadius: 'var(--radius-md)',
+                          transition: 'all 0.2s ease'
+                        }}
+                        onFocus={(e) => {
+                          e.target.style.outline = 'none';
+                          e.target.style.borderColor = 'var(--accent-primary)';
+                          e.target.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
+                          e.target.style.background = 'var(--bg-primary)';
+                        }}
+                        onBlur={(e) => {
+                          e.target.style.borderColor = 'var(--border-primary)';
+                          e.target.style.boxShadow = 'none';
+                          e.target.style.background = 'var(--bg-tertiary)';
+                        }}
+                      />
                     </div>
 
                     <div style={{ display: 'flex', gap: 'var(--space-3)', justifyContent: 'flex-end' }}>
@@ -1189,6 +1299,14 @@ const FoodLoggingDashboard = () => {
             </div>
           )}
         </>
+      )}
+
+      {/* Metadata Modal for Food Log Items */}
+      {metadataModalLog && (
+        <FoodMetadataModal 
+          food={metadataModalLog}
+          onClose={() => setMetadataModalLog(null)}
+        />
       )}
 
       <style>{`
@@ -1281,9 +1399,9 @@ const FoodLoggingDashboard = () => {
 
         .btn-primary-header {
           padding: var(--space-3) var(--space-6);
-          border: 1px solid #2C4A73;
+          border: 1px solid var(--accent-primary);
           border-radius: var(--radius-md);
-          background: #2C4A73;
+          background: var(--accent-primary);
           color: white;
           cursor: pointer;
           transition: all 0.2s var(--ease-out-cubic);
@@ -1300,10 +1418,16 @@ const FoodLoggingDashboard = () => {
         }
 
         .btn-primary-header:hover {
-          background: #1A3A5A;
-          border-color: #1A3A5A;
+          background: var(--accent-primary);
+          border-color: var(--accent-primary);
+          filter: brightness(1.15);
           transform: translateY(-1px);
           box-shadow: var(--shadow-md);
+        }
+
+        .btn-primary-header:focus {
+          outline: 2px solid var(--accent-primary);
+          outline-offset: 2px;
         }
 
         .controls-section {
@@ -1653,10 +1777,10 @@ const FoodLoggingDashboard = () => {
           width: 60px;
           height: 60px;
           padding: 0;
-          border: 1px solid var(--border-primary);
+          border: 2px solid var(--border-primary);
           border-radius: var(--radius-lg);
           background: var(--bg-tertiary);
-          color: var(--text-secondary);
+          color: var(--text-primary);
           cursor: pointer;
           transition: all 0.2s var(--ease-out-cubic);
           display: flex;
@@ -1666,49 +1790,27 @@ const FoodLoggingDashboard = () => {
         }
 
         .btn-icon-mobile:hover {
-          background: var(--bg-secondary);
-          color: var(--text-primary);
+          background: var(--accent-primary);
+          color: white;
           border-color: var(--accent-primary);
           transform: translateY(-2px);
-        }
-
-        /* View All Button */
-        .view-all-button {
-          display: flex;
-          justify-content: flex-end;
-          margin-top: var(--space-4);
-          padding-top: var(--space-4);
-          border-top: 1px solid var(--border-primary);
-        }
-
-        .view-all-button .btn-primary {
-          background: var(--accent-primary);
-          border: 1px solid var(--accent-primary);
-          color: white;
-          font-size: var(--text-xs);
-          font-weight: var(--font-weight-medium);
-          cursor: pointer;
-          padding: var(--space-1) var(--space-3);
-          border-radius: var(--radius-md);
-          transition: all 0.2s var(--ease-out-cubic);
-          box-shadow: var(--shadow-sm);
-          font-family: var(--font-primary);
-          min-height: 32px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-
-        .view-all-button .btn-primary:hover {
-          background: var(--accent-primary-dark);
-          border-color: var(--accent-primary-dark);
-          transform: translateY(-1px);
           box-shadow: var(--shadow-md);
         }
 
+        .btn-icon-mobile:focus {
+          outline: 2px solid var(--accent-primary);
+          outline-offset: 2px;
+        }
+
+
         /* Goal Progress */
         .goal-progress-section {
-          background: var(--bg-secondary);
+          background: transparent;
+        }
+
+        .goal-progress-section.card {
+          border: none;
+          box-shadow: none;
         }
 
         .progress-summary {
@@ -1718,18 +1820,33 @@ const FoodLoggingDashboard = () => {
         }
 
         .progress-summary:hover {
-          background: var(--bg-tertiary);
+          background: transparent;
         }
 
         /* Food Log */
         .food-log-section {
-          background: var(--bg-secondary);
+          background: transparent;
           padding: var(--space-2);
+        }
+
+        .food-log-section.card {
+          border: none;
+          box-shadow: none;
+        }
+
+        /* Separator line between progress and food log */
+        .goal-progress-section + .food-log-section,
+        .goal-progress-section ~ .food-log-section {
+          border-top: 1px solid var(--border-primary);
+          padding-top: var(--space-4);
+          margin-top: var(--space-4);
         }
 
         .food-log-list {
           max-height: 500px;
           overflow-y: auto;
+          overflow-x: visible;
+          position: relative;
         }
 
         .empty-state {
@@ -1766,11 +1883,13 @@ const FoodLoggingDashboard = () => {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          padding: var(--space-2);
+          padding: var(--space-2) var(--space-3);
           background: var(--bg-tertiary);
           border-radius: var(--radius-md);
-          margin-bottom: 8px;
+          margin-bottom: 6px;
           transition: all 0.2s var(--ease-out-cubic);
+          min-height: 50px;
+          gap: var(--space-3);
         }
 
         .food-log-item:hover {
@@ -1826,21 +1945,21 @@ const FoodLoggingDashboard = () => {
           flex-wrap: wrap;
           flex: 1;
           padding: 0;
-          margin: 0;
+          margin: 0 auto;
         }
 
         .macro-item {
           display: flex;
-          flex-direction: column;
+          flex-direction: row;
           align-items: center;
           gap: var(--space-1);
-          text-align: center;
+          text-align: left;
         }
 
         .macro-value {
           font-weight: var(--font-weight-bold);
           color: var(--text-primary);
-          font-size: var(--text-base);
+          font-size: var(--text-sm);
         }
 
         .macro-label {
@@ -1854,13 +1973,36 @@ const FoodLoggingDashboard = () => {
         .food-actions {
           display: flex;
           align-items: center;
+          justify-content: center;
           gap: var(--space-2);
-          margin-left: var(--space-4);
+          flex-shrink: 0;
+        }
+
+        .btn-icon-info {
+          width: 32px;
+          height: 32px;
+          padding: 0;
+          border: 1px solid var(--accent-primary);
+          border-radius: var(--radius-sm);
+          background: var(--bg-secondary);
+          color: var(--accent-primary);
+          cursor: pointer;
+          transition: all 0.2s var(--ease-out-cubic);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .btn-icon-info:hover {
+          background: var(--accent-primary);
+          color: white;
+          border-color: var(--accent-primary);
+          transform: translateY(-1px);
         }
 
         .btn-icon-delete {
-          width: 36px;
-          height: 36px;
+          width: 32px;
+          height: 32px;
           padding: 0;
           border: 1px solid var(--accent-danger);
           border-radius: var(--radius-sm);
@@ -1878,6 +2020,41 @@ const FoodLoggingDashboard = () => {
           color: white;
           border-color: #dc2626;
           transform: translateY(-1px);
+        }
+
+        .food-metadata-expanded {
+          margin-top: var(--space-3);
+          padding: var(--space-3);
+          background: var(--bg-secondary);
+          border-radius: var(--radius-md);
+          border: 1px solid var(--border-primary);
+          width: 100%;
+        }
+
+        .metadata-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+          gap: var(--space-2);
+        }
+
+        .metadata-item {
+          display: flex;
+          flex-direction: row;
+          gap: var(--space-2);
+          align-items: center;
+        }
+
+        .metadata-label {
+          font-size: var(--text-xs);
+          color: var(--text-tertiary);
+          font-weight: var(--font-weight-medium);
+          text-transform: capitalize;
+        }
+
+        .metadata-value {
+          font-size: var(--text-xs);
+          color: var(--text-primary);
+          font-weight: var(--font-weight-medium);
         }
 
         .food-servings {

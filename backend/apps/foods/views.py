@@ -12,8 +12,10 @@ from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from django.db.models import Q
-from datetime import datetime, timedelta
+from django.db.models import Q, Count
+from django.db.models.functions import TruncDate, ExtractHour
+from django.utils import timezone
+from datetime import timedelta
 from .models import Food, Meal, MealFood
 from apps.logging.models import FoodLog
 from .serializers import (
@@ -45,9 +47,13 @@ def food_list_create(request):
         min_protein = request.GET.get('min_protein')
         max_protein = request.GET.get('max_protein')
         
-        # Base queryset: all public foods (foods don't have user_id, they're shared)
-        # In future, if user-specific foods needed, add user foreign key to Food model
-        queryset = Food.objects.filter(make_public=True)
+        # Base queryset: public foods + foods the user has logged
+        # Get foods user has logged
+        user_logged_food_ids = FoodLog.objects.filter(user=request.user).values_list('food_id', flat=True).distinct()
+        # Combine with public foods
+        queryset = Food.objects.filter(
+            Q(make_public=True) | Q(food_id__in=user_logged_food_ids)
+        )
         
         # Apply search
         if search:
@@ -122,11 +128,12 @@ def food_detail(request, food_id):
     try:
         food = Food.objects.get(food_id=food_id)
         
-        # Check access: public foods only for now
+        # Check access: public foods or foods the user has logged
         # Note: Foods don't have user_id field - they're shared database
-        if not food.make_public:
+        user_has_logged = FoodLog.objects.filter(user=request.user, food_id=food_id).exists()
+        if not food.make_public and not user_has_logged:
             return Response({
-                'error': {'message': 'Access denied - food is not public'}
+                'error': {'message': 'Access denied - food is not public and you have not logged this food'}
             }, status=status.HTTP_403_FORBIDDEN)
         
     except Food.DoesNotExist:
@@ -163,6 +170,127 @@ def food_detail(request, food_id):
         return Response({
             'data': {'message': 'Food deleted successfully'}
         })
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def food_analytics(request, food_id):
+    """
+    GET: Get analytics data for a specific food
+    Returns:
+    - Stats: times_logged, time_since_last_logged, last_updated, is_public
+    - Frequency data: count of logs per day for the selected time range
+    - Time of day data: count of logs per hour (0-23)
+    """
+    try:
+        food = Food.objects.get(food_id=food_id)
+    except Food.DoesNotExist:
+        return Response({
+            'error': {'message': 'Food not found'}
+        }, status=status.HTTP_404_NOT_FOUND)
+    
+    # Get time range parameter
+    time_range = request.GET.get('time_range', '1week')
+    
+    # Calculate date range based on time_range
+    now = timezone.now()
+    if time_range == '1week':
+        start_date = now - timedelta(days=7)
+    elif time_range == '1month':
+        start_date = now - timedelta(days=30)
+    elif time_range == '6months':
+        start_date = now - timedelta(days=180)
+    elif time_range == '1year':
+        start_date = now - timedelta(days=365)
+    else:
+        start_date = now - timedelta(days=7)  # Default to 1 week
+    
+    # Get all food logs for this food for this user
+    food_logs = FoodLog.objects.filter(
+        user=request.user,
+        food_id=food_id
+    )
+    
+    # Calculate stats
+    times_logged = food_logs.count()
+    
+    # Get last logged date
+    last_log = food_logs.order_by('-date_time').first()
+    if last_log:
+        time_since_last = timezone.now() - last_log.date_time
+        if time_since_last.days > 0:
+            time_since_last_logged = f"{time_since_last.days} days ago"
+        elif time_since_last.seconds > 3600:
+            time_since_last_logged = f"{time_since_last.seconds // 3600} hours ago"
+        else:
+            time_since_last_logged = f"{time_since_last.seconds // 60} minutes ago"
+        last_logged_date = last_log.date_time.isoformat()
+    else:
+        time_since_last_logged = "Never"
+        last_logged_date = None
+    
+    # Get frequency data (logs per day)
+    frequency_logs = food_logs.filter(date_time__gte=start_date)
+    frequency_data = frequency_logs.annotate(
+        date=TruncDate('date_time')
+    ).values('date').annotate(
+        count=Count('macro_log_id')
+    ).order_by('date')
+    
+    frequency_list = []
+    # Fill in missing dates with 0
+    current_date = start_date.date()
+    end_date = now.date()
+    date_index = 0
+    
+    while current_date <= end_date:
+        if date_index < len(frequency_data) and frequency_data[date_index]['date'] == current_date:
+            frequency_list.append({
+                'date': current_date.isoformat(),
+                'count': frequency_data[date_index]['count']
+            })
+            date_index += 1
+        else:
+            frequency_list.append({
+                'date': current_date.isoformat(),
+                'count': 0
+            })
+        current_date += timedelta(days=1)
+    
+    # Get time of day data (logs per hour, 0-23)
+    time_of_day_data = food_logs.annotate(
+        hour=ExtractHour('date_time')
+    ).values('hour').annotate(
+        count=Count('macro_log_id')
+    ).order_by('hour')
+    
+    time_of_day_list = []
+    for hour_data in time_of_day_data:
+        time_of_day_list.append({
+            'hour': hour_data['hour'],
+            'count': hour_data['count']
+        })
+    
+    # Fill in missing hours with 0
+    for hour in range(24):
+        if not any(d['hour'] == hour for d in time_of_day_list):
+            time_of_day_list.append({'hour': hour, 'count': 0})
+    
+    time_of_day_list.sort(key=lambda x: x['hour'])
+    
+    return Response({
+        'data': {
+            'stats': {
+                'times_logged': times_logged,
+                'time_since_last_logged': time_since_last_logged,
+                'last_logged_date': last_logged_date,
+                'last_updated': food.updated_at.isoformat() if hasattr(food, 'updated_at') and food.updated_at else None,
+                'is_public': food.make_public
+            },
+            'frequencyData': frequency_list,
+            'timeOfDayData': time_of_day_list
+        }
+    })
 
 
 @api_view(['GET', 'POST'])
@@ -259,7 +387,7 @@ def food_log_list_create(request):
         
         # Default filter: recent logs
         if not start_date and not end_date:
-            recent_cutoff = datetime.now() - timedelta(days=int(recent_days))
+            recent_cutoff = timezone.now() - timedelta(days=int(recent_days))
             queryset = queryset.filter(date_time__gte=recent_cutoff)
         
         # Order by most recent first
@@ -303,10 +431,10 @@ def food_log_list_create(request):
         }, status=status.HTTP_400_BAD_REQUEST)
 
 
-@api_view(['DELETE'])
+@api_view(['PUT', 'PATCH', 'DELETE'])
 @permission_classes([IsAuthenticated])
-def food_log_delete(request, log_id):
-    """Delete food log entry (owner only)"""
+def food_log_update_delete(request, log_id):
+    """Update or delete food log entry (owner only)"""
     try:
         log = FoodLog.objects.get(macro_log_id=log_id, user=request.user)
     except FoodLog.DoesNotExist:
@@ -314,10 +442,24 @@ def food_log_delete(request, log_id):
             'error': {'message': 'Food log not found'}
         }, status=status.HTTP_404_NOT_FOUND)
     
-    log.delete()
-    return Response({
-        'data': {'message': 'Food log deleted successfully'}
-    })
+    if request.method == 'PUT' or request.method == 'PATCH':
+        serializer = FoodLogSerializer(log, data=request.data, partial=(request.method == 'PATCH'))
+        
+        if serializer.is_valid():
+            serializer.save()
+            return Response({
+                'data': serializer.data
+            })
+        
+        return Response({
+            'error': serializer.errors
+        }, status=status.HTTP_400_BAD_REQUEST)
+    
+    elif request.method == 'DELETE':
+        log.delete()
+        return Response({
+            'data': {'message': 'Food log deleted successfully'}
+        })
 
 
 @api_view(['GET'])
@@ -325,30 +467,50 @@ def food_log_delete(request, log_id):
 def recently_logged_foods(request):
     """Get list of recently logged foods for quick logging"""
     days = int(request.GET.get('days', 30))
-    cutoff_date = datetime.now() - timedelta(days=days)
+    cutoff_date = timezone.now() - timedelta(days=days)
     
-    # Get unique foods from recent logs
+    # Get unique foods from recent logs with count
     recent_logs = FoodLog.objects.filter(
         user=request.user,
         date_time__gte=cutoff_date
     ).select_related('food').order_by('-date_time')
     
-    # Get unique foods (most recent first)
-    seen_foods = set()
-    unique_foods = []
+    # Get unique foods (most recent first) with log count
+    seen_foods = {}
     
     for log in recent_logs:
         if log.food_id not in seen_foods:
-            seen_foods.add(log.food_id)
-            unique_foods.append(log.food)
+            seen_foods[log.food_id] = {
+                'food': log.food,
+                'log_count': 1,
+                'last_logged': log.date_time
+            }
+        else:
+            seen_foods[log.food_id]['log_count'] += 1
+    
+    # Sort by most recent first and add log_count to food object
+    unique_foods = []
+    for log in recent_logs:
+        if log.food_id in seen_foods and seen_foods[log.food_id]['food'] not in unique_foods:
+            food = seen_foods[log.food_id]['food']
+            # Add log_count as a temporary attribute for serialization
+            food.log_count = seen_foods[log.food_id]['log_count']
+            food.frequency = seen_foods[log.food_id]['log_count']  # Alias for compatibility
+            unique_foods.append(food)
             
             if len(unique_foods) >= 20:  # Limit to 20 most recent
                 break
     
     serializer = FoodSerializer(unique_foods, many=True)
     
+    # Add log_count to serialized data
+    serialized_data = serializer.data
+    for i, food_data in enumerate(serialized_data):
+        food_data['log_count'] = seen_foods[unique_foods[i].food_id]['log_count']
+        food_data['frequency'] = seen_foods[unique_foods[i].food_id]['log_count']
+    
     return Response({
         'data': {
-            'foods': serializer.data
+            'foods': serialized_data
         }
     })

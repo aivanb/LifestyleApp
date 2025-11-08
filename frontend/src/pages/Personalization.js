@@ -54,8 +54,16 @@ const Personalization = () => {
         }
       }
     } catch (err) {
-      setError('Failed to load personalization data');
+      const errorMessage = err.response?.data?.error?.message || 
+                          err.message || 
+                          'Failed to load personalization data';
+      setError(errorMessage);
       console.error('Personalization load error:', err);
+      
+      // Log detailed error in development
+      if (process.env.NODE_ENV === 'development' && err.response?.data?.error?.details) {
+        console.error('Error details:', err.response.data.error.details);
+      }
     } finally {
       setLoading(false);
     }
@@ -304,7 +312,7 @@ const Personalization = () => {
         {renderActiveTab()}
       </div>
 
-      <style jsx>{`
+      <style>{`
         .personalization-page {
           max-width: 1200px;
           margin: 0 auto;

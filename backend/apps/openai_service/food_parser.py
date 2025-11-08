@@ -133,13 +133,14 @@ Return ONLY the JSON object, nothing else.
         self.user = user
         self.openai_service = OpenAIService()
     
-    def parse_food_input(self, input_text: str, create_meal: bool = False) -> Dict[str, Any]:
+    def parse_food_input(self, input_text: str, create_meal: bool = False, preview_only: bool = False) -> Dict[str, Any]:
         """
         Parse food input and process all foods.
         
         Args:
             input_text: Natural language food description
             create_meal: If True, create a meal from all parsed foods
+            preview_only: If True, only parse and return preview without logging
             
         Returns:
             Dict with parsed foods, created logs, and any errors
@@ -181,10 +182,28 @@ Return ONLY the JSON object, nothing else.
                     serializable_processed['food'] = {
                         'food_id': food.food_id,
                         'food_name': food.food_name,
+                        'serving_size': float(food.serving_size),
+                        'unit': food.unit,
                         'calories': float(food.calories),
                         'protein': float(food.protein),
                         'fat': float(food.fat),
-                        'carbohydrates': float(food.carbohydrates)
+                        'carbohydrates': float(food.carbohydrates),
+                        'fiber': float(food.fiber),
+                        'sodium': float(food.sodium),
+                        'sugar': float(food.sugar),
+                        'saturated_fat': float(food.saturated_fat),
+                        'trans_fat': float(food.trans_fat),
+                        'calcium': float(food.calcium),
+                        'iron': float(food.iron),
+                        'magnesium': float(food.magnesium),
+                        'cholesterol': float(food.cholesterol),
+                        'vitamin_a': float(food.vitamin_a),
+                        'vitamin_c': float(food.vitamin_c),
+                        'vitamin_d': float(food.vitamin_d),
+                        'caffeine': float(food.caffeine),
+                        'food_group': food.food_group,
+                        'brand': food.brand or '',
+                        'cost': float(food.cost) if food.cost else None
                     }
                 
                 # Add meal info if available
@@ -200,28 +219,29 @@ Return ONLY the JSON object, nothing else.
                 if processed.get('error'):
                     result['errors'].append(processed['error'])
             
-            # Step 3: Create food logs
-            for processed in processed_foods:
-                if processed.get('food_object'):
-                    log = self._create_food_log(
-                        food=processed['food_object'],
-                        servings=processed.get('servings', Decimal('1')),
-                        metadata=processed.get('metadata', {})
-                    )
-                    result['logs_created'].append({
-                        'log_id': log.macro_log_id,
-                        'food_name': processed['food_object'].food_name,
-                        'servings': float(processed.get('servings', 1))
-                    })
-            
-            # Step 4: Optionally create meal
-            if create_meal and processed_foods:
-                meal = self._create_meal_from_foods(processed_foods, input_text)
-                if meal:
-                    result['meal_created'] = {
-                        'meal_id': meal.meal_id,
-                        'meal_name': meal.meal_name
-                    }
+            # Step 3: Create food logs (skip if preview_only)
+            if not preview_only:
+                for processed in processed_foods:
+                    if processed.get('food_object'):
+                        log = self._create_food_log(
+                            food=processed['food_object'],
+                            servings=processed.get('servings', Decimal('1')),
+                            metadata=processed.get('metadata', {})
+                        )
+                        result['logs_created'].append({
+                            'log_id': log.macro_log_id,
+                            'food_name': processed['food_object'].food_name,
+                            'servings': float(processed.get('servings', 1))
+                        })
+                
+                # Step 4: Optionally create meal (skip if preview_only)
+                if create_meal and processed_foods:
+                    meal = self._create_meal_from_foods(processed_foods, input_text)
+                    if meal:
+                        result['meal_created'] = {
+                            'meal_id': meal.meal_id,
+                            'meal_name': meal.meal_name
+                        }
             
         except Exception as e:
             logger.error(f"Food parsing error: {e}", exc_info=True)

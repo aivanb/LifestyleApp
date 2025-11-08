@@ -180,7 +180,12 @@ class WaterLogListCreateView(generics.ListCreateAPIView):
         return queryset
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        # If date_time is not provided, use current time
+        if 'date_time' not in serializer.validated_data or not serializer.validated_data.get('date_time'):
+            from django.utils import timezone
+            serializer.save(user=self.request.user, date_time=timezone.now())
+        else:
+            serializer.save(user=self.request.user)
 
 
 class WaterLogRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):

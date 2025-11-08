@@ -356,20 +356,37 @@ main {
 .btn-primary {
   background: var(--accent-primary);
   color: white;
+  border: 1px solid var(--accent-primary);
+  font-weight: var(--font-weight-medium);
 }
 
 .btn-primary:hover {
-  filter: brightness(1.1);
+  background: var(--accent-primary);
+  filter: brightness(1.15);
+  border-color: var(--accent-primary);
+}
+
+.btn-primary:focus {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
 }
 
 .btn-secondary {
   background: var(--bg-tertiary);
   color: var(--text-primary);
   border: 1px solid var(--border-primary);
+  font-weight: var(--font-weight-medium);
 }
 
 .btn-secondary:hover {
   background: var(--bg-hover);
+  border-color: var(--accent-primary);
+  color: var(--text-primary);
+}
+
+.btn-secondary:focus {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
 }
 
 .btn-success {
@@ -400,6 +417,32 @@ main {
 .btn-icon:hover {
   background: var(--bg-hover);
   color: var(--text-primary);
+}
+
+/* Standardized Close Button */
+.btn-close {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: var(--space-2);
+  border-radius: var(--radius-md);
+  transition: all 0.2s var(--ease-out-cubic);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+}
+
+.btn-close:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.btn-close:focus {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
 }
 
 /* ==================== Forms ==================== */
@@ -781,7 +824,8 @@ textarea.form-textarea {
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background: transparent;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
   z-index: var(--z-modal-bg);
   animation: fadeIn 0.2s var(--ease-out-cubic);
 }

@@ -392,7 +392,14 @@ export const ExpandedProgressView = ({ goals, consumed, onClose }) => {
       <div className="expanded-progress-header">
         <h3 className="expanded-progress-title">Daily Nutrition Progress</h3>
         {onClose && (
-          <button className="btn-icon" onClick={onClose} aria-label="Close">
+          <button 
+            className="btn-icon" 
+            onClick={(e) => {
+              e.stopPropagation();
+              onClose(e);
+            }} 
+            aria-label="Close"
+          >
             <svg className="icon icon-md" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L9.586 10 5.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
             </svg>
