@@ -4,7 +4,7 @@ This document provides an overview of the comprehensive dummy data generation sy
 
 ## Overview
 
-The dummy data system generates realistic test data for a single user (username: `dummyUser`, password: `dummypass123`) spanning from **April 15, 2025** to **October 31, 2025**. This ~6+ months of data is designed to simulate a healthy adult male with realistic fluctuations and patterns across all tracking categories.
+The dummy data system generates realistic test data for a single user (username: `dummyUser`, password: `dummypass123`) spanning from **April 15, 2025** to **November 30, 2025**. This ~7.5 months of data is designed to simulate a healthy adult male with realistic fluctuations and patterns across all tracking categories.
 
 ## User Profile
 
@@ -20,23 +20,35 @@ The dummy data system generates realistic test data for a single user (username:
 ## Date Range
 
 - **Start Date**: April 15, 2025
-- **End Date**: October 31, 2025
-- **Total Days**: 200 days
+- **End Date**: November 30, 2025
+- **Total Days**: 230 days
 
 ## Data Generation Specifications
 
 ### User Goals
 
-Two goal periods are created:
+Two goal periods are created with all fields populated:
 1. **Period 1** (April 15, 2025): Cutting phase
    - Calories: 2,500
    - Weight goal: 165 lbs
-   - Protein: 180g, Carbs: 200g, Fats: 50g
+   - Lean mass: 145 lbs, Fat mass: 20 lbs
+   - Macros: Protein 180g, Carbs 200g, Fats 50g
+   - Micronutrients: Fiber 30g, Sodium 2300mg, Sugar 50g, Saturated fat 20g, Trans fat 0g
+   - Vitamins/Minerals: Calcium 1000mg, Iron 18mg, Magnesium 400mg, Cholesterol 300mg
+   - Vitamins: A 900mcg, C 90mg, D 15mcg
+   - Caffeine: 400mg
+   - Tokens: 5000, Cost: $50.00
 
 2. **Period 2** (July 26, 2025): Bulking phase
    - Calories: 3,200
    - Weight goal: 195 lbs
-   - Protein: 220g, Carbs: 350g, Fats: 80g
+   - Lean mass: 170 lbs, Fat mass: 25 lbs
+   - Macros: Protein 220g, Carbs 350g, Fats 80g
+   - Micronutrients: Fiber 35g, Sodium 2500mg, Sugar 80g, Saturated fat 30g, Trans fat 0g
+   - Vitamins/Minerals: Calcium 1200mg, Iron 20mg, Magnesium 450mg, Cholesterol 350mg
+   - Vitamins: A 1000mcg, C 100mg, D 20mcg
+   - Caffeine: 400mg
+   - Tokens: 6000, Cost: $75.00
 
 ### Foods
 

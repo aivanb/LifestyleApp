@@ -85,6 +85,14 @@ If you prefer manual setup, see the detailed instructions in `DEVELOPER.md`.
 - Export data for external analysis
 - Get AI-powered insights (requires OpenAI API key)
 
+## 🖌️ UI Refresh (November 2025)
+
+- Simplified theming to **Dark** and **Light** modes with neutral grey backdrops
+- Adopted the **Josefin Sans** typeface for cleaner typography across dashboards
+- All primary surfaces (cards, tables, modals) now use borderless glass panels with deeper shadows
+- Header bars have been removed—floating, high-contrast action buttons now follow the viewport
+- Menu surfaces animate with subtle float-in effects for a more polished feel
+
 ## 🛠️ Troubleshooting
 
 ### Common Issues

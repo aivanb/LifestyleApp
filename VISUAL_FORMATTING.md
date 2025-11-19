@@ -1,9 +1,9 @@
 # Visual Formatting Guide - Tracking App
 
-**Version**: 1.0  
-**Last Updated**: October 11, 2025  
-**Primary Font**: Roboto Mono  
-**Design Philosophy**: Modern Minimalism with Functional Priority
+**Version**: 2.0  
+**Last Updated**: November 8, 2025  
+**Primary Font**: Josefin Sans  
+**Design Philosophy**: Luminous Minimalism with Functional Priority
 
 ---
 
@@ -25,103 +25,79 @@ This guide defines the visual design system for the Tracking App. **All future d
 
 ### Color Themes
 
-The app supports **multiple color themes** for user customization. All themes follow the monotone + accent pattern.
+The app now ships with **two curated themes**. Both lean into neutral greys for page backgrounds, solid black/white section surfaces, and vibrant neon-inspired accents for maximum contrast.
 
-#### Theme 1: Dark Mode (Default)
+#### Dark Mode (Default)
 ```css
---bg-primary: #0F1419        /* Main background - very dark blue-gray */
---bg-secondary: #1A1F2E      /* Cards, panels - dark slate */
---bg-tertiary: #252B3A       /* Elevated elements - lighter slate */
---bg-hover: #2D3448          /* Hover states */
+--bg-primary: #1F2125        /* Page background - charcoal grey */
+--bg-secondary: #08090D      /* Surface background - true black */
+--bg-tertiary: #14171C       /* Elevated surfaces */
+--bg-hover: #272B33          /* Hover overlays */
+--surface-overlay: rgba(255, 255, 255, 0.08) /* Soft glass overlay */
 
---text-primary: #E8E9ED      /* Main text - off-white */
---text-secondary: #A0A5B8    /* Secondary text - muted blue-gray */
---text-tertiary: #6B7280     /* Tertiary text - gray */
+--text-primary: #F4F5F7      /* Headings, key data */
+--text-secondary: #C8CBD6    /* Body copy */
+--text-tertiary: #949AAE     /* Muted metadata */
 
---border-primary: #2D3448    /* Primary borders */
---border-secondary: #1A1F2E  /* Subtle borders */
+--border-primary: rgba(255, 255, 255, 0.08)  /* Minimal edge hint */
+--border-secondary: rgba(255, 255, 255, 0.04)
 
---accent-primary: #3B82F6    /* Blue - primary actions */
---accent-secondary: #10B981  /* Green - success */
---accent-warning: #F59E0B    /* Amber - warnings */
---accent-danger: #EF4444     /* Red - errors */
---accent-info: #06B6D4       /* Cyan - information */
---accent-purple: #8B5CF6     /* Purple - special features */
+--accent-primary: #5AA6FF    /* Electric blue */
+--accent-secondary: #4ADE80  /* Vivid green */
+--accent-warning: #FACC15    /* Bright amber */
+--accent-danger: #FF6B6B     /* Punchy red */
+--accent-info: #38BDF8       /* Neon cyan */
+--accent-purple: #A855F7     /* Vibrant violet */
+
+--accent-primary-alpha: rgba(90, 166, 255, 0.18)
+--accent-secondary-alpha: rgba(74, 222, 128, 0.16)
+--accent-danger-alpha: rgba(255, 107, 107, 0.15)
 ```
 
-#### Theme 2: Light Mode
+#### Light Mode
 ```css
---bg-primary: #FFFFFF        /* Pure white */
---bg-secondary: #F9FAFB      /* Very light gray */
---bg-tertiary: #F3F4F6       /* Light gray */
---bg-hover: #E5E7EB          /* Hover - medium gray */
+--bg-primary: #E9ECF3        /* Page background - soft grey */
+--bg-secondary: #FFFFFF      /* Surface background - white */
+--bg-tertiary: #F7F9FC       /* Elevated surfaces */
+--bg-hover: #EDF1FA          /* Hover overlays */
+--surface-overlay: rgba(15, 23, 42, 0.08) /* Glass overlay */
 
---text-primary: #111827      /* Almost black */
---text-secondary: #4B5563    /* Dark gray */
---text-tertiary: #9CA3AF     /* Medium gray */
+--text-primary: #0F172A      /* Headings, key data */
+--text-secondary: #3B4259    /* Body copy */
+--text-tertiary: #6B7280     /* Muted metadata */
 
---border-primary: #E5E7EB    /* Light borders */
---border-secondary: #F3F4F6  /* Subtle borders */
+--border-primary: rgba(15, 23, 42, 0.10)   /* Minimal edge hint */
+--border-secondary: rgba(15, 23, 42, 0.06)
 
---accent-primary: #2563EB    /* Blue */
---accent-secondary: #059669  /* Green */
---accent-warning: #D97706    /* Amber */
---accent-danger: #DC2626     /* Red */
---accent-info: #0891B2       /* Cyan */
---accent-purple: #7C3AED     /* Purple */
+--accent-primary: #1D4FFF    /* Electric royal blue */
+--accent-secondary: #1ED292  /* Emerald */
+--accent-warning: #FFB020    /* Honey amber */
+--accent-danger: #F05252     /* Crimson */
+--accent-info: #0EA5E9       /* Sky cyan */
+--accent-purple: #7C3AED     /* Rich violet */
+
+--accent-primary-alpha: rgba(29, 79, 255, 0.18)
+--accent-secondary-alpha: rgba(30, 210, 146, 0.18)
+--accent-danger-alpha: rgba(240, 82, 82, 0.18)
 ```
 
-#### Theme 3: High Contrast
-```css
---bg-primary: #000000        /* Pure black */
---bg-secondary: #1A1A1A      /* Very dark gray */
---bg-tertiary: #2A2A2A       /* Dark gray */
---bg-hover: #3A3A3A          /* Medium gray */
+#### Component-Specific Backgrounds
 
---text-primary: #FFFFFF      /* Pure white */
---text-secondary: #E0E0E0    /* Light gray */
---text-tertiary: #B0B0B0     /* Medium gray */
+Some components use custom background colors for visual hierarchy:
 
---border-primary: #FFFFFF    /* White borders */
---border-secondary: #4A4A4A  /* Gray borders */
+**Workout Logging Dashboard:**
+- Dashboard background: `#25282d` (slightly lighter than `--bg-primary` for better contrast)
+- Workout set group cards: `#181b22` (darker than dashboard background for depth)
 
---accent-primary: #00BFFF    /* Bright cyan-blue */
---accent-secondary: #00FF7F  /* Bright green */
---accent-warning: #FFD700    /* Bright yellow */
---accent-danger: #FF4500     /* Bright red-orange */
---accent-info: #00FFFF       /* Bright cyan */
---accent-purple: #DA70D6     /* Bright orchid */
-```
-
-#### Theme 4: Warm Minimal
-```css
---bg-primary: #FBF8F3        /* Warm white */
---bg-secondary: #F5EFE6      /* Warm beige */
---bg-tertiary: #EDE4D9       /* Warm tan */
---bg-hover: #E5D9CC          /* Warm hover */
-
---text-primary: #2D2520      /* Warm black */
---text-secondary: #5C534A    /* Warm gray */
---text-tertiary: #8A7F75     /* Warm muted */
-
---border-primary: #D4C4B0    /* Warm border */
---border-secondary: #E5D9CC  /* Subtle warm */
-
---accent-primary: #D97706    /* Warm amber */
---accent-secondary: #059669  /* Forest green */
---accent-warning: #F59E0B    /* Bright amber */
---accent-danger: #DC2626     /* Warm red */
---accent-info: #0891B2       /* Teal */
---accent-purple: #9333EA     /* Warm purple */
-```
+These colors create a subtle layered effect where workout cards stand out against the dashboard background.
 
 ### Color Usage Rules
 
 #### Backgrounds
-- **Primary**: Main page backgrounds
-- **Secondary**: Cards, panels, containers
-- **Tertiary**: Elevated elements (modals, dropdowns, tooltips)
-- **Hover**: Interactive element hover states
+- **Primary**: Page backdrop (neutral grey)
+- **Secondary**: Major surfaces (cards, panels, modals) — always pure black or pure white depending on theme
+- **Tertiary**: Elevated elements and inset containers
+- **Hover / Overlay**: Use `--bg-hover` or `--surface-overlay` for glassy translucency
 
 #### Text
 - **Primary**: Headings, important text (contrast ratio ≥ 7:1)
@@ -143,15 +119,15 @@ The app supports **multiple color themes** for user customization. All themes fo
 ### Font Family
 
 ```css
---font-primary: 'Roboto Mono', monospace;
---font-fallback: 'Courier New', 'Monaco', 'Consolas', monospace;
+--font-primary: 'Josefin Sans', sans-serif;
+--font-fallback: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 ```
 
-**Why Roboto Mono**:
-- Excellent readability for data-heavy interfaces
-- Clear distinction between similar characters (0 vs O, 1 vs l)
-- Modern, technical aesthetic
-- Monospace aids in table alignment
+**Why Josefin Sans**:
+- Geometric letterforms reinforce the modern, data-forward aesthetic
+- High x-height for legibility on dense dashboards
+- Distinct character shapes support quick scanning of metrics
+- Works seamlessly across headings, labels, and body copy
 
 ### Font Weights
 
@@ -312,30 +288,35 @@ p {
 
 ### Buttons
 
-#### Primary Button
+Floating actions are now the norm—high-contrast, pill-shaped buttons with deep shadows that remain legible against both dark and light surfaces.
+
+#### Primary Button (Floating Action)
 ```css
 .btn-primary {
-  background: var(--accent-primary);
-  color: white;
-  border: none;
-  border-radius: var(--radius-md);
-  padding: var(--space-3) var(--space-6);
-  font-size: var(--text-base);
-  font-weight: var(--font-weight-medium);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-4) var(--space-6);
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: var(--shadow-sm);
+  border: none;
+  border-radius: var(--radius-full);
+  color: #0B0D12;
+  background: linear-gradient(135deg, var(--accent-secondary), var(--accent-primary));
+  box-shadow: 0 24px 50px rgba(0, 0, 0, 0.45);
+  transition: transform 0.25s var(--ease-out-cubic), box-shadow 0.25s var(--ease-out-cubic);
 }
 
 .btn-primary:hover {
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-md);
-  filter: brightness(1.1);
+  transform: translateY(-6px) scale(1.02);
+  box-shadow: 0 32px 65px rgba(90, 166, 255, 0.35);
 }
 
 .btn-primary:active {
-  transform: translateY(0);
-  box-shadow: var(--shadow-sm);
+  transform: translateY(-2px);
 }
 
 .btn-primary:disabled {
@@ -348,10 +329,26 @@ p {
 #### Secondary Button
 ```css
 .btn-secondary {
-  background: var(--bg-tertiary);
-  color: var(--text-primary);
-  border: 1px solid var(--border-primary);
-  /* Rest same as primary */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-4) var(--space-6);
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border: none;
+  border-radius: var(--radius-full);
+  color: #0B0D12;
+  background: linear-gradient(135deg, var(--accent-info), var(--accent-primary));
+  box-shadow: 0 24px 50px rgba(0, 0, 0, 0.42);
+  transition: transform 0.25s var(--ease-out-cubic), box-shadow 0.25s var(--ease-out-cubic);
+}
+
+.btn-secondary:hover {
+  transform: translateY(-6px) scale(1.02);
+  box-shadow: 0 30px 60px rgba(56, 189, 248, 0.35);
 }
 ```
 
@@ -364,15 +361,15 @@ p {
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-full);
   background: transparent;
   border: none;
   color: var(--text-secondary);
-  transition: all 0.2s ease;
+  transition: transform 0.2s var(--ease-out-cubic), color 0.2s var(--ease-out-cubic);
 }
 
 .btn-icon:hover {
-  background: var(--bg-hover);
+  transform: translateY(-2px);
   color: var(--text-primary);
 }
 ```
@@ -415,22 +412,21 @@ p {
 ```css
 .card {
   background: var(--bg-secondary);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-2xl);
   padding: var(--space-6);
-  box-shadow: var(--shadow-sm);
-  border: 1px solid var(--border-secondary);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: none;
+  box-shadow: 0 24px 55px rgba(0, 0, 0, 0.35);
+  transition: transform 0.3s var(--ease-in-out-cubic), box-shadow 0.3s var(--ease-in-out-cubic);
 }
 
 .card:hover {
-  box-shadow: var(--shadow-md);
-  transform: translateY(-2px);
+  transform: translateY(-6px);
+  box-shadow: 0 32px 70px rgba(0, 0, 0, 0.4);
 }
 
 .card-header {
   margin-bottom: var(--space-4);
-  padding-bottom: var(--space-4);
-  border-bottom: 1px solid var(--border-primary);
+  padding-bottom: var(--space-3);
 }
 
 .card-title {
@@ -449,8 +445,9 @@ p {
   border-collapse: separate;
   border-spacing: 0;
   background: var(--bg-secondary);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-2xl);
   overflow: hidden;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.32);
 }
 
 .table thead {
@@ -465,21 +462,22 @@ p {
   font-size: var(--text-sm);
   text-transform: uppercase;
   letter-spacing: 0.05em;
+  border-bottom: none;
 }
 
 .table td {
   padding: var(--space-4);
-  border-top: 1px solid var(--border-primary);
   color: var(--text-secondary);
   font-size: var(--text-base);
+  border-top: none;
 }
 
 .table tbody tr {
-  transition: background 0.15s ease;
+  transition: background 0.15s var(--ease-out-cubic);
 }
 
 .table tbody tr:hover {
-  background: var(--bg-hover);
+  background: var(--surface-overlay);
 }
 ```
 
@@ -489,7 +487,6 @@ p {
 .tabs {
   display: flex;
   gap: var(--space-2);
-  border-bottom: 1px solid var(--border-primary);
   padding: 0 var(--space-4);
 }
 
@@ -508,21 +505,12 @@ p {
 
 .tab:hover {
   color: var(--text-primary);
-  background: var(--bg-hover);
+  background: var(--surface-overlay);
 }
 
 .tab.active {
   color: var(--accent-primary);
-}
-
-.tab.active::after {
-  content: '';
-  position: absolute;
-  bottom: -1px;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: var(--accent-primary);
+  box-shadow: inset 0 -3px 0 0 var(--accent-primary);
 }
 ```
 
@@ -545,12 +533,13 @@ p {
   transform: translate(-50%, -50%);
   background: var(--bg-secondary);
   border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-2xl);
+  border: none;
+  box-shadow: 0 32px 70px rgba(0, 0, 0, 0.45);
   max-width: 90vw;
   max-height: 90vh;
   overflow: auto;
   z-index: var(--z-modal);
-  animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: modalFloat 0.3s var(--ease-in-out-cubic);
 }
 
 @keyframes fadeIn {
@@ -558,10 +547,14 @@ p {
   to { opacity: 1; }
 }
 
-@keyframes slideUp {
+@keyframes modalFloat {
   from {
     opacity: 0;
-    transform: translate(-50%, -45%);
+    transform: translate(-50%, -45%) scale(0.97);
+  }
+  50% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.01);
   }
   to {
     opacity: 1;
@@ -813,7 +806,7 @@ p {
 When implementing a new feature, ensure:
 
 - [ ] Uses defined color theme variables
-- [ ] Roboto Mono font applied
+- [ ] Josefin Sans font applied
 - [ ] Proper spacing system (4px increments)
 - [ ] Rounded corners on all interactive elements
 - [ ] Smooth transitions (spline curves, not linear)
@@ -888,7 +881,7 @@ When implementing a new feature, ensure:
 ## Resources
 
 ### Fonts
-- **Roboto Mono**: https://fonts.google.com/specimen/Roboto+Mono
+- **Josefin Sans**: https://fonts.google.com/specimen/Josefin+Sans
 - Load via Google Fonts or self-host
 
 ### Icons
@@ -908,5 +901,6 @@ When implementing a new feature, ensure:
 
 ## Version History
 
+- **2.0** (November 8, 2025): Reduced to light/dark themes, introduced high-contrast floating actions, upgraded typography to Josefin Sans, refreshed card/table/modal styling
 - **1.0** (October 11, 2025): Initial design system documentation
 

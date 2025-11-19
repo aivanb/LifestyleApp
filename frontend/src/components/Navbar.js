@@ -1,17 +1,45 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Link, useLocation } from 'react-router-dom';
 
 const Navbar = () => {
   const { user, isAuthenticated } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isHamburgerActive, setIsHamburgerActive] = useState(true);
+  const hamburgerFadeTimeoutRef = useRef(null);
   const location = useLocation();
 
+  const clearHamburgerFadeTimeout = useCallback(() => {
+    if (hamburgerFadeTimeoutRef.current) {
+      clearTimeout(hamburgerFadeTimeoutRef.current);
+      hamburgerFadeTimeoutRef.current = null;
+    }
+  }, []);
+
+  const startHamburgerFade = useCallback(() => {
+    clearHamburgerFadeTimeout();
+    hamburgerFadeTimeoutRef.current = setTimeout(() => {
+      setIsHamburgerActive(false);
+    }, 3000);
+  }, [clearHamburgerFadeTimeout]);
+
+  const handleHamburgerInteraction = useCallback(() => {
+    setIsHamburgerActive(true);
+    startHamburgerFade();
+  }, [startHamburgerFade]);
+
+  useEffect(() => {
+    startHamburgerFade();
+    return () => clearHamburgerFadeTimeout();
+  }, [startHamburgerFade, clearHamburgerFadeTimeout]);
+
   const toggleSidebar = () => {
+    handleHamburgerInteraction();
     setSidebarOpen(!sidebarOpen);
   };
 
   const closeSidebar = () => {
+    handleHamburgerInteraction();
     setSidebarOpen(false);
   };
 
@@ -22,15 +50,20 @@ const Navbar = () => {
   return (
     <>
       {/* Hamburger Menu Button */}
+      {!sidebarOpen && (
       <button 
         className={`hamburger-btn ${sidebarOpen ? 'open' : ''}`}
         onClick={toggleSidebar}
+          onMouseEnter={handleHamburgerInteraction}
+          onFocus={handleHamburgerInteraction}
         aria-label="Toggle navigation menu"
+          style={{ opacity: isHamburgerActive ? 1 : 0.1, transition: 'opacity 0.4s var(--ease-out-cubic)' }}
       >
         <span></span>
         <span></span>
         <span></span>
       </button>
+      )}
 
       {/* Overlay */}
       {sidebarOpen && (

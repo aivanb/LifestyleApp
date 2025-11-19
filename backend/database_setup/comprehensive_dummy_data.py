@@ -43,7 +43,7 @@ from apps.analytics.models import ApiUsageLog, ErrorLog
 
 # Date range
 START_DATE = date(2025, 4, 15)
-END_DATE = date(2025, 10, 31)
+END_DATE = date(2025, 11, 30)
 
 # Fixed dates from specifications
 WEIGHT_GOAL_CHANGE_DATE = date(2025, 7, 26)
@@ -86,32 +86,66 @@ def create_user():
 
 
 def create_user_goals(user):
-    """Create user goals at specified dates."""
+    """Create user goals at specified dates with all fields populated."""
     print("Creating user goals...")
     
-    # Goal at 4/15/2025
+    # Goal at 4/15/2025 - Cutting phase
     goal1 = UserGoal.objects.create(
         user=user,
-        calories_goal=2500,
+        tokens_goal=5000,
+        cost_goal=Decimal('50.00'),
         weight_goal=Decimal('165.00'),
+        lean_mass_goal=Decimal('145.00'),
+        fat_mass_goal=Decimal('20.00'),
+        calories_goal=2500,
         protein_goal=Decimal('180.00'),
         fat_goal=Decimal('50.00'),
         carbohydrates_goal=Decimal('200.00'),
+        fiber_goal=Decimal('30.00'),
+        sodium_goal=Decimal('2300.00'),
+        sugar_goal=Decimal('50.00'),
+        saturated_fat_goal=Decimal('20.00'),
+        trans_fat_goal=Decimal('0.00'),
+        calcium_goal=Decimal('1000.00'),
+        iron_goal=Decimal('18.00'),
+        magnesium_goal=Decimal('400.00'),
+        cholesterol_goal=Decimal('300.00'),
+        vitamin_a_goal=Decimal('900.00'),
+        vitamin_c_goal=Decimal('90.00'),
+        vitamin_d_goal=Decimal('15.00'),
+        caffeine_goal=Decimal('400.00'),
         created_at=datetime.combine(START_DATE, time(8, 0))
     )
     
-    # Goal at 7/26/2025
+    # Goal at 7/26/2025 - Bulking phase
     goal2 = UserGoal.objects.create(
         user=user,
-        calories_goal=3200,
+        tokens_goal=6000,
+        cost_goal=Decimal('75.00'),
         weight_goal=Decimal('195.00'),
+        lean_mass_goal=Decimal('170.00'),
+        fat_mass_goal=Decimal('25.00'),
+        calories_goal=3200,
         protein_goal=Decimal('220.00'),  # Increased for bulking
         fat_goal=Decimal('80.00'),  # Increased
         carbohydrates_goal=Decimal('350.00'),  # Increased
+        fiber_goal=Decimal('35.00'),
+        sodium_goal=Decimal('2500.00'),
+        sugar_goal=Decimal('80.00'),
+        saturated_fat_goal=Decimal('30.00'),
+        trans_fat_goal=Decimal('0.00'),
+        calcium_goal=Decimal('1200.00'),
+        iron_goal=Decimal('20.00'),
+        magnesium_goal=Decimal('450.00'),
+        cholesterol_goal=Decimal('350.00'),
+        vitamin_a_goal=Decimal('1000.00'),
+        vitamin_c_goal=Decimal('100.00'),
+        vitamin_d_goal=Decimal('20.00'),
+        caffeine_goal=Decimal('400.00'),
         created_at=datetime.combine(WEIGHT_GOAL_CHANGE_DATE, time(8, 0))
     )
     
-    print("[OK] Created 2 user goals")
+    print("[OK] Created 2 user goals with all fields populated")
     return [goal1, goal2]
 
 

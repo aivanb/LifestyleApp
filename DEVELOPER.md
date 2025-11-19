@@ -134,6 +134,15 @@ TrackingApp/
 └── tests/               # All test files
 ```
 
+## 🎨 Frontend Styling Notes (November 2025 Refresh)
+
+- **Themes**: Only `dark` and `light` themes are supported. Both use neutral grey page backdrops with true black/white section surfaces. Use the tokens defined in `src/index.css`.
+- **Typography**: `Josefin Sans` is the default font (`--font-primary`). Do not reintroduce monospaced stacks unless explicitly requested.
+- **Surfaces**: Cards, tables, and modals are borderless with large radii and deep shadows. Prefer gradients and `--surface-overlay` instead of hard borders for separation.
+- **Floating actions**: Header bars have been removed. Reuse the floating button patterns (`.btn-primary-header`, `.btn-secondary-header`) when adding new top-level actions.
+- **Animations**: Menus and modals rely on the new `menuFloatIn` / `modalFloat` keyframes. When adding new overlays, hook into these animations for consistency.
+- **Color usage**: All accent tones were brightened. Avoid introducing new hex colors; pull from the accent variables to maintain contrast compliance.
+
 ## 🔍 How to Debug
 
 ### Workout System Debugging

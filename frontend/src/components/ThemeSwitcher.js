@@ -38,7 +38,7 @@ const ThemeSwitcher = () => {
             onClick={() => setIsOpen(false)}
           />
           <div className="theme-switcher">
-            <h4 style={{ marginTop: 0, marginBottom: 'var(--space-4)', color: 'var(--text-primary)' }}>
+            <h4 style={{ marginTop: 0, marginBottom: 'var(--space-3)', color: 'var(--text-primary)', fontWeight: 'var(--font-weight-medium)' }}>
               Select Theme
             </h4>
             {themes.map((t) => (
@@ -63,23 +63,24 @@ const ThemeSwitcher = () => {
           position: fixed;
           bottom: var(--space-6);
           right: var(--space-6);
-          width: 3.5rem;
-          height: 3.5rem;
+          width: 3.75rem;
+          height: 3.75rem;
           border-radius: var(--radius-full);
           background: var(--accent-primary);
           color: white;
           border: none;
-          box-shadow: var(--shadow-xl);
+          box-shadow: 0 16px 30px rgba(0, 0, 0, 0.4);
           cursor: pointer;
           display: flex;
           align-items: center;
           justify-content: center;
           z-index: var(--z-fixed);
-          transition: all 0.2s var(--ease-out-cubic);
+          transition: transform 0.25s var(--ease-out-cubic), box-shadow 0.25s var(--ease-out-cubic);
         }
 
         .theme-toggle-btn:hover {
-          transform: scale(1.1) rotate(15deg);
+          transform: translateY(-4px) scale(1.05);
+          box-shadow: 0 22px 36px rgba(0, 0, 0, 0.45);
         }
 
         .theme-backdrop {
@@ -87,21 +88,20 @@ const ThemeSwitcher = () => {
           inset: 0;
           background: transparent;
           z-index: calc(var(--z-fixed) - 1);
-          animation: fadeIn 0.2s var(--ease-out-cubic);
+          animation: fadeInBackdrop 0.2s var(--ease-out-cubic);
         }
 
         .theme-switcher {
           position: fixed;
-          bottom: calc(var(--space-6) + 4rem);
+          bottom: calc(var(--space-6) + 4.5rem);
           right: var(--space-6);
           background: var(--bg-secondary);
-          border: 1px solid var(--border-primary);
-          border-radius: var(--radius-lg);
+          border-radius: var(--radius-xl);
           padding: var(--space-5);
-          box-shadow: var(--shadow-2xl);
+          box-shadow: 0 20px 45px rgba(0, 0, 0, 0.35);
           z-index: var(--z-fixed);
-          min-width: 200px;
-          animation: slideUp 0.2s var(--ease-in-out-cubic);
+          min-width: 220px;
+          animation: floatIn 0.25s var(--ease-in-out-cubic);
         }
 
         .theme-option {
@@ -109,9 +109,9 @@ const ThemeSwitcher = () => {
           align-items: center;
           gap: var(--space-3);
           padding: var(--space-3);
-          border-radius: var(--radius-md);
+          border-radius: var(--radius-lg);
           cursor: pointer;
-          transition: all 0.2s var(--ease-out-cubic);
+          transition: all 0.25s var(--ease-out-cubic);
           border: none;
           background: none;
           width: 100%;
@@ -127,22 +127,23 @@ const ThemeSwitcher = () => {
         }
 
         .theme-option:hover {
-          background: var(--bg-hover);
+          background: rgba(255, 255, 255, 0.06);
           color: var(--text-primary);
-          transform: translateX(4px);
+          transform: translateX(6px);
         }
 
         .theme-option.active {
-          background: var(--accent-primary);
-          color: white;
+          background: rgba(255, 255, 255, 0.08);
+          color: var(--accent-primary);
+          box-shadow: inset 0 0 0 1px currentColor;
         }
 
         .theme-preview {
-          width: 24px;
-          height: 24px;
-          border-radius: var(--radius-sm);
-          border: 2px solid var(--border-primary);
-          box-shadow: var(--shadow-sm);
+          width: 28px;
+          height: 28px;
+          border-radius: var(--radius-full);
+          border: none;
+          box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
         }
 
         @media (max-width: 640px) {
@@ -152,19 +153,28 @@ const ThemeSwitcher = () => {
           }
 
           .theme-switcher {
-            bottom: calc(var(--space-4) + 4rem);
+            bottom: calc(var(--space-4) + 4.5rem);
             right: var(--space-4);
           }
         }
 
-        @keyframes slideUp {
+        @keyframes floatIn {
           from {
             opacity: 0;
-            transform: translateY(10px);
+            transform: translateY(14px) scale(0.98);
           }
           to {
             opacity: 1;
-            transform: translateY(0);
+            transform: translateY(0) scale(1);
+          }
+        }
+
+        @keyframes fadeInBackdrop {
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
           }
         }
       `}</style>

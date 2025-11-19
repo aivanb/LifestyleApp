@@ -25,10 +25,8 @@ export const ThemeProvider = ({ children }) => {
   }, [theme]);
 
   const themes = [
-    { id: 'dark', name: 'Dark Mode', preview: '#0F1419' },
-    { id: 'light', name: 'Light Mode', preview: '#FFFFFF' },
-    { id: 'high-contrast', name: 'High Contrast', preview: '#000000' },
-    { id: 'warm', name: 'Warm Minimal', preview: '#FBF8F3' },
+    { id: 'dark', name: 'Dark Mode', preview: '#1F2125' },
+    { id: 'light', name: 'Light Mode', preview: '#F0F1F5' },
   ];
 
   const value = {

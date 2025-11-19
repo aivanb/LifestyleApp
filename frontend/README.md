@@ -105,10 +105,10 @@ src/
 - Modern CSS features
 
 ### Design System
-- Consistent color scheme
-- Typography hierarchy
-- Button and form styles
-- Card-based layouts
+- Dark and light themes only (neutral grey backgrounds, black/white surfaces)
+- Josefin Sans type hierarchy with uppercase floating action buttons
+- High-contrast gradients for primary/secondary actions; no header bars
+- Borderless glass panels for cards, tables, and modals with deep shadows
 
 ## Development
 

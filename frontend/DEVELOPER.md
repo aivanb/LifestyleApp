@@ -17,6 +17,15 @@ src/
 └── index.css           # Global styles
 ```
 
+## 🎨 Styling Guidelines (November 2025 Refresh)
+
+- **Theme options**: Only `dark` and `light` are available via `ThemeContext`. Do not reintroduce additional themes without updating the design system.
+- **Typography**: Global font is `Josefin Sans`. Use semantic elements and rely on CSS variables instead of hard-coded font declarations.
+- **Surfaces**: Cards, panels, tables, and modals are borderless with large radii and heavy drop shadows (`0 24px 55px ...`). Reference the `.card`, `.data-table`, and `.modal` rules in `index.css`.
+- **Floating actions**: Header controls have been replaced by floating buttons (`.btn-primary-header`, `.btn-secondary-header`). New primary actions should follow the same gradient + uppercase pattern.
+- **Menus & overlays**: Attach the `menuFloatIn` or `modalFloat` animations for dropdowns, calendars, and modals to preserve the refreshed motion language.
+- **Color usage**: Pull from the accent variables defined in `index.css` and reuse `--surface-overlay` for subtle separators instead of borders.
+
 ## Component Architecture
 
 ### Component Hierarchy

@@ -3,9 +3,11 @@ import { getMuscleDescription } from '../utils/muscleDescriptions';
 import { 
   ChevronUpIcon, 
   ChevronDownIcon,
-  InformationCircleIcon
+  InformationCircleIcon,
+  ChartBarIcon
 } from '@heroicons/react/24/outline';
 import api from '../services/api';
+import WorkoutAnalytics from './WorkoutAnalytics';
 
 const WorkoutLogger = ({ onOpenWorkoutSelection, onWorkoutLogged, selectedDate, onClose, preSelectedWorkout }) => {
   const [workouts, setWorkouts] = useState([]);
@@ -22,6 +24,8 @@ const WorkoutLogger = ({ onOpenWorkoutSelection, onWorkoutLogged, selectedDate, 
   const [activeMuscleDescription, setActiveMuscleDescription] = useState(null);
   const [showWorkoutSelectionModal, setShowWorkoutSelectionModal] = useState(false);
   const [showWorkoutLoggingModal, setShowWorkoutLoggingModal] = useState(false);
+  const [analyticsWorkout, setAnalyticsWorkout] = useState(null);
+  const [showAnalytics, setShowAnalytics] = useState(false);
   const [logData, setLogData] = useState({
     weight: '',
     reps: '',
@@ -31,6 +35,34 @@ const WorkoutLogger = ({ onOpenWorkoutSelection, onWorkoutLogged, selectedDate, 
     rest_time: ''
   });
   const [isLogging, setIsLogging] = useState(false);
+
+  const resetLogData = () => {
+    setLogData({
+      weight: '',
+      reps: '',
+      rir: '',
+      attributes: [],
+      attributeInputs: {},
+      rest_time: ''
+    });
+  };
+
+  const populateLogDataFromWorkout = (workout) => {
+    if (workout && workout.recent_log) {
+      const recentLog = workout.recent_log;
+      const autofillData = {
+        weight: recentLog.last_weight ?? '',
+        reps: recentLog.last_reps ?? '',
+        rir: recentLog.last_rir ?? '',
+        attributes: recentLog.last_attributes || [],
+        attributeInputs: recentLog.last_attribute_inputs ? { ...recentLog.last_attribute_inputs } : {},
+        rest_time: recentLog.last_rest_time ?? ''
+      };
+      setLogData(autofillData);
+    } else {
+      resetLogData();
+    }
+  };
 
   const attributeOptions = [
     {
@@ -98,13 +130,16 @@ const WorkoutLogger = ({ onOpenWorkoutSelection, onWorkoutLogged, selectedDate, 
   useEffect(() => {
     loadWorkouts();
     
-    // If a workout is pre-selected, set it and open logging modal
     if (preSelectedWorkout) {
       setSelectedWorkout(preSelectedWorkout);
+      setShowWorkoutSelectionModal(false);
       setShowWorkoutLoggingModal(true);
+      populateLogDataFromWorkout(preSelectedWorkout);
     } else {
-      // Automatically open workout selection modal when component mounts
+      setShowWorkoutLoggingModal(false);
+      setSelectedWorkout(null);
       setShowWorkoutSelectionModal(true);
+      resetLogData();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [preSelectedWorkout]);
@@ -156,7 +191,7 @@ const WorkoutLogger = ({ onOpenWorkoutSelection, onWorkoutLogged, selectedDate, 
 
   const filteredWorkouts = workouts.filter(workout => {
     const matchesSearch = workout.workout_name.toLowerCase().includes(searchTerm.toLowerCase());
-    
+      
     // Check if muscles match selected muscles AND their activation ratings
     let matchesMuscles = selectedMuscles.length === 0;
     if (selectedMuscles.length > 0) {
@@ -171,7 +206,7 @@ const WorkoutLogger = ({ onOpenWorkoutSelection, onWorkoutLogged, selectedDate, 
     
     const matchesLocations = selectedLocations.length === 0 || selectedLocations.includes(workout.location);
     const matchesEquipmentTypes = selectedEquipmentTypes.length === 0 || selectedEquipmentTypes.includes(workout.type);
-    
+      
     return matchesSearch && matchesMuscles && matchesLocations && matchesEquipmentTypes;
   }).sort((a, b) => {
     let comparison = 0;
@@ -254,39 +289,7 @@ const WorkoutLogger = ({ onOpenWorkoutSelection, onWorkoutLogged, selectedDate, 
     setSelectedWorkout(workout);
     setShowWorkoutSelectionModal(false);
     setShowWorkoutLoggingModal(true);
-    
-    if (workout.recent_log) {
-      // Parse attributes and attribute inputs from the recent log
-      const recentAttributes = workout.recent_log.last_attributes || [];
-      const attributeInputs = {};
-      
-      // Process attribute inputs - the backend stores them as a flat object
-      // We need to reconstruct them based on the attribute structure
-      if (workout.recent_log.last_attribute_inputs) {
-        Object.keys(workout.recent_log.last_attribute_inputs).forEach(key => {
-          attributeInputs[key] = workout.recent_log.last_attribute_inputs[key];
-        });
-      }
-      
-      const autofillData = {
-        weight: workout.recent_log.last_weight || '',
-        reps: workout.recent_log.last_reps || '',
-        rir: workout.recent_log.last_rir || '',
-        attributes: recentAttributes,
-        attributeInputs: attributeInputs,
-        rest_time: workout.recent_log.last_rest_time || ''
-      };
-      setLogData(autofillData);
-    } else {
-      setLogData({
-        weight: '',
-        reps: '',
-        rir: '',
-        attributes: [],
-        attributeInputs: {},
-        rest_time: ''
-      });
-    }
+    populateLogDataFromWorkout(workout);
   };
 
   const handleLogDataChange = (field, value) => {
@@ -635,9 +638,8 @@ const WorkoutLogger = ({ onOpenWorkoutSelection, onWorkoutLogged, selectedDate, 
                   <div
               key={workout.workouts_id}
                     className="workout-selection-card"
-              onClick={() => selectWorkout(workout)}
                   >
-                    <div className="workout-content">
+                    <div className="workout-content" onClick={() => selectWorkout(workout)}>
                       <div className="workout-name">{workout.workout_name}</div>
                       <div className="workout-muscles">
                 {workout.muscles.map(muscle => (
@@ -661,6 +663,17 @@ const WorkoutLogger = ({ onOpenWorkoutSelection, onWorkoutLogged, selectedDate, 
                 ))}
               </div>
                     </div>
+                    <button
+                      className="workout-analytics-button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setAnalyticsWorkout(workout);
+                        setShowAnalytics(true);
+                      }}
+                      title="View Analytics"
+                    >
+                      <ChartBarIcon className="w-5 h-5" />
+                    </button>
                   </div>
           ))}
         </div>
@@ -681,9 +694,22 @@ const WorkoutLogger = ({ onOpenWorkoutSelection, onWorkoutLogged, selectedDate, 
                 ← Back to Workouts
               </button>
               <h2 className="modal-title">Log Workout: {selectedWorkout.workout_name}</h2>
-              <button className="modal-close-button" onClick={closeWorkoutLoggingModal}>
-                ×
-              </button>
+              <div className="modal-header-actions">
+                <button
+                  className="workout-analytics-button-header"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setAnalyticsWorkout(selectedWorkout);
+                    setShowAnalytics(true);
+                  }}
+                  title="View Analytics"
+                >
+                  <ChartBarIcon className="w-5 h-5" />
+                </button>
+                <button className="modal-close-button" onClick={closeWorkoutLoggingModal}>
+                  ×
+                </button>
+              </div>
             </div>
 
             <div className="modal-body workout-logging-body">
@@ -953,7 +979,7 @@ const WorkoutLogger = ({ onOpenWorkoutSelection, onWorkoutLogged, selectedDate, 
           <button
                 className="close-overlay-button"
                 onClick={() => setActiveMuscleDescription(null)}
-              >
+          >
                 ×
           </button>
             </div>
@@ -970,6 +996,18 @@ const WorkoutLogger = ({ onOpenWorkoutSelection, onWorkoutLogged, selectedDate, 
             </div>
           </div>
         </div>
+      )}
+
+      {/* Workout Analytics Modal */}
+      {showAnalytics && analyticsWorkout && (
+        <WorkoutAnalytics
+          workout={analyticsWorkout}
+          isOpen={showAnalytics}
+          onClose={() => {
+            setShowAnalytics(false);
+            setAnalyticsWorkout(null);
+          }}
+        />
       )}
     </div>
   );
@@ -1145,12 +1183,25 @@ const styles = `
     flex-direction: column;
   }
 
+  @keyframes selectionModalLift {
+    from {
+      opacity: 0;
+      transform: translateY(14px) scale(0.96);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
   .workout-selection-modal {
     width: 1400px;
+    animation: selectionModalLift 0.25s var(--ease-out-cubic);
   }
 
   .workout-logging-modal {
     width: 1000px;
+    animation: selectionModalLift 0.25s var(--ease-out-cubic);
   }
 
   .modal-header {
@@ -1160,6 +1211,12 @@ const styles = `
     padding: var(--space-6);
     border-bottom: 2px solid var(--border-primary);
     background: var(--bg-secondary);
+  }
+
+  .modal-header-actions {
+    display: flex;
+    gap: var(--space-2);
+    align-items: center;
   }
 
   .modal-title {
@@ -1479,6 +1536,10 @@ const styles = `
     outline: none;
   }
 
+  .workout-selection-modal .form-select {
+    height: 47px;
+  }
+
   .btn-secondary {
     font-family: var(--font-primary);
     font-size: var(--text-sm);
@@ -1553,12 +1614,56 @@ const styles = `
     display: flex;
     flex-direction: column;
     gap: var(--space-5);
+    position: relative;
   }
 
   .workout-selection-card:hover {
     border-color: var(--accent-primary);
     box-shadow: var(--shadow-md);
     transform: translateY(-2px);
+  }
+
+  .workout-analytics-button {
+    position: absolute;
+    top: var(--space-3);
+    right: var(--space-3);
+    background: var(--bg-tertiary);
+    border: 2px solid var(--border-primary);
+    border-radius: var(--radius-md);
+    padding: var(--space-2);
+    cursor: pointer;
+    color: var(--text-secondary);
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+  }
+
+  .workout-analytics-button:hover {
+    background: var(--bg-hover);
+    border-color: var(--accent-primary);
+    color: var(--accent-primary);
+    transform: scale(1.1);
+  }
+
+  .workout-analytics-button-header {
+    background: var(--bg-tertiary);
+    border: 2px solid var(--border-primary);
+    border-radius: var(--radius-md);
+    padding: var(--space-2);
+    cursor: pointer;
+    color: var(--text-secondary);
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .workout-analytics-button-header:hover {
+    background: var(--bg-hover);
+    border-color: var(--accent-primary);
+    color: var(--accent-primary);
   }
 
   .workout-icon {
