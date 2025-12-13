@@ -672,7 +672,7 @@ const WorkoutLogger = ({ onOpenWorkoutSelection, onWorkoutLogged, selectedDate, 
                       }}
                       title="View Analytics"
                     >
-                      <ChartBarIcon className="w-5 h-5" />
+                      <ChartBarIcon className="w-6 h-6" />
                     </button>
                   </div>
           ))}
@@ -704,7 +704,7 @@ const WorkoutLogger = ({ onOpenWorkoutSelection, onWorkoutLogged, selectedDate, 
                   }}
                   title="View Analytics"
                 >
-                  <ChartBarIcon className="w-5 h-5" />
+                  <ChartBarIcon className="w-6 h-6" />
                 </button>
                 <button className="modal-close-button" onClick={closeWorkoutLoggingModal}>
                   ×
@@ -1630,7 +1630,7 @@ const styles = `
     background: var(--bg-tertiary);
     border: 2px solid var(--border-primary);
     border-radius: var(--radius-md);
-    padding: var(--space-2);
+    padding: var(--space-2) var(--space-3);
     cursor: pointer;
     color: var(--text-secondary);
     transition: all 0.3s ease;
@@ -1638,6 +1638,13 @@ const styles = `
     align-items: center;
     justify-content: center;
     z-index: 10;
+    flex-shrink: 0;
+  }
+
+  .workout-analytics-button svg {
+    width: 24px;
+    height: 24px;
+    display: block;
   }
 
   .workout-analytics-button:hover {
@@ -1651,19 +1658,27 @@ const styles = `
     background: var(--bg-tertiary);
     border: 2px solid var(--border-primary);
     border-radius: var(--radius-md);
-    padding: var(--space-2);
+    padding: var(--space-2) var(--space-3);
     cursor: pointer;
     color: var(--text-secondary);
     transition: all 0.3s ease;
     display: flex;
     align-items: center;
     justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .workout-analytics-button-header svg {
+    width: 24px;
+    height: 24px;
+    display: block;
   }
 
   .workout-analytics-button-header:hover {
     background: var(--bg-hover);
     border-color: var(--accent-primary);
     color: var(--accent-primary);
+    transform: scale(1.1);
   }
 
   .workout-icon {

@@ -10,6 +10,32 @@ const WorkoutAnalytics = ({ workout, isOpen, onClose }) => {
   const [customStartDate, setCustomStartDate] = useState('');
   const [customEndDate, setCustomEndDate] = useState('');
 
+  // Get all workout logs to determine date range - optimized with workout_id filter
+  const getAllWorkoutLogs = useCallback(async () => {
+    if (!workout) return { minDate: null, maxDate: null };
+    
+    try {
+      const workoutId = workout.workouts_id || workout.workout_id;
+      // Use workout_id filter on backend instead of fetching all logs
+      const response = await api.get(`/workouts/logs/?workout_id=${workoutId}&date_from=1970-01-01&date_to=2099-12-31`);
+      
+      if (response.data.success) {
+        const filteredLogs = response.data.data || [];
+        
+        if (filteredLogs.length === 0) return { minDate: null, maxDate: null };
+        
+        const dates = filteredLogs.map(log => new Date(log.date_time));
+        const minDate = new Date(Math.min(...dates));
+        const maxDate = new Date(Math.max(...dates));
+        
+        return { minDate, maxDate };
+      }
+    } catch (error) {
+      console.error('Failed to get date range:', error);
+    }
+    return { minDate: null, maxDate: null };
+  }, [workout]);
+
   const loadWorkoutLogs = useCallback(async () => {
     if (!workout) return;
     
@@ -38,6 +64,10 @@ const WorkoutAnalytics = ({ workout, isOpen, onClose }) => {
           if (customStartDate && customEndDate) {
             startDate = new Date(customStartDate);
             endDate = new Date(customEndDate);
+          } else {
+            // If custom but dates not set, use all time range
+            startDate = new Date(0);
+            endDate = new Date();
           }
           break;
         default:
@@ -47,16 +77,11 @@ const WorkoutAnalytics = ({ workout, isOpen, onClose }) => {
       const startDateStr = startDate.toISOString().split('T')[0];
       const endDateStr = endDate.toISOString().split('T')[0];
 
-      // Fetch all logs for this workout
-      const response = await api.get(`/workouts/logs/?date_from=${startDateStr}&date_to=${endDateStr}`);
+      // Fetch logs for this specific workout using workout_id filter on backend
+      const response = await api.get(`/workouts/logs/?workout_id=${workoutId}&date_from=${startDateStr}&date_to=${endDateStr}`);
       
       if (response.data.success) {
-        const allLogs = response.data.data || [];
-        // Filter logs for this specific workout
-        const filteredLogs = allLogs.filter(log => {
-          const logWorkoutId = log.workout?.workouts_id || log.workout?.workout_id || log.workout_id;
-          return logWorkoutId === workoutId;
-        });
+        const filteredLogs = response.data.data || [];
         
         // Sort by date
         filteredLogs.sort((a, b) => new Date(a.date_time) - new Date(b.date_time));
@@ -68,6 +93,18 @@ const WorkoutAnalytics = ({ workout, isOpen, onClose }) => {
       setLoading(false);
     }
   }, [workout, dateRange, customStartDate, customEndDate]);
+
+  // Set default custom date range when switching to custom
+  useEffect(() => {
+    if (dateRange === 'custom' && !customStartDate && !customEndDate) {
+      getAllWorkoutLogs().then(({ minDate, maxDate }) => {
+        if (minDate && maxDate) {
+          setCustomStartDate(minDate.toISOString().split('T')[0]);
+          setCustomEndDate(maxDate.toISOString().split('T')[0]);
+        }
+      });
+    }
+  }, [dateRange, customStartDate, customEndDate, getAllWorkoutLogs]);
 
   useEffect(() => {
     if (isOpen && workout) {
@@ -96,24 +133,30 @@ const WorkoutAnalytics = ({ workout, isOpen, onClose }) => {
     }
   }, [workoutLogs]);
 
-  // Calculate difference between first and most recent
-  const timeDifference = useMemo(() => {
-    if (workoutLogs.length < 2) return null;
+  // Calculate weight difference (first to last)
+  const weightDifference = useMemo(() => {
+    if (!workoutLogs.length) return null;
     
-    const firstDate = new Date(workoutLogs[0].date_time);
-    const lastDate = new Date(workoutLogs[workoutLogs.length - 1].date_time);
-    const diffMs = lastDate - firstDate;
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-    const diffMonths = Math.floor(diffDays / 30);
-    const diffYears = Math.floor(diffDays / 365);
+    const logsWithWeight = workoutLogs
+      .map(log => ({
+        weight: parseFloat(log.weight || 0),
+        date: new Date(log.date_time)
+      }))
+      .filter(log => log.weight > 0)
+      .sort((a, b) => a.date - b.date); // Sort by date ascending
     
-    if (diffYears > 0) {
-      return `${diffYears} year${diffYears !== 1 ? 's' : ''}, ${diffMonths % 12} month${(diffMonths % 12) !== 1 ? 's' : ''}`;
-    } else if (diffMonths > 0) {
-      return `${diffMonths} month${diffMonths !== 1 ? 's' : ''}, ${diffDays % 30} day${(diffDays % 30) !== 1 ? 's' : ''}`;
-    } else {
-      return `${diffDays} day${diffDays !== 1 ? 's' : ''}`;
-    }
+    if (logsWithWeight.length < 2) return null;
+    
+    const firstWeight = logsWithWeight[0].weight;
+    const lastWeight = logsWithWeight[logsWithWeight.length - 1].weight;
+    const difference = lastWeight - firstWeight;
+    
+    return {
+      firstWeight,
+      lastWeight,
+      difference,
+      isPositive: difference >= 0
+    };
   }, [workoutLogs]);
 
   // Prepare graph data - group by date
@@ -181,17 +224,20 @@ const WorkoutAnalytics = ({ workout, isOpen, onClose }) => {
                     {timeSinceLastLogged || 'Never'}
                   </span>
                 </div>
-                {timeDifference && (
+                {weightDifference && (
                   <div className="analytics-info-item">
-                    <span className="analytics-info-label">Time Span:</span>
-                    <span className="analytics-info-value">{timeDifference}</span>
+                    <span className="analytics-info-label">Weight Change:</span>
+                    <span 
+                      className={`analytics-info-value analytics-weight-difference ${weightDifference.isPositive ? 'positive' : 'negative'}`}
+                    >
+                      {weightDifference.isPositive ? '+' : ''}{weightDifference.difference.toFixed(1)} lbs
+                    </span>
                   </div>
                 )}
               </div>
 
               {/* Date Range Selector */}
               <div className="analytics-date-range-section">
-                <label className="analytics-date-range-label">Date Range:</label>
                 <div className="analytics-date-range-controls">
                   <select
                     className="analytics-date-range-select"
@@ -266,8 +312,8 @@ const WorkoutAnalytics = ({ workout, isOpen, onClose }) => {
                         yAxisId="weight"
                         type="monotone" 
                         dataKey="avgWeight" 
-                        stroke="#3b82f6" 
-                        strokeWidth={2}
+                        stroke="#2563eb" 
+                        strokeWidth={3}
                         name="Avg Weight"
                         dot={{ r: 4 }}
                       />
@@ -275,17 +321,17 @@ const WorkoutAnalytics = ({ workout, isOpen, onClose }) => {
                         yAxisId="weight"
                         type="monotone" 
                         dataKey="maxWeight" 
-                        stroke="#ef4444" 
-                        strokeWidth={2}
+                        stroke="#dc2626" 
+                        strokeWidth={3}
                         name="Max Weight"
                         dot={{ r: 4 }}
                       />
                       <Bar 
                         yAxisId="count"
                         dataKey="count" 
-                        fill="#22c55e"
+                        fill="#166534"
                         name="Times Logged"
-                        opacity={0.6}
+                        opacity={0.4}
                       />
                     </ComposedChart>
                   </ResponsiveContainer>
@@ -382,9 +428,7 @@ const WorkoutAnalytics = ({ workout, isOpen, onClose }) => {
           display: flex;
           gap: var(--space-6);
           margin-bottom: var(--space-6);
-          padding: var(--space-4);
-          background: var(--bg-secondary);
-          border-radius: var(--radius-md);
+          padding: 0;
         }
 
         .analytics-info-item {
@@ -405,16 +449,18 @@ const WorkoutAnalytics = ({ workout, isOpen, onClose }) => {
           font-weight: var(--font-weight-bold);
         }
 
-        .analytics-date-range-section {
-          margin-bottom: var(--space-6);
+        .analytics-weight-difference.positive {
+          color: #22c55e;
         }
 
-        .analytics-date-range-label {
-          display: block;
-          font-size: var(--text-sm);
-          font-weight: var(--font-weight-medium);
-          color: var(--text-primary);
-          margin-bottom: var(--space-2);
+        .analytics-weight-difference.negative {
+          color: #ef4444;
+        }
+
+        .analytics-date-range-section {
+          margin-bottom: var(--space-6);
+          display: flex;
+          justify-content: center;
         }
 
         .analytics-date-range-controls {
@@ -422,6 +468,7 @@ const WorkoutAnalytics = ({ workout, isOpen, onClose }) => {
           gap: var(--space-4);
           align-items: center;
           flex-wrap: wrap;
+          justify-content: center;
         }
 
         .analytics-date-range-select {

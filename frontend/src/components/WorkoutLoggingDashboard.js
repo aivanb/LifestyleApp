@@ -488,21 +488,21 @@ const WorkoutLoggingDashboard = () => {
                       <div className="workout-emoji-box">{workoutEmoji}</div>
                       <div className="workout-name-row">
                         <div className="workout-name">{nameWithoutEmoji}</div>
+                        <button
+                          className="workout-analytics-button-dashboard"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setAnalyticsWorkout(workout);
+                            setShowAnalytics(true);
+                          }}
+                          title="View Analytics"
+                        >
+                          <ChartBarIcon className="w-6 h-6" />
+                        </button>
                         {muscles && muscles.length > 0 && (
                           <div className="workout-muscles-inline">{muscles.join(', ')}</div>
                         )}
                       </div>
-                      <button
-                        className="workout-analytics-button-dashboard"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setAnalyticsWorkout(workout);
-                          setShowAnalytics(true);
-                        }}
-                        title="View Analytics"
-                      >
-                        <ChartBarIcon className="w-5 h-5" />
-                      </button>
                     </div>
                     <div className="workout-set-summary">
                       <div className="workout-set-totals">
@@ -913,21 +913,21 @@ const WorkoutLoggingDashboard = () => {
                               <div className="workout-emoji-box">{workoutEmoji}</div>
                               <div className="workout-name-row">
                                 <div className="workout-name">{nameWithoutEmoji}</div>
+                                <button
+                                  className="workout-analytics-button-dashboard"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setAnalyticsWorkout(workout);
+                                    setShowAnalytics(true);
+                                  }}
+                                  title="View Analytics"
+                                >
+                                  <ChartBarIcon className="w-6 h-6" />
+                                </button>
                                 {musclesList.length > 0 && (
                                   <div className="workout-muscles-inline">{musclesList.join(', ')}</div>
                                 )}
                               </div>
-                              <button
-                                className="workout-analytics-button-dashboard"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setAnalyticsWorkout(workout);
-                                  setShowAnalytics(true);
-                                }}
-                                title="View Analytics"
-                              >
-                                <ChartBarIcon className="w-5 h-5" />
-                              </button>
                             </div>
                             <div className="workout-set-summary">
                               <button
@@ -1188,21 +1188,21 @@ const WorkoutLoggingDashboard = () => {
                             <div className="workout-emoji-box">{workoutEmoji}</div>
                             <div className="workout-name-row">
                               <div className="workout-name">{nameWithoutEmoji}</div>
+                              <button
+                                className="workout-analytics-button-dashboard"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setAnalyticsWorkout(workout);
+                                  setShowAnalytics(true);
+                                }}
+                                title="View Analytics"
+                              >
+                                <ChartBarIcon className="w-6 h-6" />
+                              </button>
                               {musclesList.length > 0 && (
                                 <div className="workout-muscles-inline">{musclesList.join(', ')}</div>
                               )}
                             </div>
-                            <button
-                              className="workout-analytics-button-dashboard"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setAnalyticsWorkout(workout);
-                                setShowAnalytics(true);
-                              }}
-                              title="View Analytics"
-                            >
-                              <ChartBarIcon className="w-5 h-5" />
-                            </button>
                           </div>
                           <div className="workout-set-summary">
                             <button
@@ -2080,17 +2080,24 @@ const WorkoutLoggingDashboard = () => {
         }
 
         .workout-analytics-button-dashboard {
-          margin-left: auto;
           background: var(--bg-tertiary);
           border: 2px solid var(--border-primary);
           border-radius: var(--radius-md);
-          padding: var(--space-2);
+          padding: var(--space-2) var(--space-3);
           cursor: pointer;
           color: var(--text-secondary);
           transition: all 0.3s ease;
           display: flex;
           align-items: center;
           justify-content: center;
+          flex-shrink: 0;
+          margin-left: var(--space-2);
+        }
+
+        .workout-analytics-button-dashboard svg {
+          width: 24px;
+          height: 24px;
+          display: block;
         }
 
         .workout-analytics-button-dashboard:hover {
