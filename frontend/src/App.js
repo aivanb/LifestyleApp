@@ -7,10 +7,15 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Profile from './pages/Profile';
 import Personalization from './pages/Personalization';
+import MusclePriorityPage from './pages/MusclePriorityPage';
+import SplitsHome from './pages/SplitsHome';
+import SplitEditor from './pages/SplitEditor';
+import SplitNew from './pages/SplitNew';
 import DataViewer from './pages/DataViewer';
 import FoodLog from './pages/FoodLog';
 import WorkoutTracker from './pages/WorkoutTracker';
 import AdditionalTrackers from './pages/AdditionalTrackers';
+import Analytics from './pages/Analytics';
 import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
@@ -40,6 +45,38 @@ function App() {
                     <Personalization />
                   </ProtectedRoute>
                 } 
+              />
+              <Route
+                path="/personalization/splits"
+                element={
+                  <ProtectedRoute>
+                    <SplitsHome />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/personalization/muscle-priority"
+                element={
+                  <ProtectedRoute>
+                    <MusclePriorityPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/personalization/splits/:splitId/edit"
+                element={
+                  <ProtectedRoute>
+                    <SplitEditor />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/personalization/splits/new"
+                element={
+                  <ProtectedRoute>
+                    <SplitNew />
+                  </ProtectedRoute>
+                }
               />
               <Route 
                 path="/data-viewer" 
@@ -72,6 +109,14 @@ function App() {
                     element={
                       <ProtectedRoute>
                         <AdditionalTrackers />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/analytics"
+                    element={
+                      <ProtectedRoute>
+                        <Analytics />
                       </ProtectedRoute>
                     }
                   />

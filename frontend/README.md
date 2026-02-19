@@ -37,18 +37,12 @@ React frontend for the Tracking App with modern UI components, authentication, a
 ```
 src/
 ├── components/          # Reusable UI components
-│   ├── Navbar.js       # Navigation component
-│   └── ProtectedRoute.js # Route protection
-├── contexts/            # React Context providers
-│   └── AuthContext.js  # Authentication state
-├── pages/              # Page components
-│   ├── Login.js        # Login page
-│   ├── Register.js      # Registration page
-│   ├── Dashboard.js     # Main dashboard
-│   ├── OpenAI.js       # OpenAI integration
-│   └── Profile.js       # User profile
+│   ├── trackers/       # Health metric trackers
+│   ├── analytics/      # Chart components
+│   └── ...             # Other components
+├── pages/              # Route-level components
 ├── services/           # API communication
-│   └── api.js          # Axios service layer
+├── contexts/           # React Context providers
 ├── App.js              # Main app component
 ├── index.js            # App entry point
 └── index.css           # Global styles
@@ -63,9 +57,13 @@ src/
 
 ### Main Components
 - **Navbar**: Navigation with user menu and logout
-- **Dashboard**: User dashboard with quick stats
-- **OpenAI**: Interactive prompt interface with usage stats
 - **Profile**: User profile management
+- **FoodLog**: Food logging interface
+- **WorkoutTracker**: Workout tracking interface
+- **AdditionalTrackers**: Health metrics tracking
+- **DataViewer**: Database viewer interface
+- **Analytics**: Data analytics dashboard
+- **Personalization**: Muscle priorities and splits configuration
 
 ## State Management
 
@@ -91,10 +89,11 @@ src/
 - Password changes
 - Token refresh
 
-### OpenAI Endpoints
-- Send prompts to OpenAI API
-- Usage statistics tracking
-- Cost monitoring
+### Data Endpoints
+- Food logging and management
+- Workout tracking
+- Health metrics
+- Analytics data
 
 ## Styling
 
@@ -133,13 +132,6 @@ REACT_APP_ENV=development
 4. JWT tokens stored in localStorage
 5. User redirected to dashboard
 6. Tokens automatically refreshed
-
-### OpenAI Integration
-1. User enters prompt in textarea
-2. Form submits to OpenAI endpoint
-3. Response displayed to user
-4. Usage statistics updated
-5. Cost tracking maintained
 
 ### Responsive Design
 - Mobile-first approach

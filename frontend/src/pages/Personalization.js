@@ -1,43 +1,56 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
-import MusclePriority from '../components/MusclePriority';
-import SplitCreator from '../components/SplitCreator';
 
 /**
  * Personalization Component
  * 
  * Comprehensive personalization management with:
- * - Goal management and macro calculations
+ * - Goal management
  * - Body composition goals
  * - Macro goals
- * - Weight calculator with last logged weight
- * - Nutritional metadata generation
- * - Muscle Priority management
- * - Split Creator
  */
 const Personalization = () => {
-  const [activeTab, setActiveTab] = useState('goals');
+  const navigate = useNavigate();
   const [goals, setGoals] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [editingBodyComposition, setEditingBodyComposition] = useState(false);
   const [editingMacroGoals, setEditingMacroGoals] = useState(false);
-  const [lastWeight, setLastWeight] = useState(null);
-  const [macroCalculation, setMacroCalculation] = useState({
-    weight_goal: '',
-    timeframe_weeks: '',
-    calculating: false,
-    result: null
-  });
-
-  const tabs = [
-    { id: 'goals', label: 'Goals & Macros', icon: '🎯' },
-    { id: 'muscle-priority', label: 'Muscle Priority', icon: '💪' },
-    { id: 'split-creator', label: 'Split Creator', icon: '📅' }
+  const bodyCompositionGoalKeys = ['weight_goal', 'lean_mass_goal', 'fat_mass_goal', 'cost_goal'];
+  const primaryMacroGoalKeys = ['calories_goal', 'carbohydrates_goal', 'protein_goal', 'fat_goal', 'sodium_goal'];
+  const knownMacroGoalKeys = [
+    'calories_goal',
+    'protein_goal',
+    'fat_goal',
+    'carbohydrates_goal',
+    'fiber_goal',
+    'sodium_goal',
+    'sugar_goal',
+    'saturated_fat_goal',
+    'trans_fat_goal',
+    'calcium_goal',
+    'iron_goal',
+    'magnesium_goal',
+    'cholesterol_goal',
+    'vitamin_a_goal',
+    'vitamin_c_goal',
+    'vitamin_d_goal',
+    'caffeine_goal',
   ];
 
   useEffect(() => {
+    // Override global .main-content centering only while on /personalization.
+    if (typeof document !== 'undefined') {
+      document.body.classList.add('route-personalization');
+    }
     loadPersonalizationData();
+
+    return () => {
+      if (typeof document !== 'undefined') {
+        document.body.classList.remove('route-personalization');
+      }
+    };
   }, []);
 
   const loadPersonalizationData = async () => {
@@ -47,11 +60,6 @@ const Personalization = () => {
       
       if (response.data.data) {
         setGoals(response.data.data.goals);
-        // Get last logged weight
-        const weightResponse = await api.getWeightLogs();
-        if (weightResponse.data && weightResponse.data.length > 0) {
-          setLastWeight(weightResponse.data[0].weight);
-        }
       }
     } catch (err) {
       const errorMessage = err.response?.data?.error?.message || 
@@ -71,8 +79,11 @@ const Personalization = () => {
 
   const handleGoalsUpdate = async (updatedGoals) => {
     try {
-      await api.put('/users/goals/', updatedGoals);
-      setGoals(updatedGoals);
+      const sanitizedGoals = Object.fromEntries(
+        Object.entries(updatedGoals || {}).map(([k, v]) => [k, v === '' ? null : v])
+      );
+      await api.put('/users/goals/', sanitizedGoals);
+      setGoals(sanitizedGoals);
       setEditingBodyComposition(false);
       setEditingMacroGoals(false);
     } catch (err) {
@@ -81,197 +92,64 @@ const Personalization = () => {
     }
   };
 
-  const calculateMacros = useCallback(async () => {
-    if (!macroCalculation.weight_goal || !macroCalculation.timeframe_weeks) {
-      return;
-    }
-
-    setMacroCalculation(prev => ({ ...prev, calculating: true }));
-    
-    try {
-      // Calculate all nutritional metadata
-      const nutritionalData = {
-        calories: Math.round(2000 + (parseFloat(macroCalculation.weight_goal) * 10)),
-        protein: Math.round(parseFloat(macroCalculation.weight_goal) * 2.2),
-        fat: Math.round(parseFloat(macroCalculation.weight_goal) * 0.8),
-        carbohydrates: Math.round(parseFloat(macroCalculation.weight_goal) * 3.5),
-        fiber: Math.round(parseFloat(macroCalculation.weight_goal) * 0.4),
-        sodium: Math.round(parseFloat(macroCalculation.weight_goal) * 0.5),
-        sugar: Math.round(parseFloat(macroCalculation.weight_goal) * 0.3),
-        saturated_fat: Math.round(parseFloat(macroCalculation.weight_goal) * 0.2),
-        trans_fat: Math.round(parseFloat(macroCalculation.weight_goal) * 0.05),
-        calcium: Math.round(parseFloat(macroCalculation.weight_goal) * 12),
-        iron: Math.round(parseFloat(macroCalculation.weight_goal) * 0.8),
-        magnesium: Math.round(parseFloat(macroCalculation.weight_goal) * 4),
-        cholesterol: Math.round(parseFloat(macroCalculation.weight_goal) * 0.3),
-        vitamin_a: Math.round(parseFloat(macroCalculation.weight_goal) * 300),
-        vitamin_c: Math.round(parseFloat(macroCalculation.weight_goal) * 90),
-        vitamin_d: Math.round(parseFloat(macroCalculation.weight_goal) * 20),
-        caffeine: Math.round(parseFloat(macroCalculation.weight_goal) * 0.4)
-      };
-
-      setMacroCalculation(prev => ({ 
-        ...prev, 
-        calculating: false, 
-        result: nutritionalData 
-      }));
-
-      // Update goals with calculated values
-      const updatedGoals = {
-        ...goals,
-        ...nutritionalData
-      };
-      
-      await handleGoalsUpdate(updatedGoals);
-    } catch (err) {
-      setError('Failed to calculate macros');
-      console.error('Macro calculation error:', err);
-    }
-  }, [macroCalculation.weight_goal, macroCalculation.timeframe_weeks, goals]);
-
-  const renderActiveTab = () => {
-    switch (activeTab) {
-      case 'goals':
-        return (
-          <div>
-            {error && (
-              <div className="error-message">
-                <p>{error}</p>
-              </div>
-            )}
-
-            {/* Body Composition Goals */}
-            <div className="goals-section">
-              <div className="section-header">
-                <h2>Body Composition Goals</h2>
-                <button
-                  className="btn btn-secondary"
-                  onClick={() => setEditingBodyComposition(!editingBodyComposition)}
-                >
-                  {editingBodyComposition ? 'Cancel' : 'Edit Goals'}
-                </button>
-              </div>
-
-              {editingBodyComposition ? (
-                <BodyCompositionForm 
-                  goals={goals}
-                  onSave={handleGoalsUpdate}
-                  onCancel={() => setEditingBodyComposition(false)}
-                />
-              ) : (
-                <div className="goals-display">
-                  <div className="goal-item">
-                    <span className="goal-label">Target Weight</span>
-                    <span className="goal-value">{goals?.weight_goal ? `${goals.weight_goal} kg` : 'Not set'}</span>
-                  </div>
-                  <div className="goal-item">
-                    <span className="goal-label">Lean Mass Goal</span>
-                    <span className="goal-value">{goals?.lean_mass_goal ? `${goals.lean_mass_goal} kg` : 'Not set'}</span>
-                  </div>
-                  <div className="goal-item">
-                    <span className="goal-label">Fat Mass Goal</span>
-                    <span className="goal-value">{goals?.fat_mass_goal ? `${goals.fat_mass_goal} kg` : 'Not set'}</span>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Macro Goals */}
-            <div className="goals-section">
-              <div className="section-header">
-                <h2>Macro Goals</h2>
-                <button
-                  className="btn btn-secondary"
-                  onClick={() => setEditingMacroGoals(!editingMacroGoals)}
-                >
-                  {editingMacroGoals ? 'Cancel' : 'Edit Goals'}
-                </button>
-              </div>
-
-              {editingMacroGoals ? (
-                <MacroGoalsForm 
-                  goals={goals}
-                  onSave={handleGoalsUpdate}
-                  onCancel={() => setEditingMacroGoals(false)}
-                />
-              ) : (
-                <div className="macro-goals-display">
-                  <div className="macro-grid">
-                    <div className="macro-item">
-                      <span className="macro-label">Calories</span>
-                      <span className="macro-value">{goals?.calories_goal || 'Not set'}</span>
-                    </div>
-                    <div className="macro-item">
-                      <span className="macro-label">Protein</span>
-                      <span className="macro-value">{goals?.protein_goal ? `${goals.protein_goal}g` : 'Not set'}</span>
-                    </div>
-                    <div className="macro-item">
-                      <span className="macro-label">Fat</span>
-                      <span className="macro-value">{goals?.fat_goal ? `${goals.fat_goal}g` : 'Not set'}</span>
-                    </div>
-                    <div className="macro-item">
-                      <span className="macro-label">Carbohydrates</span>
-                      <span className="macro-value">{goals?.carbohydrates_goal ? `${goals.carbohydrates_goal}g` : 'Not set'}</span>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Weight Calculator */}
-            <div className="weight-calculator-section">
-              <div className="weight-calculator-card">
-                <h3>Weight Calculator</h3>
-                {lastWeight && (
-                  <p className="last-weight">Last logged weight: {lastWeight} kg</p>
-                )}
-                
-                <div className="calculator-form">
-                  <div className="form-group">
-                    <label>Target Weight (kg)</label>
-                    <input
-                      type="number"
-                      step="0.1"
-                      value={macroCalculation.weight_goal}
-                      onChange={(e) => setMacroCalculation(prev => ({ ...prev, weight_goal: e.target.value }))}
-                      className="form-input"
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label>Timeframe (weeks)</label>
-                    <input
-                      type="number"
-                      min="1"
-                      value={macroCalculation.timeframe_weeks}
-                      onChange={(e) => setMacroCalculation(prev => ({ ...prev, timeframe_weeks: e.target.value }))}
-                      className="form-input"
-                    />
-                  </div>
-                  <button
-                    className="btn btn-primary"
-                    onClick={calculateMacros}
-                    disabled={macroCalculation.calculating}
-                  >
-                    {macroCalculation.calculating ? 'Calculating...' : 'Calculate Macros'}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        );
-      case 'muscle-priority':
-        return <MusclePriority onPrioritiesUpdated={() => {}} />;
-      case 'split-creator':
-        return (
-          <SplitCreator 
-            onSplitCreated={() => {}}
-            onSplitUpdated={() => {}}
-          />
-        );
-      default:
-        return null;
-    }
+  const formatGoalLabel = (key) => {
+    const base = `${key}`.replace(/_goal$/i, '').replace(/_/g, ' ');
+    return base.replace(/\b\w/g, (c) => c.toUpperCase());
   };
+
+  const getUnitForGoalKey = (key) => {
+    const units = {
+      // Body composition
+      weight_goal: 'kg',
+      lean_mass_goal: 'kg',
+      fat_mass_goal: 'kg',
+      cost_goal: '$',
+
+      // Macros + nutrition
+      calories_goal: 'kcal',
+      protein_goal: 'g',
+      fat_goal: 'g',
+      carbohydrates_goal: 'g',
+      fiber_goal: 'g',
+      sodium_goal: 'mg',
+      sugar_goal: 'g',
+      saturated_fat_goal: 'g',
+      trans_fat_goal: 'g',
+      calcium_goal: 'mg',
+      iron_goal: 'mg',
+      magnesium_goal: 'mg',
+      cholesterol_goal: 'mg',
+      vitamin_a_goal: 'IU',
+      vitamin_c_goal: 'mg',
+      vitamin_d_goal: 'IU',
+      caffeine_goal: 'mg',
+    };
+
+    return units[key] || '';
+  };
+
+  const formatGoalValue = (key, value) => {
+    if (value === null || value === undefined || value === '') return 'Not set';
+
+    const unit = getUnitForGoalKey(key);
+    if (unit === '$') return `$${value}`;
+    if (!unit) return `${value}`;
+    return `${value} ${unit}`;
+  };
+
+  const macroGoalKeysRaw = Array.from(
+    new Set([
+      ...knownMacroGoalKeys,
+      ...Object.keys(goals || {}).filter(
+        (key) => `${key}`.endsWith('_goal') && !bodyCompositionGoalKeys.includes(key)
+      ),
+    ])
+  ).sort((a, b) => a.localeCompare(b));
+
+  const macroGoalKeys = [
+    ...primaryMacroGoalKeys,
+    ...macroGoalKeysRaw.filter((k) => !primaryMacroGoalKeys.includes(k)),
+  ];
 
   if (loading) {
     return (
@@ -286,97 +164,145 @@ const Personalization = () => {
 
   return (
     <div className="personalization-page">
-      <div className="page-header">
-        <h1>Personalization</h1>
-        <p>Customize your fitness and nutrition goals</p>
+      <div className="personalization-actions">
+        <button
+          type="button"
+          className="btn btn-primary personalization-action-btn"
+          onClick={() => navigate('/personalization/muscle-priority')}
+        >
+          Muscle Priority
+        </button>
+        <button
+          type="button"
+          className="btn btn-primary personalization-splits-btn"
+          onClick={() => navigate('/personalization/splits')}
+        >
+          Splits
+        </button>
       </div>
 
-      {/* Tab Navigation */}
-      <div className="tab-navigation">
-        <div className="tab-buttons">
-          {tabs.map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`tab-button ${activeTab === tab.id ? 'active' : ''}`}
-            >
-              <span className="tab-icon">{tab.icon}</span>
-              <span className="tab-label">{tab.label}</span>
-            </button>
-          ))}
+      {error && (
+        <div className="error-message">
+          <p>{error}</p>
+        </div>
+      )}
+
+      {/* Body Composition Goals */}
+      <div className="goals-section goals-section--body-comp">
+        {editingBodyComposition ? (
+          <BodyCompositionForm 
+            goals={goals}
+            onSave={handleGoalsUpdate}
+          />
+        ) : (
+          <div className="goals-display">
+            {bodyCompositionGoalKeys.map((key) => (
+              <div key={key} className="goal-item">
+                <span className="goal-label">{formatGoalLabel(key)}</span>
+                <span className="goal-value">{formatGoalValue(key, goals?.[key])}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div className="goals-card-footer">
+          <button
+            type="button"
+            className="goals-text-btn"
+            onClick={() => setEditingBodyComposition(!editingBodyComposition)}
+          >
+            {editingBodyComposition ? 'Cancel' : 'Edit Goals'}
+          </button>
         </div>
       </div>
 
-      {/* Tab Content */}
-      <div className="tab-content">
-        {renderActiveTab()}
+      {/* Macro Goals */}
+      <div className="goals-section goals-section--macro-goals">
+        {editingMacroGoals ? (
+          <MacroGoalsForm 
+            goals={goals}
+            onSave={handleGoalsUpdate}
+          />
+        ) : (
+          <div className="macro-goals-display">
+            <div className="macro-primary-row">
+              {primaryMacroGoalKeys.map((key) => (
+                <div key={key} className="macro-item macro-item--primary">
+                  <span className="macro-label">{formatGoalLabel(key)}</span>
+                  <span className="macro-value">{formatGoalValue(key, goals?.[key])}</span>
+                </div>
+              ))}
+            </div>
+
+            <div className="macro-grid">
+              {macroGoalKeys
+                .filter((k) => !primaryMacroGoalKeys.includes(k))
+                .map((key) => (
+                  <div key={key} className="macro-item">
+                    <span className="macro-label">{formatGoalLabel(key)}</span>
+                    <span className="macro-value">{formatGoalValue(key, goals?.[key])}</span>
+                  </div>
+                ))}
+            </div>
+          </div>
+        )}
+
+        <div className="goals-card-footer">
+          <button
+            type="button"
+            className="goals-text-btn"
+            onClick={() => setEditingMacroGoals(!editingMacroGoals)}
+          >
+            {editingMacroGoals ? 'Cancel' : 'Edit Goals'}
+          </button>
+        </div>
       </div>
 
       <style>{`
+        .route-personalization .main-content {
+          justify-content: flex-start;
+          align-items: stretch;
+        }
+
         .personalization-page {
-          max-width: 1200px;
-          margin: 0 auto;
-          padding: var(--space-6);
-        }
-
-        .page-header {
-          margin-bottom: var(--space-8);
-        }
-
-        .page-header h1 {
-          font-size: var(--text-3xl);
-          font-weight: var(--font-weight-bold);
-          color: var(--text-primary);
-          margin-bottom: var(--space-2);
-        }
-
-        .page-header p {
-          color: var(--text-secondary);
+          width: 100%;
+          max-width: none;
+          margin: 0;
+          padding: 0 var(--space-4) var(--space-4);
           font-size: var(--text-lg);
+          font-family: var(--font-primary);
         }
 
-        .tab-navigation {
-          margin-bottom: var(--space-6);
-        }
-
-        .tab-buttons {
+        .personalization-actions {
           display: flex;
-          gap: var(--space-2);
-          overflow-x: auto;
+          justify-content: flex-end;
+          gap: var(--space-8);
+          margin-bottom: var(--space-10);
+          padding-right: var(--space-10);
         }
 
-        .tab-button {
-          display: flex;
-          align-items: center;
-          gap: var(--space-2);
-          padding: var(--space-3) var(--space-4);
-          border: 1px solid var(--border-primary);
-          border-radius: var(--radius-md);
-          background: var(--bg-secondary);
-          color: var(--text-secondary);
-          cursor: pointer;
-          transition: all 0.2s var(--ease-out-cubic);
-          white-space: nowrap;
+        .personalization-action-btn {
+          padding: var(--space-8) var(--space-20);
+          font-size: var(--text-4xl);
+          font-weight: var(--font-weight-semibold);
+          transform: scale(1.2);
+          transition: transform 0.25s var(--ease-out-cubic), box-shadow 0.25s var(--ease-out-cubic), background 0.25s var(--ease-out-cubic);
         }
 
-        .tab-button:hover {
-          background: var(--bg-tertiary);
-          color: var(--text-primary);
+        .personalization-splits-btn {
+          padding: var(--space-8) var(--space-20);
+          font-size: var(--text-4xl);
+          font-weight: var(--font-weight-semibold);
+          transform: scale(1.2);
+          background: var(--accent-purple);
+          border-color: var(--accent-purple);
+          transition: transform 0.25s var(--ease-out-cubic), box-shadow 0.25s var(--ease-out-cubic), background 0.25s var(--ease-out-cubic);
         }
 
-        .tab-button.active {
-          background: var(--accent-primary);
-          color: white;
-          border-color: var(--accent-primary);
-        }
-
-        .tab-icon {
-          font-size: var(--text-lg);
-        }
-
-        .tab-label {
-          font-size: var(--text-sm);
-          font-weight: var(--font-weight-medium);
+        .personalization-action-btn:hover,
+        .personalization-splits-btn:hover {
+          transform: translateY(-3px) scale(1.2);
+          box-shadow: 0 24px 55px rgba(0, 0, 0, 0.42);
         }
 
         .loading-container {
@@ -412,24 +338,28 @@ const Personalization = () => {
 
         .goals-section {
           background: var(--bg-secondary);
-          border: 1px solid var(--border-primary);
+          border: none;
           border-radius: var(--radius-lg);
           padding: var(--space-6);
           margin-bottom: var(--space-6);
+          box-shadow: 0 24px 55px rgba(0, 0, 0, 0.4);
+          transition: transform 0.25s var(--ease-out-cubic), box-shadow 0.25s var(--ease-out-cubic);
+          backdrop-filter: blur(8px);
         }
 
-        .section-header {
+        .goals-section:hover {
+          transform: translateY(-3px);
+          box-shadow: 0 30px 60px rgba(0, 0, 0, 0.45);
+        }
+
+        .goals-section--body-comp {
+          padding-top: var(--space-10);
+        }
+
+        .goals-card-footer {
           display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: var(--space-6);
-        }
-
-        .section-header h2 {
-          font-size: var(--text-xl);
-          font-weight: var(--font-weight-semibold);
-          color: var(--text-primary);
-          margin: 0;
+          justify-content: flex-end;
+          margin-top: var(--space-5);
         }
 
         .goals-display {
@@ -442,18 +372,52 @@ const Personalization = () => {
           display: flex;
           flex-direction: column;
           gap: var(--space-2);
+          align-items: center;
+          text-align: center;
+          border-radius: var(--radius-md);
+          transition: transform 0.2s var(--ease-out-cubic), background 0.2s var(--ease-out-cubic);
+          padding: var(--space-3);
+        }
+
+        .goal-item:hover {
+          transform: translateY(-2px);
+          background: rgba(255, 255, 255, 0.04);
         }
 
         .goal-label {
-          font-size: var(--text-sm);
-          color: var(--text-secondary);
+          font-size: var(--text-base);
+          color: var(--text-tertiary);
           font-weight: var(--font-weight-medium);
         }
 
         .goal-value {
-          font-size: var(--text-lg);
+          font-size: var(--text-xl);
           color: var(--text-primary);
           font-weight: var(--font-weight-semibold);
+        }
+
+        .goals-text-btn {
+          background: transparent;
+          border: none;
+          padding: 0;
+          color: var(--text-secondary);
+          font-family: var(--font-primary);
+          font-size: var(--text-base);
+          font-weight: var(--font-weight-medium);
+          cursor: pointer;
+        }
+
+        .goals-text-btn:hover {
+          text-decoration: underline;
+          color: var(--text-primary);
+        }
+
+        .macro-primary-row {
+          display: grid;
+          grid-template-columns: repeat(5, minmax(140px, 1fr));
+          gap: var(--space-4);
+          margin-bottom: var(--space-5);
+          padding-top: var(--space-4);
         }
 
         .macro-grid {
@@ -466,44 +430,38 @@ const Personalization = () => {
           display: flex;
           flex-direction: column;
           gap: var(--space-2);
+          align-items: center;
+          text-align: center;
+          border-radius: var(--radius-md);
+          transition: transform 0.2s var(--ease-out-cubic), background 0.2s var(--ease-out-cubic);
+          padding: var(--space-3);
+        }
+
+        .macro-item:hover {
+          transform: translateY(-2px);
+          background: rgba(255, 255, 255, 0.04);
         }
 
         .macro-label {
-          font-size: var(--text-sm);
-          color: var(--text-secondary);
+          font-size: var(--text-base);
+          color: var(--text-tertiary);
           font-weight: var(--font-weight-medium);
         }
 
         .macro-value {
-          font-size: var(--text-lg);
-          color: var(--text-primary);
-          font-weight: var(--font-weight-semibold);
-        }
-
-        .weight-calculator-section {
-          background: var(--bg-secondary);
-          border: 1px solid var(--border-primary);
-          border-radius: var(--radius-lg);
-          padding: var(--space-6);
-        }
-
-        .weight-calculator-card h3 {
           font-size: var(--text-xl);
-          font-weight: var(--font-weight-semibold);
           color: var(--text-primary);
-          margin-bottom: var(--space-4);
+          font-weight: var(--font-weight-semibold);
         }
 
-        .last-weight {
-          color: var(--text-secondary);
-          margin-bottom: var(--space-4);
+        .macro-item--primary .macro-label {
+          font-size: var(--text-xl);
+          color: var(--text-primary);
+          font-weight: var(--font-weight-semibold);
         }
 
-        .calculator-form {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-          gap: var(--space-4);
-          align-items: end;
+        .macro-item--primary .macro-value {
+          font-size: var(--text-4xl);
         }
 
         .form-group {
@@ -579,21 +537,22 @@ const Personalization = () => {
 
         @media (max-width: 768px) {
           .personalization-page {
-            padding: var(--space-4);
+            padding: var(--space-3);
           }
 
-          .section-header {
+          .personalization-actions {
+            justify-content: stretch;
             flex-direction: column;
-            gap: var(--space-4);
-            align-items: stretch;
           }
 
-          .calculator-form {
-            grid-template-columns: 1fr;
+          .personalization-splits-btn,
+          .personalization-action-btn {
+            width: 100%;
+            transform: none;
           }
 
-          .tab-buttons {
-            flex-wrap: wrap;
+          .macro-primary-row {
+            grid-template-columns: 1fr 1fr;
           }
         }
       `}</style>
@@ -602,11 +561,12 @@ const Personalization = () => {
 };
 
 // Body Composition Form Component
-const BodyCompositionForm = ({ goals, onSave, onCancel }) => {
+const BodyCompositionForm = ({ goals, onSave }) => {
   const [formData, setFormData] = useState({
     weight_goal: goals?.weight_goal || '',
     lean_mass_goal: goals?.lean_mass_goal || '',
-    fat_mass_goal: goals?.fat_mass_goal || ''
+    fat_mass_goal: goals?.fat_mass_goal || '',
+    cost_goal: goals?.cost_goal || ''
   });
 
   const handleChange = (e) => {
@@ -655,11 +615,19 @@ const BodyCompositionForm = ({ goals, onSave, onCancel }) => {
             className="form-input"
           />
         </div>
+        <div className="form-group">
+          <label>Cost Goal ($)</label>
+          <input
+            type="number"
+            step="0.01"
+            name="cost_goal"
+            value={formData.cost_goal}
+            onChange={handleChange}
+            className="form-input"
+          />
+        </div>
       </div>
       <div className="form-actions">
-        <button type="button" className="btn btn-secondary" onClick={onCancel}>
-          Cancel
-        </button>
         <button type="submit" className="btn btn-primary">
           Save Goals
         </button>
@@ -669,7 +637,7 @@ const BodyCompositionForm = ({ goals, onSave, onCancel }) => {
 };
 
 // Macro Goals Form Component
-const MacroGoalsForm = ({ goals, onSave, onCancel }) => {
+const MacroGoalsForm = ({ goals, onSave }) => {
   const [formData, setFormData] = useState({
     calories_goal: goals?.calories_goal || '',
     protein_goal: goals?.protein_goal || '',
@@ -891,9 +859,6 @@ const MacroGoalsForm = ({ goals, onSave, onCancel }) => {
         </div>
       </div>
       <div className="form-actions">
-        <button type="button" className="btn btn-secondary" onClick={onCancel}>
-          Cancel
-        </button>
         <button type="submit" className="btn btn-primary">
           Save Goals
         </button>

@@ -147,18 +147,21 @@ describe('VoiceRecorder Component', () => {
     const startButton = screen.getByText('Start Recording');
     fireEvent.click(startButton);
     
-    // Wait for recording to start
+    // Wait for recording to start and timer to be set up
     await waitFor(() => {
       expect(voiceService.startRecording).toHaveBeenCalled();
     });
     
-    // Fast-forward time to 60 seconds
-    jest.advanceTimersByTime(60000);
+    // Fast-forward time incrementally to ensure each timer callback runs
+    // The timer runs every 1000ms, so we need 60 callbacks
+    for (let i = 0; i < 60; i++) {
+      jest.advanceTimersByTime(1000);
+      // Allow React to process state updates
+      await Promise.resolve();
+    }
     
-    // Wait for the timer callback to execute and call stopRecording
-    await waitFor(() => {
-      expect(voiceService.stopRecording).toHaveBeenCalled();
-    }, { timeout: 1000 });
+    // After 60 seconds, stopRecording should have been called
+    expect(voiceService.stopRecording).toHaveBeenCalled();
   });
 
   it('calls onTranscriptionComplete with transcribed text', async () => {

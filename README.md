@@ -2,7 +2,7 @@
 
 A comprehensive fitness tracking application that helps you monitor your workouts, nutrition, and health metrics - all in one place. Built with modern web technologies and featuring AI-powered food logging.
 
-## 🎯 What is this app?
+## What is this app?
 
 This is a full-featured fitness tracking system that allows you to:
 - **Track your workouts** with detailed exercise logs and muscle group targeting
@@ -11,7 +11,7 @@ This is a full-featured fitness tracking system that allows you to:
 - **Use voice commands** to log food quickly with AI transcription
 - **View analytics** with comprehensive data visualization and progress tracking
 
-## 🚀 Getting Started
+## Getting Started
 
 ### System Requirements
 
@@ -50,9 +50,32 @@ Before installing, ensure you have:
 
 ### Manual Installation
 
-If you prefer manual setup, see the detailed instructions in `DEVELOPER.md`.
+If you prefer manual setup:
 
-## 📱 Using the Application
+**Backend Setup:**
+```bash
+cd backend
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+pip install -r requirements.txt
+python manage.py migrate
+python manage.py setup_database --required  # Reference data only
+python manage.py setup_database --full     # With test data
+python manage.py runserver
+```
+
+**Frontend Setup:**
+```bash
+cd frontend
+npm install
+npm start
+```
+
+The app will be available at:
+- Frontend: http://localhost:3000
+- Backend API: http://localhost:8000
+
+## Using the Application
 
 ### First Time Setup
 
@@ -62,65 +85,34 @@ If you prefer manual setup, see the detailed instructions in `DEVELOPER.md`.
 
 ### Core Features
 
-#### 🏋️ Workout Tracking
+#### Workout Tracking
 - Create custom workout routines and splits
 - Log sets, reps, and weights
 - Track muscle group activation
 - View workout history and progress
+- Manage muscle priorities for balanced training
 
-#### 🍎 Nutrition Logging
+#### Nutrition Logging
 - Search our database of 8000+ foods
 - Create custom foods and meals
 - Use voice commands to log food naturally
 - Track calories and all macronutrients
+- View daily macro summaries
 
-#### 📊 Health Metrics
+#### Health Metrics
 - Log daily weight and body measurements
 - Track water intake and steps
 - Monitor sleep quality and duration
 - Record cardio sessions
+- View streak tracking for consistency
 
-#### 📈 Data Analysis
+#### Data Analysis
 - View trends and progress charts
 - Export data for external analysis
 - Get AI-powered insights (requires OpenAI API key)
+- Comprehensive analytics dashboard
 
-## 🖌️ UI Refresh (November 2025)
-
-- Simplified theming to **Dark** and **Light** modes with neutral grey backdrops
-- Adopted the **Josefin Sans** typeface for cleaner typography across dashboards
-- All primary surfaces (cards, tables, modals) now use borderless glass panels with deeper shadows
-- Header bars have been removed—floating, high-contrast action buttons now follow the viewport
-- Menu surfaces animate with subtle float-in effects for a more polished feel
-
-## 🛠️ Troubleshooting
-
-### Common Issues
-
-**"Cannot connect to database"**
-- Ensure MySQL is running: `mysql --version`
-- Check your database credentials in `.env`
-- Make sure the database exists: `CREATE DATABASE tracking_app;`
-
-**"Module not found" errors**
-- Backend: Activate virtual environment and run `pip install -r requirements.txt`
-- Frontend: Run `npm install` in the frontend directory
-
-**"Port already in use"**
-- Backend runs on port 8000, frontend on port 3000
-- Kill existing processes or change ports in configuration
-
-**Voice recording not working**
-- Ensure microphone permissions are granted in browser
-- For better accuracy, install Vosk model: `python backend/download_vosk_model.py`
-
-### Getting Help
-
-1. Check the `notes/` directory for additional documentation
-2. Review `DEVELOPER.md` for technical details
-3. Look at existing test files for usage examples
-
-## 🔧 Configuration
+## Configuration
 
 ### Essential Settings
 
@@ -146,7 +138,7 @@ DEBUG=False                    # Set True for development only
 - **Voice Transcription**: Install Vosk for offline voice processing
 - **Email Notifications**: Configure SMTP settings (coming soon)
 
-## 📊 Data Privacy
+## Data Privacy
 
 Your data stays on your machine:
 - All data is stored locally in your MySQL database
@@ -154,7 +146,7 @@ Your data stays on your machine:
 - API keys are only used for their intended services
 - You can export and delete your data at any time
 
-## 🔄 Updates
+## Updates
 
 To update to the latest version:
 ```bash
@@ -165,7 +157,7 @@ cd ../frontend && npm install
 cd ../backend && python manage.py migrate
 ```
 
-## 🎮 Quick Start Examples
+## Quick Start Examples
 
 ### Log Your First Workout
 1. Go to "Workout Tracker"
@@ -187,10 +179,46 @@ cd ../backend && python manage.py migrate
 3. Review the parsed items
 4. Confirm to log
 
-## 📝 License
+## Troubleshooting
+
+### Common Issues
+
+**"Cannot connect to database"**
+- Ensure MySQL is running: `mysql --version`
+- Check your database credentials in `.env`
+- Make sure the database exists: `CREATE DATABASE tracking_app;`
+
+**"Module not found" errors**
+- Backend: Activate virtual environment and run `pip install -r requirements.txt`
+- Frontend: Run `npm install` in the frontend directory
+
+**"Port already in use"**
+- Backend runs on port 8000, frontend on port 3000
+- Kill existing processes or change ports in configuration
+
+**Voice recording not working**
+- Ensure microphone permissions are granted in browser
+- For better accuracy, install Vosk model: `python backend/download_vosk_model.py`
+
+### Getting Help
+
+1. Check the `DEVELOPER.md` for technical details
+2. Review existing test files for usage examples
+3. Check the `docs/` directory for additional documentation
+
+## UI Design (November 2025 Refresh)
+
+The application features a modern, minimalistic design:
+- **Themes**: Dark and Light modes with neutral grey backdrops
+- **Typography**: Josefin Sans font for clean, readable text
+- **Surfaces**: Borderless glass panels with deep shadows
+- **Floating Actions**: High-contrast gradient buttons
+- **Animations**: Smooth transitions and hover effects
+
+## License
 
 This project is licensed under the MIT License. See `LICENSE` file for details.
 
 ---
 
-**Need more help?** Check out `DEVELOPER.md` for technical documentation or explore the `notes/` directory for detailed guides.
+**Need more help?** Check out `DEVELOPER.md` for technical documentation or explore the `docs/` directory for detailed guides.

@@ -74,6 +74,8 @@ describe('FoodLoggingDashboard', () => {
       }
     });
 
+    // getFoodLogs is called multiple times (for daily progress and streak calculation)
+    // Use mockResolvedValue so it works for all calls
     api.getFoodLogs.mockResolvedValue({
       data: {
         data: {

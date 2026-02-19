@@ -101,7 +101,7 @@ class RealUserWorkflowTestCase(APITestCase):
         response = self.client.post('/api/workouts/', workout_data_1, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         workout_1_id = response.data['data']['workouts_id']
-        print(f"✓ Workout 1 created with ID: {workout_1_id}")
+        print(f"[OK] Workout 1 created with ID: {workout_1_id}")
         
         # Verify workout was actually created in database
         workout_1 = Workout.objects.get(workouts_id=workout_1_id)
@@ -131,7 +131,7 @@ class RealUserWorkflowTestCase(APITestCase):
         response = self.client.post('/api/workouts/', workout_data_2, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         workout_2_id = response.data['data']['workouts_id']
-        print(f"✓ Workout 2 created with ID: {workout_2_id}")
+        print(f"[OK] Workout 2 created with ID: {workout_2_id}")
         
         # Step 2: Create a split with multiple days
         print("Step 2: Creating split with multiple days...")
@@ -169,7 +169,7 @@ class RealUserWorkflowTestCase(APITestCase):
         response = self.client.post('/api/workouts/splits/', split_data, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         split_id = response.data['data']['splits_id']
-        print(f"✓ Split created with ID: {split_id}")
+        print(f"[OK] Split created with ID: {split_id}")
         
         # Verify split was actually created in database
         split = Split.objects.get(splits_id=split_id)
@@ -179,12 +179,12 @@ class RealUserWorkflowTestCase(APITestCase):
         # Verify split days were created
         split_days = SplitDay.objects.filter(split=split)
         self.assertEqual(split_days.count(), 3)
-        print(f"✓ {split_days.count()} split days created")
+        print(f"[OK] {split_days.count()} split days created")
         
         # Verify split day targets were created
         total_targets = SplitDayTarget.objects.filter(split_day__split=split).count()
         self.assertEqual(total_targets, 5)  # 2 + 2 + 1 targets
-        print(f"✓ {total_targets} split day targets created")
+        print(f"[OK] {total_targets} split day targets created")
         
         # Step 3: Activate the split with start date
         print("Step 3: Activating split with start date...")
@@ -192,7 +192,7 @@ class RealUserWorkflowTestCase(APITestCase):
         
         response = self.client.post(f'/api/workouts/splits/{split_id}/activate/', activate_data, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        print(f"✓ Split activated with start date: {today}")
+        print(f"[OK] Split activated with start date: {today}")
         
         # Verify split is active in database
         split.refresh_from_db()
@@ -215,7 +215,7 @@ class RealUserWorkflowTestCase(APITestCase):
         response = self.client.post('/api/workouts/logs/', workout_log_data, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         log_id = response.data['data']['workout_log_id']
-        print(f"✓ Workout logged with ID: {log_id}")
+        print(f"[OK] Workout logged with ID: {log_id}")
         
         # Verify workout log was actually created in database
         workout_log = WorkoutLog.objects.get(workout_log_id=log_id)
@@ -234,7 +234,7 @@ class RealUserWorkflowTestCase(APITestCase):
         current_split_day = response.data['data']['current_split_day']
         self.assertIsNotNone(current_split_day)
         self.assertEqual(current_split_day['day_name'], 'Push Day')
-        print(f"✓ Current split day: {current_split_day['day_name']}")
+        print(f"[OK] Current split day: {current_split_day['day_name']}")
         
         # Step 6: Verify muscle priorities can be updated
         print("Step 6: Testing muscle priority updates...")
@@ -254,7 +254,7 @@ class RealUserWorkflowTestCase(APITestCase):
         
         updated_back_log = MuscleLog.objects.get(muscle_log_id=self.back_log.muscle_log_id)
         self.assertEqual(updated_back_log.priority, 75)
-        print(f"✓ Muscle priorities updated: Chest={updated_chest_log.priority}, Back={updated_back_log.priority}")
+        print(f"[OK] Muscle priorities updated: Chest={updated_chest_log.priority}, Back={updated_back_log.priority}")
         
         # Step 7: Verify workout stats
         print("Step 7: Checking workout stats...")
@@ -264,7 +264,7 @@ class RealUserWorkflowTestCase(APITestCase):
         stats = response.data['data']
         self.assertGreater(stats['total_workouts'], 0)
         self.assertGreater(stats['total_muscles'], 0)
-        print(f"✓ Workout stats: {stats['total_workouts']} workouts, {stats['total_muscles']} muscles")
+        print(f"[OK] Workout stats: {stats['total_workouts']} workouts, {stats['total_muscles']} muscles")
         
         # Step 8: Verify recently logged workouts
         print("Step 8: Checking recently logged workouts...")
@@ -273,9 +273,9 @@ class RealUserWorkflowTestCase(APITestCase):
         
         recent_workouts = response.data['data']
         self.assertGreater(len(recent_workouts), 0)
-        print(f"✓ {len(recent_workouts)} recently logged workouts")
+        print(f"[OK] {len(recent_workouts)} recently logged workouts")
         
-        print("\n🎉 Complete user workflow test PASSED! All database operations successful.")
+        print("\n[SUCCESS] Complete user workflow test PASSED! All database operations successful.")
 
     def test_muscle_priority_workflow_real_database(self):
         """Test muscle priority workflow with real database operations"""
@@ -287,7 +287,7 @@ class RealUserWorkflowTestCase(APITestCase):
         
         initial_priorities = response.data['data']
         self.assertGreater(len(initial_priorities), 0)
-        print(f"✓ Retrieved {len(initial_priorities)} muscle priorities")
+        print(f"[OK] Retrieved {len(initial_priorities)} muscle priorities")
         
         # Update priorities
         update_data = {
@@ -314,7 +314,7 @@ class RealUserWorkflowTestCase(APITestCase):
         back_log = MuscleLog.objects.get(muscle_log_id=self.back_log.muscle_log_id)
         self.assertEqual(back_log.priority, 75)
         
-        print("✓ Muscle priorities workflow working correctly with database updates")
+        print("[OK] Muscle priorities workflow working correctly with database updates")
 
     def test_split_analysis_real_calculations(self):
         """Test split analysis with real calculations"""
@@ -365,7 +365,30 @@ class RealUserWorkflowTestCase(APITestCase):
         self.assertEqual(chest_analysis['total_activation'], 225)
         self.assertEqual(chest_analysis['muscle_priority'], 90)
         
-        print("✓ Split analysis calculations working correctly")
+        print("[OK] Split analysis calculations working correctly")
+
+    def test_create_split_without_start_date(self):
+        """Creating a split should work when start_date is omitted (NULL in DB)."""
+        split_data = {
+            'split_name': 'No Start Date Split',
+            'split_days': [
+                {
+                    'day_name': 'Day 1',
+                    'day_order': 1,
+                    'targets': [
+                        {'muscle': self.chest.muscles_id, 'target_activation': 225},
+                    ]
+                }
+            ]
+        }
+
+        response = self.client.post('/api/workouts/splits/', split_data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED, response.data)
+        self.assertTrue(response.data.get('success'))
+
+        split_id = response.data['data']['splits_id']
+        split = Split.objects.get(splits_id=split_id)
+        self.assertIsNone(split.start_date)
 
     def test_workout_creation_with_emoji_icons_real_database(self):
         """Test creating workouts with various emoji icons in real database"""
@@ -396,7 +419,7 @@ class RealUserWorkflowTestCase(APITestCase):
             workout_muscle = WorkoutMuscle.objects.get(workout=workout)
             self.assertEqual(workout_muscle.activation_rating, 100)
         
-        print(f"✓ Successfully created {len(icons)} workouts with emoji icons in database")
+        print(f"[OK] Successfully created {len(icons)} workouts with emoji icons in database")
 
     def test_workout_logging_real_database(self):
         """Test workout logging with real database operations"""
@@ -436,4 +459,4 @@ class RealUserWorkflowTestCase(APITestCase):
         self.assertEqual(log.rir, 2)
         self.assertEqual(log.attributes, ['pause'])
         
-        print("✓ Workout logging working correctly with database operations")
+        print("[OK] Workout logging working correctly with database operations")

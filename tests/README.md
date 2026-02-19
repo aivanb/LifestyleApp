@@ -7,31 +7,66 @@ Comprehensive testing suite for the Tracking App covering backend, frontend, and
 ```
 tests/
 ├── backend/          # Backend unit and integration tests
+│   ├── __init__.py
+│   ├── test_*.py     # Unit tests (models, APIs, services)
+│   └── integration/  # Integration tests (full workflows)
+│       └── test_*.py
 ├── frontend/         # Frontend component and unit tests
+│   └── test_*.js     # React component and page tests
 └── e2e/             # End-to-end user flow tests
+    └── *.spec.js     # Playwright E2E tests
+
+Note: Additional tests also exist in backend/apps/*/tests.py (standard Django location)
 ```
 
 ## Running Tests
 
+### Quick Start (All Tests)
+```bash
+# From project root
+python run_tests.py --all
+```
+
 ### Backend Tests
 ```bash
+# Option 1: Using test runner (recommended)
+python run_tests.py --backend
+
+# Option 2: Using Django directly
 cd backend
 python manage.py test
+
+# Option 3: Run specific test modules
+cd backend
+python manage.py test apps.authentication.tests
+python manage.py test apps.workouts.tests
 ```
 
 ### Frontend Tests
 ```bash
+# Option 1: Using test runner (recommended)
+python run_tests.py --frontend
+
+# Option 2: Using npm directly
 cd frontend
-npm test
+npm test -- --watchAll=false --ci
 ```
 
-### All Tests
+### E2E Tests
 ```bash
-# Backend tests
-cd backend && python manage.py test && cd ..
+# Option 1: Using test runner (recommended)
+python run_tests.py --e2e
 
-# Frontend tests
-cd frontend && npm test && cd ..
+# Option 2: Using Playwright directly
+npx playwright test
+
+# Option 3: Run specific test file
+npx playwright test tests/e2e/test_workout_tracker_e2e.spec.js
+```
+
+### Check Dependencies
+```bash
+python run_tests.py --check-deps
 ```
 
 ## Test Coverage
@@ -53,8 +88,7 @@ cd frontend && npm test && cd ..
 ### E2E Test Coverage
 - **Authentication Flow**: Complete registration and login flows
 - **Navigation**: Protected route navigation and user flows
-- **OpenAI Integration**: Prompt submission and response handling
-- **Profile Management**: Profile updates and data persistence
+- **Data Operations**: Food logging, workout tracking, health metrics
 - **Error Handling**: Network errors and invalid token handling
 
 ## Test Categories
@@ -187,20 +221,6 @@ describe('User Flow', () => {
 - Monitor API response times
 - Check memory usage
 - Validate bundle sizes
-
-## Continuous Integration
-
-### Automated Testing
-- Run tests on every commit
-- Fail builds on test failures
-- Generate test coverage reports
-- Run tests in multiple environments
-
-### Test Reporting
-- Generate HTML coverage reports
-- Track test trends over time
-- Monitor test execution times
-- Report test failures
 
 ## Debugging Tests
 

@@ -1,19 +1,19 @@
-# Tests Developer Guide
+# Tests Developer Guide for AI Agents
 
-Technical documentation for developers and AI agents working on the test suite.
+Technical documentation for AI agents working on the test suite. This document covers test architecture, patterns, requirements, and extension points.
 
 ## Test Architecture Overview
 
-The test suite follows a comprehensive testing strategy covering all layers of the application:
-
+### Directory Structure
 ```
 tests/
 ├── backend/          # Django backend tests
-│   └── test_backend.py
+│   ├── integration/ # Integration tests
+│   └── test_*.py     # Unit and integration tests
 ├── frontend/         # React frontend tests
-│   └── test_frontend.js
+│   └── test_*.js    # Component and unit tests
 └── e2e/             # End-to-end tests
-    └── test_e2e.js
+    └── *.spec.js    # Playwright E2E tests
 ```
 
 ## Backend Testing Strategy
@@ -51,7 +51,7 @@ tests/
 
 #### Service Tests
 - **Purpose**: Test business logic and external service integration
-- **Coverage**: OpenAI service and other business logic
+- **Coverage**: OpenAI service, body metrics, macro calculations
 - **Key Areas**:
   - Service method functionality
   - External API integration
@@ -112,24 +112,6 @@ def test_protected_endpoint_with_auth(self):
     self.assertEqual(response.status_code, 200)
 ```
 
-#### Authentication Flow Testing
-```python
-def test_complete_auth_flow(self):
-    # Test registration
-    response = self.client.post('/api/auth/register/', user_data)
-    self.assertEqual(response.status_code, 201)
-    
-    # Test login
-    response = self.client.post('/api/auth/login/', credentials)
-    self.assertEqual(response.status_code, 200)
-    
-    # Test protected endpoint
-    token = response.data['data']['tokens']['access']
-    headers = {'Authorization': f'Bearer {token}'}
-    response = self.client.get('/api/auth/profile/', headers=headers)
-    self.assertEqual(response.status_code, 200)
-```
-
 ## Frontend Testing Strategy
 
 ### Test Categories
@@ -154,7 +136,7 @@ def test_complete_auth_flow(self):
 
 #### Context Tests
 - **Purpose**: Test React Context providers
-- **Coverage**: Authentication context
+- **Coverage**: Authentication context, Theme context
 - **Key Areas**:
   - State management
   - Context updates
@@ -220,64 +202,6 @@ test('handles API call', async () => {
 });
 ```
 
-#### Context Mocking
-```javascript
-test('uses context data', () => {
-  jest.spyOn(React, 'useContext').mockReturnValue({
-    user: { username: 'testuser' },
-    isAuthenticated: true,
-    login: jest.fn(),
-  });
-  
-  render(<Component />);
-  expect(screen.getByText('Welcome, testuser')).toBeInTheDocument();
-});
-```
-
-### User Interaction Testing
-
-#### Form Testing
-```javascript
-test('handles form submission', async () => {
-  const mockSubmit = jest.fn();
-  
-  render(<Form onSubmit={mockSubmit} />);
-  
-  fireEvent.change(screen.getByLabelText(/username/i), {
-    target: { value: 'testuser' }
-  });
-  fireEvent.change(screen.getByLabelText(/password/i), {
-    target: { value: 'testpass' }
-  });
-  
-  fireEvent.click(screen.getByRole('button', { name: /submit/i }));
-  
-  await waitFor(() => {
-    expect(mockSubmit).toHaveBeenCalledWith({
-      username: 'testuser',
-      password: 'testpass'
-    });
-  });
-});
-```
-
-#### Navigation Testing
-```javascript
-test('navigates between pages', () => {
-  render(
-    <TestWrapper>
-      <App />
-    </TestWrapper>
-  );
-  
-  fireEvent.click(screen.getByText('Dashboard'));
-  expect(screen.getByText('Welcome')).toBeInTheDocument();
-  
-  fireEvent.click(screen.getByText('Profile'));
-  expect(screen.getByText('Profile')).toBeInTheDocument();
-});
-```
-
 ## E2E Testing Strategy
 
 ### Test Categories
@@ -311,77 +235,94 @@ test('navigates between pages', () => {
 
 ### E2E Test Setup
 
-#### Full Application Testing
-```javascript
-describe('E2E Tests', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-    localStorageMock.getItem.mockReturnValue(null);
-  });
-  
-  test('complete user registration flow', async () => {
-    // Mock API responses
-    api.post.mockResolvedValueOnce({
-      data: {
-        data: {
-          user: { username: 'newuser' },
-          tokens: { access: 'token', refresh: 'refresh' }
-        }
-      }
-    });
+#### Playwright Configuration
+- Browser automation
+- Screenshot on failure
+- Video recording
+- Network interception
+
+#### Test Data
+- Use test users from database setup
+- Clean data between tests
+- Realistic test scenarios
+
+## Test Requirements
+
+### Coverage Requirements
+- New features: 90% coverage minimum
+- Bug fixes: Must include regression test
+- Refactoring: Maintain existing coverage
+
+### Test Naming
+```python
+# Python
+def test_calculate_macros_returns_correct_totals(self):
+    """Test that macro calculation returns accurate totals."""
     
-    render(
-      <BrowserRouter>
-        <AuthProvider>
-          <App />
-        </AuthProvider>
-      </BrowserRouter>
-    );
-    
-    // Complete user flow
-    // 1. Navigate to registration
-    // 2. Fill form
-    // 3. Submit
-    // 4. Verify redirect
-    // 5. Check authentication state
-  });
+# JavaScript
+test('should display error when food creation fails', () => {
+  // Test implementation
 });
 ```
 
-#### Real API Integration
-```javascript
-test('OpenAI integration flow', async () => {
-  // Mock authentication
-  localStorageMock.getItem.mockReturnValue('access-token');
-  api.get.mockResolvedValueOnce({
-    data: { data: { username: 'testuser' } }
-  });
-  
-  // Mock OpenAI response
-  api.post.mockResolvedValueOnce({
-    data: {
-      data: {
-        response: 'AI response',
-        tokens_used: 15,
-        cost: 0.002
-      }
-    }
-  });
-  
-  // Test complete flow
-  // 1. Navigate to OpenAI page
-  // 2. Enter prompt
-  // 3. Submit
-  // 4. Verify response
-  // 5. Check usage stats
-});
+### Test Organization
+- Group related tests in describe blocks
+- Use descriptive test names
+- Follow AAA pattern (Arrange, Act, Assert)
+- Keep tests focused and independent
+
+## Running Tests
+
+### Autonomous Test Execution
+All tests can be run autonomously using the test runner:
+```bash
+python run_tests.py --all        # Run all tests
+python run_tests.py --backend    # Backend only
+python run_tests.py --frontend   # Frontend only
+python run_tests.py --e2e        # E2E only
 ```
 
-## Test Data Management
+### Backend Tests
+```bash
+# Using test runner (recommended)
+python run_tests.py --backend
 
-### Test Data Patterns
+# Using Django directly
+cd backend
+python manage.py test                    # All tests
+python manage.py test apps.workouts.tests # Specific app
+python manage.py test tests.backend      # Tests from tests/backend/
+```
 
-#### Backend Test Data
+### Frontend Tests
+```bash
+# Using test runner (recommended)
+python run_tests.py --frontend
+
+# Using npm directly
+cd frontend
+npm test -- --watchAll=false --ci        # CI mode (non-interactive)
+npm test -- --coverage                    # With coverage
+```
+
+### E2E Tests
+```bash
+# Using test runner (recommended)
+python run_tests.py --e2e
+
+# Using Playwright directly
+npx playwright test                      # All E2E tests
+npx playwright test tests/e2e/test_workout_tracker_e2e.spec.js  # Specific test
+```
+
+### Test Discovery
+- **Backend**: Django automatically discovers tests in `apps/*/tests.py` and `apps/*/tests/`
+- **Frontend**: Jest discovers tests matching `*.test.js` and `*.spec.js` patterns
+- **E2E**: Playwright discovers tests matching `*.spec.js` in `tests/e2e/`
+
+## Test Data Patterns
+
+### Backend Test Data
 ```python
 class TestDataFactory:
     @staticmethod
@@ -393,21 +334,9 @@ class TestDataFactory:
             password='testpass123',
             access_level=access_level
         )
-    
-    @staticmethod
-    def create_food(name='Test Food'):
-        return Food.objects.create(
-            food_name=name,
-            serving_size=100,
-            unit='g',
-            calories=250,
-            protein=10,
-            fat=5,
-            carbohydrates=30
-        )
 ```
 
-#### Frontend Test Data
+### Frontend Test Data
 ```javascript
 const createMockUser = (overrides = {}) => ({
   username: 'testuser',
@@ -415,124 +344,12 @@ const createMockUser = (overrides = {}) => ({
   access_level: 'user',
   ...overrides
 });
-
-const createMockApiResponse = (data) => ({
-  data: { data }
-});
 ```
-
-### Mock Data Strategies
-
-#### API Response Mocking
-```javascript
-const mockApiResponses = {
-  login: {
-    data: {
-      data: {
-        user: { username: 'testuser' },
-        tokens: { access: 'token', refresh: 'refresh' }
-      }
-    }
-  },
-  profile: {
-    data: {
-      data: { username: 'testuser', email: 'test@example.com' }
-    }
-  },
-  openai: {
-    data: {
-      data: {
-        response: 'AI response',
-        tokens_used: 10,
-        cost: 0.001
-      }
-    }
-  }
-};
-```
-
-#### Error Response Mocking
-```javascript
-const mockErrorResponses = {
-  unauthorized: {
-    response: { status: 401 }
-  },
-  badRequest: {
-    response: {
-      data: { error: { message: 'Invalid input' } }
-    }
-  },
-  serverError: {
-    response: { status: 500 }
-  }
-};
-```
-
-## Test Performance and Optimization
-
-### Test Execution Speed
-
-#### Backend Test Optimization
-- Use `setUp` and `tearDown` for test data
-- Use database transactions for isolation
-- Mock external services
-- Use test-specific settings
-
-#### Frontend Test Optimization
-- Mock API calls
-- Use shallow rendering where appropriate
-- Avoid unnecessary re-renders
-- Use `waitFor` for async operations
-
-### Test Reliability
-
-#### Avoiding Flaky Tests
-- Use deterministic test data
-- Wait for async operations
-- Mock external dependencies
-- Use proper cleanup
-
-#### Test Isolation
-- Clear mocks between tests
-- Reset component state
-- Clean up test data
-- Use fresh instances
-
-## Test Maintenance
-
-### Test Updates
-
-#### When to Update Tests
-- Feature changes
-- API modifications
-- Component updates
-- Bug fixes
-
-#### How to Update Tests
-- Update test data
-- Modify assertions
-- Add new test cases
-- Remove obsolete tests
-
-### Test Quality
-
-#### Test Coverage
-- Aim for high coverage
-- Focus on critical paths
-- Test edge cases
-- Test error scenarios
-
-#### Test Readability
-- Use descriptive names
-- Group related tests
-- Add comments for complex logic
-- Keep tests focused
 
 ## Common Test Patterns
 
 ### Authentication Testing
 ```javascript
-// Test login flow
 test('user login flow', async () => {
   api.post.mockResolvedValue(mockLoginResponse);
   
@@ -555,7 +372,6 @@ test('user login flow', async () => {
 
 ### Form Testing
 ```javascript
-// Test form validation
 test('form validation', async () => {
   render(<Form />);
   
@@ -569,7 +385,6 @@ test('form validation', async () => {
 
 ### API Integration Testing
 ```javascript
-// Test API error handling
 test('handles API errors', async () => {
   api.post.mockRejectedValue(mockErrorResponse);
   
@@ -582,22 +397,71 @@ test('handles API errors', async () => {
 });
 ```
 
-## Debugging Tests
+## Test Maintenance
 
-### Backend Test Debugging
-- Use Django debug toolbar
-- Check test database state
-- Verify model relationships
-- Use print statements for debugging
+### When to Update Tests
+- Feature changes
+- API modifications
+- Component updates
+- Bug fixes
 
-### Frontend Test Debugging
-- Use React DevTools
-- Check component state
-- Verify API calls
-- Use `screen.debug()` for DOM inspection
+### How to Update Tests
+- Update test data
+- Modify assertions
+- Add new test cases
+- Remove obsolete tests
 
-### E2E Test Debugging
-- Take screenshots on failures
-- Record test execution
-- Check network requests
-- Verify localStorage state
+## Critical Invariants
+
+### Test Isolation
+- Tests must not depend on each other
+- Clean up test data after each test
+- Use fresh instances for each test
+- Mock external dependencies
+
+### Test Reliability
+- Use deterministic test data
+- Wait for async operations
+- Mock external dependencies
+- Use proper cleanup
+
+## Extension Points
+
+### Adding New Backend Tests
+1. Create test file in `tests/backend/` or app's `tests.py`
+2. Extend `TestCase` or `APITestCase`
+3. Set up test data in `setUp()`
+4. Write test methods
+5. Clean up in `tearDown()`
+
+### Adding New Frontend Tests
+1. Create test file `ComponentName.test.js`
+2. Import testing utilities
+3. Set up component with providers
+4. Write test cases
+5. Mock API calls
+
+### Adding New E2E Tests
+1. Create test file in `tests/e2e/`
+2. Use Playwright test structure
+3. Set up authentication
+4. Test user workflows
+5. Add assertions
+
+## What Must NOT Be Changed
+
+- Test isolation requirements
+- Authentication test patterns
+- API mocking patterns
+- Test data cleanup
+
+## What Can Be Safely Extended
+
+- New test cases
+- New test utilities
+- New test data factories
+- New E2E scenarios
+
+---
+
+**Remember**: Tests must be reliable, isolated, and maintainable. Always clean up test data.

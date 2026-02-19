@@ -181,9 +181,10 @@ GET    /transcription-status/ # Check Vosk status
 
 ### Data Viewer (`/api/data-viewer/`)
 ```
-GET    /tables/            # List all tables
-GET    /tables/<name>/     # Get table data
-GET    /export/<name>/     # Export table to CSV
+GET    /tables/                    # List all tables
+GET    /tables/<name>/schema/     # Get table schema
+GET    /tables/<name>/data/        # Get table data
+GET    /tables/<name>/count/       # Get row count
 ```
 
 ## Database Schema
@@ -191,39 +192,40 @@ GET    /export/<name>/     # Export table to CSV
 ### Core Tables
 
 **Users & Auth**:
-- `users_user` - User accounts
-- `users_usergoal` - Macro/weight goals
-- `users_accesslevel` - Role definitions
-- `users_activitylevel` - Activity multipliers
-- `users_unit` - Measurement units
+- `users` - User accounts
+- `user_goal` - Macro/weight goals
+- `access_levels` - Role definitions
+- `activity_levels` - Activity multipliers
+- `units` - Measurement units
 
 **Foods & Nutrition**:
-- `foods_food` - Food database
-- `foods_foodgroup` - Food categories
-- `meals_meal` - Meal templates
-- `meals_mealfood` - Meal composition
+- `foods` - Food database
+- `meals` - Meal templates
+- `meals_foods` - Meal composition (junction table)
 
 **Activity Logs**:
-- `logging_foodlog` - Food intake
-- `logging_weightlog` - Weight tracking
-- `logging_waterlog` - Hydration
-- `logging_stepslog` - Daily steps
-- `logging_cardiolog` - Cardio sessions
-- `logging_bodymeasurementlog` - Body measurements
+- `food_log` - Food intake (in logging app)
+- `weight_log` - Weight tracking
+- `water_log` - Hydration
+- `steps_log` - Daily steps
+- `cardio_log` - Cardio sessions
+- `body_measurement_log` - Body measurements
 
 **Workouts**:
-- `workouts_workout` - Workout definitions
-- `workouts_workoutset` - Exercise sets
-- `workouts_muscle` - Muscle groups
-- `workouts_musclelog` - Muscle activation
-- `workouts_split` - Training splits
-- `workouts_splitday` - Split schedule
+- `workouts` - Workout definitions
+- `workout_muscle` - Workout-muscle activation (junction table)
+- `muscles` - Muscle groups (reference data)
+- `muscle_log` - User muscle priorities
+- `workout_log` - Workout session logs
+- `splits` - Training split definitions
+- `split_days` - Days within splits
+- `split_day_targets` - Muscle targets per day
 
 **Health & Analytics**:
-- `health_sleeplog` - Sleep tracking
-- `health_healthmetricslog` - General health
-- `analytics_apiusagelog` - API usage
-- `analytics_errorlog` - Error tracking
+- `sleep_log` - Sleep tracking
+- `health_metrics_log` - General health metrics
+- `api_usage_log` - API usage tracking
+- `error_log` - Error tracking
 
 ## Integration Points
 

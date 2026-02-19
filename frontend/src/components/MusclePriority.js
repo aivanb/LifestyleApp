@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
 import { ChevronDownIcon, ChevronRightIcon, InformationCircleIcon } from '@heroicons/react/24/outline';
+import { getMuscleDescription } from '../utils/muscleDescriptions';
 
-const MusclePriority = ({ onPrioritiesUpdated }) => {
+const MusclePriority = ({ onPrioritiesUpdated, showHeader = true, enableTooltips = false }) => {
   const [musclePriorities, setMusclePriorities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
   const [expandedGroups, setExpandedGroups] = useState({});
+  const [activeMuscleDescription, setActiveMuscleDescription] = useState(null);
   
   // Define major muscle groups and their sub-muscles
   const majorMuscleGroups = {
@@ -27,7 +29,6 @@ const MusclePriority = ({ onPrioritiesUpdated }) => {
   const loadMusclePriorities = async () => {
     try {
       const response = await api.getMusclePriorities();
-      console.log('Muscle priorities response:', response.data);
       if (response.data.success) {
         setMusclePriorities(response.data.data);
         
@@ -147,56 +148,9 @@ const MusclePriority = ({ onPrioritiesUpdated }) => {
     }
   };
 
-  const getMuscleDescription = (muscleName) => {
-    const descriptions = {
-      // Chest muscles
-      'Pectoralis Major': 'Main chest muscle for pushing movements',
-      'Pectoralis Minor': 'Smaller chest muscle, stabilizes shoulder blade',
-      'Serratus Anterior': 'Pulls shoulder blade forward, important for overhead movements',
-      
-      // Back muscles
-      'Latissimus Dorsi': 'Large back muscle for pulling movements',
-      'Rhomboids': 'Retract shoulder blades, improve posture',
-      'Trapezius': 'Elevates and retracts shoulder blades',
-      'Erector Spinae': 'Spinal muscles for back extension and stability',
-      'Infraspinatus': 'External rotation of shoulder',
-      'Supraspinatus': 'Initiates shoulder abduction',
-      'Teres Major': 'Adduction and internal rotation of arm',
-      'Teres Minor': 'External rotation and stabilization of shoulder',
-      
-      // Arm muscles
-      'Biceps Brachii': 'Flexes elbow and supinates forearm',
-      'Triceps Brachii': 'Extends elbow, main arm extensor',
-      'Brachialis': 'Primary elbow flexor',
-      'Brachioradialis': 'Flexes elbow, assists in forearm rotation',
-      'Anconeus': 'Assists triceps in elbow extension',
-      'Pronator Teres': 'Pronates forearm',
-      'Supinator': 'Supinates forearm',
-      
-      // Leg muscles
-      'Quadriceps': 'Extends knee, main thigh muscle group',
-      'Hamstrings': 'Flexes knee and extends hip',
-      'Glutes': 'Hip extension and stabilization',
-      'Calves': 'Plantar flexion of foot',
-      'Tibialis Anterior': 'Dorsiflexion of foot',
-      'Hip Flexors': 'Flex hip joint',
-      'Adductors': 'Adduct thigh toward midline',
-      'Abductors': 'Abduct thigh away from midline',
-      
-      // Core muscles
-      'Rectus Abdominis': 'Flexes spine, main abdominal muscle',
-      'Obliques': 'Rotate and laterally flex spine',
-      'Transverse Abdominis': 'Deep core stabilizer',
-      'Multifidus': 'Spinal stabilizer and rotator',
-      
-      // Other muscles
-      'Deltoids': 'Shoulder abduction, flexion, and extension',
-      'Rotator Cuff': 'Stabilizes shoulder joint',
-      'Forearms': 'Grip strength and wrist movements',
-      'Neck': 'Head and neck movement and stability'
-    };
-    
-    return descriptions[muscleName] || 'Muscle for movement and stability';
+  const handleMuscleClick = (muscleName) => {
+    if (!enableTooltips) return;
+    setActiveMuscleDescription((prev) => (prev === muscleName ? null : muscleName));
   };
 
   if (loading) {
@@ -206,21 +160,23 @@ const MusclePriority = ({ onPrioritiesUpdated }) => {
   if (musclePriorities.length === 0) {
     return (
       <div className="container">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold text-primary">Muscle Priority</h2>
-          <div className="flex items-center space-x-6 text-xs text-tertiary">
-            <InformationCircleIcon 
-              className="h-6 w-6" 
-              style={{ 
-                width: '24px',
-                height: '24px',
-                minWidth: '24px',
-                minHeight: '24px'
-              }}
-            />
-            <span>Priority is used for emphasizing, balancing, or improving weaker/stronger muscles</span>
+        {showHeader && (
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold text-primary">Muscle Priority</h2>
+            <div className="flex items-center space-x-6 text-xs text-tertiary">
+              <InformationCircleIcon 
+                className="h-6 w-6" 
+                style={{ 
+                  width: '24px',
+                  height: '24px',
+                  minWidth: '24px',
+                  minHeight: '24px'
+                }}
+              />
+              <span>Priority is used for emphasizing, balancing, or improving weaker/stronger muscles</span>
+            </div>
           </div>
-        </div>
+        )}
         
         <div className="text-center py-8">
           <p className="text-secondary mb-4">No muscle priorities found.</p>
@@ -234,7 +190,7 @@ const MusclePriority = ({ onPrioritiesUpdated }) => {
 
   return (
     <div className="container">
-      <style jsx>{`
+      <style>{`
         .muscle-priority-header {
           display: flex;
           justify-content: space-between;
@@ -265,6 +221,13 @@ const MusclePriority = ({ onPrioritiesUpdated }) => {
           border: 1px solid var(--border-primary);
           border-radius: var(--radius-lg);
           margin-bottom: var(--space-4);
+          box-shadow: 0 24px 55px rgba(0, 0, 0, 0.4);
+          transition: transform 0.25s var(--ease-out-cubic), box-shadow 0.25s var(--ease-out-cubic);
+        }
+
+        .muscle-group-card:hover {
+          transform: translateY(-3px);
+          box-shadow: 0 30px 60px rgba(0, 0, 0, 0.45);
         }
 
         .muscle-group-header {
@@ -467,6 +430,35 @@ const MusclePriority = ({ onPrioritiesUpdated }) => {
         .muscle-details {
           display: flex;
           flex-direction: column;
+          gap: var(--space-2);
+        }
+
+        .muscle-name-row {
+          display: inline-flex;
+          align-items: center;
+          gap: var(--space-2);
+        }
+
+        .muscle-info-button {
+          background: transparent;
+          border: none;
+          padding: 0;
+          color: var(--text-tertiary);
+          cursor: pointer;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          transition: transform 0.2s var(--ease-out-cubic), color 0.2s var(--ease-out-cubic);
+        }
+
+        .muscle-info-button:hover {
+          color: var(--accent-primary);
+          transform: translateY(-1px);
+        }
+
+        .muscle-info-button svg {
+          width: 18px;
+          height: 18px;
         }
 
         .muscle-name {
@@ -476,39 +468,96 @@ const MusclePriority = ({ onPrioritiesUpdated }) => {
           font-weight: var(--font-weight-medium);
         }
 
-        .muscle-description {
-          color: var(--text-tertiary);
-          font-family: var(--font-primary);
-          font-size: var(--text-xs);
-          font-weight: var(--font-weight-normal);
-          margin-top: 2px;
-        }
-
         .muscle-priority-controls {
           display: flex;
           align-items: center;
           gap: var(--space-4);
         }
+
+        /* Tooltip modal (same interaction pattern as workout-tracker) */
+        .mp-muscle-description-overlay {
+          position: fixed;
+          inset: 0;
+          background: rgba(0, 0, 0, 0.55);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: var(--space-6);
+          z-index: 9999;
+        }
+
+        .mp-muscle-description-modal {
+          width: min(720px, 100%);
+          background: var(--bg-secondary);
+          border-radius: var(--radius-lg);
+          box-shadow: 0 30px 60px rgba(0, 0, 0, 0.45);
+          border: 1px solid var(--border-primary);
+          overflow: hidden;
+          font-family: var(--font-primary);
+        }
+
+        .mp-muscle-description-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: var(--space-5) var(--space-6);
+          border-bottom: 1px solid var(--border-primary);
+        }
+
+        .mp-muscle-description-title {
+          margin: 0;
+          font-size: var(--text-xl);
+          font-weight: var(--font-weight-bold);
+          color: var(--text-primary);
+        }
+
+        .mp-close-overlay-button {
+          background: transparent;
+          border: none;
+          color: var(--text-tertiary);
+          font-size: var(--text-2xl);
+          cursor: pointer;
+          line-height: 1;
+          padding: var(--space-1) var(--space-2);
+        }
+
+        .mp-close-overlay-button:hover {
+          color: var(--text-primary);
+        }
+
+        .mp-muscle-description-content {
+          padding: var(--space-6);
+          display: grid;
+          gap: var(--space-3);
+          color: var(--text-secondary);
+          font-size: var(--text-base);
+        }
+
+        .mp-muscle-description-detail strong {
+          color: var(--text-primary);
+        }
       `}</style>
       
-      <div className="muscle-priority-header">
-        <h2 className="muscle-priority-title">
-          Muscle Priority
-        </h2>
-        <div className="muscle-priority-info">
-          <InformationCircleIcon 
-            className="h-6 w-6" 
-            style={{ 
-              color: 'var(--text-tertiary)',
-              width: '24px',
-              height: '24px',
-              minWidth: '24px',
-              minHeight: '24px'
-            }}
-          />
-          <span>Priority is used for emphasizing, balancing, or improving weaker/stronger muscles</span>
+      {showHeader && (
+        <div className="muscle-priority-header">
+          <h2 className="muscle-priority-title">
+            Muscle Priority
+          </h2>
+          <div className="muscle-priority-info">
+            <InformationCircleIcon 
+              className="h-6 w-6" 
+              style={{ 
+                color: 'var(--text-tertiary)',
+                width: '24px',
+                height: '24px',
+                minWidth: '24px',
+                minHeight: '24px'
+              }}
+            />
+            <span>Priority is used for emphasizing, balancing, or improving weaker/stronger muscles</span>
+          </div>
         </div>
-      </div>
+      )}
 
       {error && (
         <div className="error-message">
@@ -625,12 +674,22 @@ const MusclePriority = ({ onPrioritiesUpdated }) => {
                       <div key={muscleLog.muscle_log_id} className="individual-muscle-item">
                     <div className="muscle-info">
                           <div className="muscle-details">
-                            <span className="muscle-name">
-                              {muscleLog.muscle_name}
-                            </span>
-                            <span className="muscle-description">
-                              {getMuscleDescription(muscleLog.muscle_name)}
-                            </span>
+                            <div className="muscle-name-row">
+                              <span className="muscle-name">
+                                {muscleLog.muscle_name}
+                              </span>
+                              {enableTooltips && (
+                                <button
+                                  type="button"
+                                  className="muscle-info-button"
+                                  onClick={() => handleMuscleClick(muscleLog.muscle_name)}
+                                  aria-label={`Muscle info: ${muscleLog.muscle_name}`}
+                                  title="View muscle info"
+                                >
+                                  <InformationCircleIcon />
+                                </button>
+                              )}
+                            </div>
                           </div>
                     </div>
                     
@@ -704,6 +763,41 @@ const MusclePriority = ({ onPrioritiesUpdated }) => {
           {isUpdating ? 'Updating...' : 'Update Priorities'}
         </button>
       </div>
+
+      {enableTooltips && activeMuscleDescription && (
+        <div
+          className="mp-muscle-description-overlay"
+          onClick={() => setActiveMuscleDescription(null)}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="mp-muscle-description-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="mp-muscle-description-header">
+              <div className="mp-muscle-description-title">{activeMuscleDescription}</div>
+              <button
+                type="button"
+                className="mp-close-overlay-button"
+                onClick={() => setActiveMuscleDescription(null)}
+                aria-label="Close"
+                title="Close"
+              >
+                ×
+              </button>
+            </div>
+            <div className="mp-muscle-description-content">
+              <div className="mp-muscle-description-detail">
+                <strong>Description:</strong> {getMuscleDescription(activeMuscleDescription).description}
+              </div>
+              <div className="mp-muscle-description-detail">
+                <strong>Location:</strong> {getMuscleDescription(activeMuscleDescription).location}
+              </div>
+              <div className="mp-muscle-description-detail">
+                <strong>Function:</strong> {getMuscleDescription(activeMuscleDescription).function}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

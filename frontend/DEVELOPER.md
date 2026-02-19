@@ -1,1075 +1,400 @@
-# Frontend Developer Guide
+# Frontend Developer Guide for AI Agents
 
-Technical documentation for developers and AI agents working on the React frontend.
+Technical documentation for AI agents working on the React frontend. This document covers architecture, components, state management, APIs, and extension points.
 
 ## Architecture Overview
 
-The frontend follows React best practices with clear component hierarchy and separation of concerns:
-
+### Directory Structure
 ```
-src/
+frontend/src/
 ├── components/          # Reusable UI components
-├── contexts/            # React Context providers
-├── pages/              # Route-specific pages
+│   ├── trackers/       # Health metric trackers
+│   ├── analytics/      # Chart components
+│   └── ...             # Other components
+├── pages/              # Route-level components
 ├── services/           # API communication layer
+├── contexts/           # React Context providers
+├── utils/              # Utility functions
 ├── App.js              # Main application component
 ├── index.js            # Application entry point
 └── index.css           # Global styles
 ```
 
-## 🎨 Styling Guidelines (November 2025 Refresh)
-
-- **Theme options**: Only `dark` and `light` are available via `ThemeContext`. Do not reintroduce additional themes without updating the design system.
-- **Typography**: Global font is `Josefin Sans`. Use semantic elements and rely on CSS variables instead of hard-coded font declarations.
-- **Surfaces**: Cards, panels, tables, and modals are borderless with large radii and heavy drop shadows (`0 24px 55px ...`). Reference the `.card`, `.data-table`, and `.modal` rules in `index.css`.
-- **Floating actions**: Header controls have been replaced by floating buttons (`.btn-primary-header`, `.btn-secondary-header`). New primary actions should follow the same gradient + uppercase pattern.
-- **Menus & overlays**: Attach the `menuFloatIn` or `modalFloat` animations for dropdowns, calendars, and modals to preserve the refreshed motion language.
-- **Color usage**: Pull from the accent variables defined in `index.css` and reuse `--surface-overlay` for subtle separators instead of borders.
-
-## Component Architecture
-
 ### Component Hierarchy
 ```
 App
-├── AuthProvider (Context)
+├── ThemeProvider
+├── AuthProvider
 ├── Router
 │   ├── Navbar
 │   └── Routes
 │       ├── Login (Public)
 │       ├── Register (Public)
-│       ├── Dashboard (Protected)
-│       ├── OpenAI (Protected)
-│       └── Profile (Protected)
+│       ├── Profile (Protected)
+│       ├── FoodLog (Protected)
+│       ├── WorkoutTracker (Protected)
+│       ├── AdditionalTrackers (Protected)
+│       ├── DataViewer (Protected)
+│       ├── Analytics (Protected)
+│       └── Personalization (Protected)
 ```
 
-### Component Responsibilities
+## Pages (`src/pages/`)
 
-#### App Component (`App.js`)
-- **Purpose**: Main application wrapper
-- **Responsibilities**:
-  - AuthProvider setup
-  - Router configuration
-  - Global layout structure
-- **Key Features**: Route protection, navigation setup
-- **Routes**: Profile (default), Food Log, Workout Tracker, Additional Trackers, Data Viewer
+### Public Pages
+- **Login.js** - User authentication form
+- **Register.js** - User registration form
 
-#### Authentication Components
-- **Login** (`pages/Login.js`): User authentication form
-- **Register** (`pages/Register.js`): User registration form
-- **ProtectedRoute** (`components/ProtectedRoute.js`): Route protection wrapper
+### Protected Pages
+- **Profile.js** - User profile management (tabs: Personal Info, Goals, Body Metrics, History)
+- **FoodLog.js** - Food logging interface (uses FoodLoggingDashboard)
+- **WorkoutTracker.js** - Workout tracking interface (uses WorkoutLoggingDashboard)
+- **AdditionalTrackers.js** - Health metrics tracking menu
+- **DataViewer.js** - Database viewer interface
+- **Analytics.js** - Data analytics dashboard
+- **Personalization.js** - Muscle priorities, splits configuration
 
-#### Main Components
-- **Navbar** (`components/Navbar.js`): Navigation with user menu
-- **Dashboard** (`pages/Dashboard.js`): User dashboard with stats
-- **FoodLog** (`pages/FoodLog.js`): Food logging system (NEW)
-- **WorkoutTracker** (`pages/WorkoutTracker.js`): Workout tracking system (NEW)
-- **AdditionalTrackers** (`pages/AdditionalTrackers.js`): Health tracking system (NEW)
-- **DataViewer** (`pages/DataViewer.js`): Database viewer interface (NEW)
-- **OpenAI** (`pages/OpenAI.js`): AI prompt interface
-- **Profile** (`pages/Profile.js`): User profile management
+## Key Components (`src/components/`)
 
-### Food Logging Components (NEW)
-- **FoodCreator** (`components/FoodCreator.js`): Create new foods with macro preview
-- **MealCreator** (`components/MealCreator.js`): Create meals with multiple foods
-- **FoodLogViewer** (`components/FoodLogViewer.js`): View and filter food logs
-- **Features**:
-  - Real-time macro calculations
-  - Search and filter foods
-  - Public/private food sharing
-  - Create and log simultaneously
-  - Delete log entries
-  - Recently logged foods
+### Food Logging Components
+- **FoodLoggingDashboard.js** - Main food logging interface
+- **FoodCreator.js** - Create new foods with macro preview
+- **MealCreator.js** - Create meals with multiple foods
+- **FoodLogger.js** - Food logging form
+- **FoodChatbot.js** - AI-powered food logging interface
+- **VoiceRecorder.js** - Voice input for food logging
 
-### Additional Trackers Components (NEW)
-- **AdditionalTrackersMenu** (`components/AdditionalTrackersMenu.js`): Main menu with tracker buttons
-- **Individual Tracker Components** (`components/trackers/`):
-  - **WeightTracker**: Daily weight tracking with unit support
-  - **WaterTracker**: Hydration tracking with daily totals
-  - **BodyMeasurementTracker**: Flexible body measurement tracking
-  - **StepsTracker**: Daily step count tracking
-  - **CardioTracker**: Cardiovascular exercise tracking
-  - **SleepTracker**: Sleep pattern and quality tracking
-  - **HealthMetricsTracker**: Daily wellness metrics with rating systems
-- **Features**:
-  - Real-time streak calculations
-  - Comprehensive form validation
-  - Date filtering and historical data
-  - Responsive design for mobile and desktop
-  - Error handling and user feedback
-  - Edit and delete functionality
-  - Daily totals and analytics
+### Workout Components
+- **WorkoutLoggingDashboard.js** - Main workout logging interface
+- **WorkoutAdder.js** - Create and edit workouts
+- **WorkoutLogger.js** - Log workout sessions
+- **WorkoutLog.js** - View workout history
+- **MusclePriority.js** - Manage muscle priorities
+- **SplitCreator.js** - Create workout splits
+- **WorkoutAnalytics.js** - Workout analytics display
+
+### Tracker Components (`src/components/trackers/`)
+- **WeightTracker.js** - Daily weight tracking
+- **WaterTracker.js** - Hydration tracking
+- **BodyMeasurementTracker.js** - Body measurements
+- **StepsTracker.js** - Step count tracking
+- **CardioTracker.js** - Cardiovascular exercise tracking
+- **SleepTracker.js** - Sleep pattern tracking
+- **HealthMetricsTracker.js** - Daily wellness metrics
+
+### Analytics Components (`src/components/analytics/`)
+- **AnalyticsChartBase.js** - Base chart component
+- **WeightProgressionChart.js** - Weight trends
+- **MacroSplitChart.js** - Macro distribution
+- **FoodTimingChart.js** - Food timing analysis
+- **WorkoutProgressionChart.js** - Workout progress
+- **ActivationProgressChart.js** - Muscle activation progress
+- And many more chart components
+
+### Utility Components
+- **Navbar.js** - Navigation with user menu
+- **ProtectedRoute.js** - Route protection wrapper
+- **DataTable.js** - Reusable data table
+- **DataFilters.js** - Data filtering interface
+- **ProgressBar.js** - Progress visualization
+- **ThemeSwitcher.js** - Theme switching (dark/light)
 
 ## State Management
 
 ### Authentication Context (`contexts/AuthContext.js`)
-- **Purpose**: Global authentication state management
-- **State**:
-  - `user`: Current user data
-  - `token`: JWT access token
-  - `loading`: Authentication loading state
-- **Methods**:
-  - `login(username, password)`: User authentication
-  - `register(userData)`: User registration
-  - `logout()`: User logout
-  - `updateProfile(profileData)`: Profile updates
+- **State**: `user`, `token`, `loading`, `isAuthenticated`
+- **Methods**: `login()`, `register()`, `logout()`, `updateProfile()`
+- **Token Management**: Automatic token refresh on 401
+- **Storage**: Tokens in `localStorage` as `access_token` and `refresh_token`
 
-### Context Provider Pattern
-```javascript
-const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [token, setToken] = useState(localStorage.getItem('access_token'));
-  
-  // Context value object
-  const value = {
-    user, token, loading,
-    login, register, logout, updateProfile,
-    isAuthenticated: !!user
-  };
-  
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
-};
-```
+### Theme Context (`contexts/ThemeContext.js`)
+- **State**: `theme` ('dark' or 'light')
+- **Methods**: `toggleTheme()`, `setTheme()`
+- **Storage**: Theme preference in `localStorage`
 
-## API Service Layer
+### Component State
+- Local state for forms, UI interactions
+- React hooks: `useState`, `useEffect`, `useCallback`, `useMemo`
+- No global state management library (Redux, etc.)
 
-### Service Architecture (`services/api.js`)
-- **Purpose**: Centralized API communication
-- **Features**:
-  - Axios instance with base configuration
-  - Automatic JWT token handling
-  - Request/response interceptors
-  - Token refresh logic
-  - Error handling
+## API Service Layer (`src/services/api.js`)
+
+### Architecture
+- Axios instance with base URL from environment
+- Request interceptor: Adds JWT token to headers
+- Response interceptor: Handles token refresh on 401
+- Standardized error handling
 
 ### Token Management
 ```javascript
-// Request interceptor adds auth token
-this.api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('access_token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
+// Request interceptor
+config.headers.Authorization = `Bearer ${accessToken}`;
 
-// Response interceptor handles token refresh
-this.api.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    if (error.response?.status === 401 && !originalRequest._retry) {
+// Response interceptor
+if (error.response?.status === 401) {
       // Attempt token refresh
-      const refreshToken = localStorage.getItem('refresh_token');
-      if (refreshToken) {
-        const response = await axios.post(`${API_BASE_URL}/auth/token/refresh/`, {
-          refresh: refreshToken
-        });
-        const { access } = response.data.data;
-        localStorage.setItem('access_token', access);
-        originalRequest.headers.Authorization = `Bearer ${access}`;
-        return this.api(originalRequest);
-      }
-    }
-    return Promise.reject(error);
+  // Retry original request with new token
   }
-);
 ```
 
 ### API Methods
-- **Authentication**: `login()`, `register()`, `logout()`, `getProfile()`, `updateProfile()`
-- **OpenAI**: `sendPrompt()`, `getUsageStats()`
-- **Generic**: `get()`, `post()`, `put()`, `patch()`, `delete()`
+- Generic: `get()`, `post()`, `put()`, `patch()`, `delete()`
+- Authentication: `login()`, `register()`, `logout()`, `getProfile()`
+- Food: `getFoods()`, `createFood()`, `logFood()`
+- Workout: `getWorkouts()`, `createWorkout()`, `logWorkout()`
+- And many more specific methods
 
-## Routing and Navigation
+## Styling System (November 2025 Refresh)
+
+### Design Philosophy
+- **Themes**: Only `dark` and `light` (neutral grey backdrops)
+- **Typography**: `Josefin Sans` font family (`--font-primary`)
+- **Surfaces**: Borderless glass panels, large radii, deep shadows
+- **Floating Actions**: No header bars, floating buttons with gradients
+- **Animations**: `menuFloatIn`, `modalFloat` keyframes
+
+### CSS Variables (`src/index.css`)
+- Theme colors: `--bg-primary`, `--surface-primary`, `--text-primary`
+- Accent colors: `--accent-primary`, `--accent-secondary`
+- Spacing: `--space-*` variables (4px base unit)
+- Shadows: `--shadow-*` variables
+- Transitions: `--transition-*` variables
+
+### Component Styling
+- Use CSS variables for theming
+- Borderless cards with `border-radius: var(--radius-lg)`
+- Deep shadows: `box-shadow: 0 24px 55px ...`
+- Floating buttons: `.btn-primary-header`, `.btn-secondary-header`
+- Menu animations: `animation: menuFloatIn 0.3s ease-out`
+
+### Responsive Design
+- Mobile-first approach
+- Breakpoints: 768px (tablet), 1024px (desktop)
+- Flexible grid layouts
+- Touch-friendly interfaces
+
+## Routing
 
 ### React Router Setup
-- **BrowserRouter**: Client-side routing
-- **Routes**: Route definitions
-- **Route**: Individual route components
-- **Navigate**: Programmatic navigation
-- **Link**: Navigation links
+- `BrowserRouter` for client-side routing
+- `Routes` and `Route` components
+- `Navigate` for programmatic navigation
+- `Link` for navigation links
 
 ### Route Protection
 ```javascript
-const ProtectedRoute = ({ children }) => {
-  const { isAuthenticated, loading } = useAuth();
-  
-  if (loading) {
-    return <LoadingSpinner />;
-  }
-  
-  return isAuthenticated ? children : <Navigate to="/login" replace />;
-};
+<ProtectedRoute>
+  <Component />
+</ProtectedRoute>
 ```
 
-### Navigation Structure
-- **Public Routes**: `/login`, `/register`
-- **Protected Routes**: `/dashboard`, `/openai`, `/profile`
-- **Default Route**: Redirects to `/dashboard`
+`ProtectedRoute` checks authentication and redirects to login if not authenticated.
+
+### Route Structure
+- `/login` - Public
+- `/register` - Public
+- `/` - Redirects to `/profile`
+- `/profile` - Protected
+- `/food-log` - Protected
+- `/workout-tracker` - Protected
+- `/additional-trackers/*` - Protected
+- `/data-viewer` - Protected
+- `/analytics` - Protected
+- `/personalization` - Protected
 
 ## Form Handling
 
-### Form State Management
-- **Local State**: Component-level form state
-- **Controlled Components**: Input values controlled by React state
-- **Validation**: Client-side validation with error display
-- **Submission**: Async form submission with loading states
+### Patterns
+- Controlled components with `useState`
+- Form validation with error display
+- Loading states during submission
+- Success/error feedback
 
-### Form Patterns
+### Example
 ```javascript
-const [formData, setFormData] = useState({
-  username: '',
-  password: ''
-});
-
-const handleChange = (e) => {
-  setFormData({
-    ...formData,
-    [e.target.name]: e.target.value
-  });
-};
+const [formData, setFormData] = useState({ name: '', email: '' });
+const [errors, setErrors] = useState({});
+const [loading, setLoading] = useState(false);
 
 const handleSubmit = async (e) => {
   e.preventDefault();
   setLoading(true);
-  
-  const result = await login(formData.username, formData.password);
-  
-  if (result.success) {
-    navigate('/dashboard');
-  } else {
-    setError(result.error);
-  }
-  
+  try {
+    await api.post('/endpoint', formData);
+    // Success handling
+  } catch (error) {
+    setErrors(error.response.data.error);
+  } finally {
   setLoading(false);
+  }
 };
 ```
 
 ## Error Handling
 
-### Error Display Patterns
-- **Form Errors**: Inline error messages
-- **API Errors**: Toast notifications or error banners
-- **Network Errors**: Fallback UI states
-- **Authentication Errors**: Redirect to login
+### Patterns
+- Try-catch blocks for async operations
+- Error state management
+- User-friendly error messages
+- Console logging for debugging
+- Error boundaries for React errors
 
-### Error Boundary Implementation
+### API Error Handling
 ```javascript
-class ErrorBoundary extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = { hasError: false };
-  }
-  
-  static getDerivedStateFromError(error) {
-    return { hasError: true };
-  }
-  
-  componentDidCatch(error, errorInfo) {
-    console.error('Error caught by boundary:', error, errorInfo);
-  }
-  
-  render() {
-    if (this.state.hasError) {
-      return <ErrorFallback />;
-    }
-    
-    return this.props.children;
-  }
+try {
+  const response = await api.get('/endpoint');
+  return response.data.data;
+} catch (error) {
+  if (error.response?.status === 401) {
+    // Token refresh handled by interceptor
+  } else if (error.response?.status === 400) {
+    setErrors(error.response.data.error);
+  } else {
+    setError('An unexpected error occurred');
 }
-```
-
-## Visual Design System
-
-### Design Philosophy
-The application follows a **modern minimalistic design** with emphasis on:
-- **Functionality over decoration**
-- **High contrast for readability**
-- **Monotone colors with colorful accents**
-- **Smooth animations and transitions**
-- **Responsive mobile and desktop layouts**
-
-### Documentation Reference
-**📚 COMPLETE DESIGN GUIDE**: See `VISUAL_FORMATTING.md` in the root directory for comprehensive visual design guidelines including:
-- Complete color theme system (4 themes)
-- Typography scale and font usage
-- Spacing system (4px base unit)
-- Border radius standards
-- Shadow and layering system
-- UI component specifications
-- Animation guidelines
-- Accessibility requirements
-- Icon usage
-- Responsive breakpoints
-
-**IMPORTANT**: All frontend development MUST reference `VISUAL_FORMATTING.md` to maintain design consistency.
-
-### Quick Reference
-
-#### Color Themes
-The app supports 4 color themes:
-1. **Dark Mode** (default) - Dark blue-gray backgrounds
-2. **Light Mode** - Clean white backgrounds
-3. **High Contrast** - Black/white with bright accents
-4. **Warm Minimal** - Warm beige tones
-
-Switch themes using the theme switcher (bottom-right floating button).
-
-#### Typography
-- **Primary Font**: Roboto Mono (monospace)
-- **Scale**: xs, sm, base, lg, xl, 2xl, 3xl, 4xl
-- **Weights**: light (300), regular (400), medium (500), bold (700)
-
-#### Spacing
-All spacing uses 4px base unit:
-- Micro: 4-8px (related elements)
-- Small: 12-16px (component groups)
-- Medium: 20-24px (sections in cards)
-- Large: 32-48px (major sections)
-
-#### Components
-- **Buttons**: Rounded (8px), shadow on hover, lift effect
-- **Cards**: Rounded (12px), subtle shadow, hover elevation
-- **Inputs**: Rounded (8px), focus state with accent glow
-- **Tables**: Rounded container, sticky headers, hover rows
-
-### CSS Organization
-- **Global Styles**: `index.css` - design system and base styles
-- **Component Styles**: Scoped `<style jsx>` tags in components
-- **Utility Classes**: CSS variables for theming
-- **Responsive Design**: Mobile-first with breakpoints
-
-### Icons
-- **Library**: Heroicons (MIT License)
-- **Style**: Monotone, uses `currentColor`
-- **Sizes**: sm (16px), md (20px), lg (24px), xl (32px)
-- **Usage**: Paired with text or icon-only with tooltips
-
-See `IMAGE_REGISTRY.md` for complete icon documentation.
-
-### Responsive Patterns
-```css
-/* Mobile-first responsive design */
-.container {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: var(--space-4);
-}
-
-@media (min-width: 768px) {
-  .container {
-    padding: var(--space-6);
-  }
-}
-
-@media (min-width: 1024px) {
-  .container {
-    padding: var(--space-8);
-  }
-}
-```
-
-### Animation Guidelines
-- **Use spline curves**: `cubic-bezier()` for smooth, natural motion
-- **Duration**: 150-300ms for interactions, 500ms for page transitions
-- **Effects**: Slide, fade, scale animations for visual feedback
-- **Hover states**: Lift, scale, or color changes
-- **Click feedback**: Subtle press animation
-
-Example:
-```css
-.btn {
-  transition: all 0.2s cubic-bezier(0.33, 1, 0.68, 1);
-}
-
-.btn:hover {
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-md);
 }
 ```
 
 ## Performance Optimization
 
 ### Code Splitting
-- **Route-based splitting**: Lazy load route components
-- **Component splitting**: Split large components
-- **Library splitting**: Separate vendor bundles
+- Route-based lazy loading (if implemented)
+- Component-level code splitting
+- Dynamic imports for heavy components
 
-### Optimization Strategies
-```javascript
-// Lazy loading components
-const Dashboard = React.lazy(() => import('./pages/Dashboard'));
-const OpenAI = React.lazy(() => import('./pages/OpenAI'));
-
-// Memoization for expensive computations
-const MemoizedComponent = React.memo(({ data }) => {
-  const processedData = useMemo(() => {
-    return expensiveCalculation(data);
-  }, [data]);
-  
-  return <div>{processedData}</div>;
-});
-```
+### Memoization
+- `useMemo` for expensive calculations
+- `useCallback` for stable function references
+- `React.memo` for component memoization
 
 ### Bundle Optimization
-- **Tree shaking**: Remove unused code
-- **Minification**: Compress JavaScript and CSS
-- **Asset optimization**: Optimize images and fonts
-- **Caching**: Implement proper caching strategies
+- Tree shaking for unused code
+- Minification in production builds
+- Asset optimization
 
-## Testing Strategy
+## Testing
 
-### Testing Architecture
-- **Unit Tests**: Component and utility testing
-- **Integration Tests**: User flow testing
-- **E2E Tests**: Full application testing
-- **API Tests**: Service layer testing
+### Test Structure
+- Component tests: `ComponentName.test.js`
+- Integration tests for user flows
+- E2E tests in `tests/e2e/`
 
 ### Testing Tools
-- **React Testing Library**: Component testing
-- **Jest**: Test runner and assertions
-- **MSW**: API mocking
-- **User Event**: User interaction simulation
+- Jest test runner
+- React Testing Library
+- User event simulation
+- API mocking
 
-### Test Patterns
-```javascript
-// Component testing
-import { render, screen, fireEvent } from '@testing-library/react';
-import { AuthProvider } from '../contexts/AuthContext';
-import Login from '../pages/Login';
+## Extension Points
 
-const renderWithAuth = (component) => {
-  return render(
-    <AuthProvider>
-      {component}
-    </AuthProvider>
-  );
-};
+### Adding New Pages
+1. Create component in `src/pages/`
+2. Add route in `App.js`
+3. Add navigation link in `Navbar.js` if needed
+4. Create API service methods if needed
 
-test('should login user with valid credentials', async () => {
-  renderWithAuth(<Login />);
-  
-  fireEvent.change(screen.getByLabelText(/username/i), {
-    target: { value: 'testuser' }
-  });
-  fireEvent.change(screen.getByLabelText(/password/i), {
-    target: { value: 'testpass' }
-  });
-  
-  fireEvent.click(screen.getByRole('button', { name: /login/i }));
-  
-  await waitFor(() => {
-    expect(screen.getByText(/welcome/i)).toBeInTheDocument();
-  });
-});
-```
+### Adding New Components
+1. Create component in `src/components/`
+2. Follow existing patterns (props, state, styling)
+3. Use CSS variables for theming
+4. Add tests if applicable
 
-## Development Workflow
+### Adding New Trackers
+1. Create component in `src/components/trackers/`
+2. Follow existing tracker patterns
+3. Add to `AdditionalTrackers` menu
+4. Create API service methods
+5. Add streak calculation if applicable
 
-### Component Development
-1. **Plan**: Define component responsibilities
-2. **Create**: Build component with props interface
-3. **Style**: Add CSS and responsive design
-4. **Test**: Write unit tests
-5. **Integrate**: Connect to parent components
+### Adding New Analytics
+1. Create chart component in `src/components/analytics/`
+2. Extend `AnalyticsChartBase` if applicable
+3. Add to `Analytics` page
+4. Create API service method
 
-### Feature Development
-1. **Design**: Plan user interface and interactions
-2. **API**: Define API endpoints and data flow
-3. **Components**: Build required components
-4. **Integration**: Connect components and API
-5. **Testing**: Test user flows and edge cases
+## Critical Invariants
 
-### Code Organization
-- **File Naming**: PascalCase for components, camelCase for utilities
-- **Import Order**: External libraries, internal modules, relative imports
-- **Export Patterns**: Default exports for components, named exports for utilities
-- **Documentation**: JSDoc comments for complex functions
+### API Communication
+- ALL API calls go through `services/api.js`
+- Tokens stored in `localStorage` as `access_token` and `refresh_token`
+- Automatic token refresh on 401
+- Standardized error handling
 
-## Environment Configuration
+### Routing
+- Protected routes use `ProtectedRoute` component
+- Public routes: `/login`, `/register`
+- Default route redirects to `/profile`
 
-### Environment Variables
+### Styling
+- Use CSS variables for theming
+- Follow design system (borderless, shadows, animations)
+- Only `dark` and `light` themes supported
+- `Josefin Sans` font family
+
+### State Management
+- Authentication state in `AuthContext`
+- Theme state in `ThemeContext`
+- Component-level state for forms/UI
+- No global state management library
+
+## Known Issues and Patterns
+
+### Token Refresh
+- Handled automatically by API service interceptor
+- On refresh failure, user redirected to login
+- Original request retried after successful refresh
+
+### Form Validation
+- Client-side validation for UX
+- Server-side validation for security
+- Error messages displayed inline
+
+### Loading States
+- Show loading indicators during API calls
+- Disable forms during submission
+- Optimistic updates where appropriate
+
+## Environment Variables
+
 ```env
 REACT_APP_API_URL=http://localhost:8000/api
 REACT_APP_ENV=development
 ```
 
-### Build Configuration
-- **Development**: Hot reloading, source maps, debug tools
-- **Production**: Minification, optimization, error boundaries
-- **Testing**: Test environment setup, mocking configuration
+## Development Workflow
 
-## Security Considerations
-
-### Client-side Security
-- **Input Validation**: Client-side validation for UX
-- **XSS Prevention**: Proper data sanitization
-- **Token Storage**: Secure token handling
-- **HTTPS**: Enforce secure connections
-
-### Authentication Security
-- **Token Management**: Secure token storage and refresh
-- **Route Protection**: Prevent unauthorized access
-- **Session Management**: Proper logout handling
-- **Error Handling**: Don't expose sensitive information
-
-## Deployment Considerations
-
-### Build Process
-1. **Environment Setup**: Configure production environment variables
-2. **Build**: Run `npm run build` to create production bundle
-3. **Static Serving**: Serve build files through web server
-4. **CDN**: Configure CDN for static assets
-
-### Production Optimization
-- **Bundle Analysis**: Analyze bundle size and composition
-- **Performance Monitoring**: Track Core Web Vitals
-- **Error Tracking**: Implement error monitoring
-- **Caching**: Configure proper caching headers
-
-## Workout Tracker System - Comprehensive Frontend Interface
-
-### Overview
-The workout tracker system provides a comprehensive frontend interface for fitness tracking with muscle priority management, workout creation, split programs, workout logging, and progress tracking. It features a tabbed interface with modern design principles and robust error handling.
-
-### Recent Fixes (Latest Update)
-The workout tracker system has been completely redesigned and enhanced with comprehensive testing and validation:
-
-1. **Dashboard-Style Interface**: 
-   - Completely redesigned `pages/WorkoutTracker.js` to use a new `WorkoutLoggingDashboard` component
-   - Matches the food log page UI/UX design patterns
-   - Responsive PC/mobile layout with proper grid systems
-   - **TESTED**: All components load correctly, no compilation errors
-
-2. **Component Removal and Restructuring**:
-   - Removed muscle priority and split creator components (now in personalization page)
-   - Simplified to focus on workout logging and creation
-   - Streamlined interface with header, date picker, and action buttons
-   - **TESTED**: Navigation and component switching work correctly
-
-3. **Real Database Integration**:
-   - Removed ALL placeholder data
-   - Integrated real data from database via API calls
-   - Added workout statistics display (total sets, weight lifted, reps, RIR)
-   - Implemented streak calculation and time-based logging
-   - **TESTED**: All API endpoints return correct data, database consistency verified
-
-4. **Enhanced UI/UX**:
-   - Added header with date picker and action buttons
-   - Implemented time-based workout log display with separators
-   - Added additional colors for buttons, selection boxes, and data
-   - Editable timestamps and proper modal handling
-   - **TESTED**: Date picker updates all components correctly
-
-5. **Fixed Log Workout Button Functionality**:
-   - Fixed non-functional "Log Workout" button
-   - Implemented proper modal/panel toggle for both desktop and mobile
-   - Added conditional rendering for WorkoutLogger component
-   - Added close buttons and proper state management
-   - **TESTED**: Workout logging works correctly with all attribute types
-
-6. **Centralized Muscle Description System**:
-   - Created `utils/muscleDescriptions.js` for centralized muscle information
-   - Provides detailed descriptions including location and function
-   - Reusable across different components in the application
-   - Comprehensive muscle database with 47+ muscle groups
-   - **TESTED**: All muscles have proper descriptions
-
-7. **Interactive Muscle Descriptions**:
-   - Implemented clickable muscle names with toggle functionality
-   - Added visual indicators (ℹ️ icon and dotted underline) showing muscles are clickable
-   - Descriptions show/hide on click with smooth transitions
-   - Only one muscle description visible at a time
-   - Applied to both workout cards and selected workout details
-   - **TESTED**: Muscle descriptions display correctly
-
-8. **Comprehensive System Testing**:
-   - **Authentication**: Verified john_doe/testpass123 credentials work correctly
-   - **Split System**: Created comprehensive 7-day test split covering all 47 muscles
-   - **Workout Creation**: Created 5 diverse test workouts with different types and muscle assignments
-   - **Workout Logging**: Logged workouts for multiple days (10/15-10/25) with various attributes
-   - **Autofill Functionality**: Verified workout fields autofill from recent logs correctly
-   - **Quick Add System**: Tested previous split day workout suggestions
-   - **Muscle Progress**: Verified progress bars show current day targets and progress
-   - **Stats System**: Confirmed stats update correctly with current day data
-   - **Date Picker Integration**: Tested date changes update all components
-   - **Edge Cases**: Tested empty states, date boundaries, multiple logs same day
-   - **Database Consistency**: Verified all displayed data matches database records
-   - **Build Process**: Confirmed frontend builds successfully with no errors
-
-9. **Attribute System Enhancement**:
-   - Updated attribute options to: Drop set, Partials, Assisted sets, Negatives, Rest pause
-   - Added proper input fields for each attribute type
-   - Implemented autofill for attribute inputs from recent logs
-   - **TESTED**: All attribute types work correctly with proper input validation
-
-### Key Components
-
-#### 1. Main Page (`pages/WorkoutTracker.js`)
-- **Purpose**: Main workout tracker page using dashboard-style interface
-- **Features**:
-  - Renders the WorkoutLoggingDashboard component
-  - Provides clean, simple interface matching food log page style
-  - Real-time data integration from database
-- **State Management**: Handled by WorkoutLoggingDashboard component
-- **Error Handling**: Graceful error handling with user feedback
-
-#### 2. Core Components
-
-##### WorkoutLoggingDashboard (`components/WorkoutLoggingDashboard.js`)
-- **Purpose**: Main dashboard interface for workout logging system
-- **Features**:
-  - Header with date picker and action buttons (Create Workout, Log Workout)
-  - Workout statistics display (total sets, weight lifted, reps, RIR)
-  - Time-based workout log list with separators
-  - Responsive PC/mobile layout with proper grid systems
-  - Real-time data integration from database
-  - Streak calculation and display
-- **State Management**: Workout logs, stats, selected date, modal states, editing states
-- **Error Handling**: API error handling with user feedback
-
-##### WorkoutAdder (`components/WorkoutAdder.js`)
-- **Purpose**: Create and edit custom workouts
-- **Features**:
-  - Workout metadata (name, type, equipment, location, notes)
-  - Emoji icon selection from predefined list
-  - Muscle activation rating assignment (0-100)
-  - Public/private workout settings
-  - Form validation and error handling
-  - Edit existing workouts functionality
-- **State Management**: Form data, muscle selection, validation state
-- **API Integration**: Create/update workout endpoints
-
-##### MusclePriority (`components/MusclePriority.js`)
-- **Purpose**: Manage muscle group priorities
-- **Features**:
-  - Expandable muscle group sections
-  - Slider-based priority adjustment (0-100)
-  - Color-coded priority levels
-  - Reset to default (80) functionality
-  - Batch update capabilities
-  - Priority legend and explanations
-- **State Management**: Muscle priorities, expanded groups, update state
-- **API Integration**: Get/update muscle priorities endpoints
-
-##### SplitCreator (`components/SplitCreator.js`)
-- **Purpose**: Create and manage workout splits
-- **Features**:
-  - Split creation with multiple days
-  - Muscle target activation per day
-  - Real-time muscle analysis with optimal ranges
-  - Split activation/deactivation
-  - Edit existing splits
-  - Muscle progress visualization
-- **State Management**: Split data, muscle analysis, form state
-- **API Integration**: Split CRUD operations, activation endpoints
-
-##### WorkoutLogger (`components/WorkoutLogger.js`)
-- **Purpose**: Log individual workout sessions with enhanced muscle descriptions
-- **Features**:
-  - Workout selection with filtering and search
-  - Weight, reps, RIR logging
-  - Workout attributes (dropset, assisted, partial, pause, negatives)
-  - Working timer functionality
-  - Quick-add from previous sessions
-  - Form validation and autofill
-  - Interactive muscle descriptions with click functionality
-  - Visual indicators for clickable muscles
-- **State Management**: Selected workout, form data, timer state, active muscle descriptions
-- **API Integration**: Workout logging, recent workouts endpoints
-- **Muscle Descriptions**: Integrates with centralized muscle description system
-
-##### WorkoutLog (`components/WorkoutLog.js`)
-- **Purpose**: Display and manage workout logs for a specific date
-- **Features**:
-  - Date-based workout log display with time separators
-  - Add set modal with RIR description and progressive overload message
-  - Workout statistics and progress tracking
-  - Editable timestamps and delete functionality
-  - Real-time data from database
-- **State Management**: Workout logs, selected date, modal states, editing states
-- **API Integration**: Workout logging, recent workouts endpoints
-
-##### Muscle Descriptions Utility (`utils/muscleDescriptions.js`)
-- **Purpose**: Centralized system for muscle group information and descriptions
-- **Features**:
-  - Comprehensive database of 18+ muscle groups
-  - Detailed descriptions including location and function
-  - Reusable across different components
-  - Consistent muscle information throughout the application
-- **Exports**:
-  - `muscleDescriptions`: Complete muscle database object
-  - `getMuscleDescription(muscleName)`: Get muscle info by name
-  - `getAllMuscleNames()`: Get all available muscle names
-  - `getMuscleDescriptionText(muscleName)`: Get formatted description text
-- **Usage**: Import and use in any component that needs muscle information
-
-### Features
-
-#### Muscle Priority Management
-- **Visual Interface**: Expandable groups with slider controls
-- **Priority Scale**: 0-100 with color-coded levels (blue, green, yellow, orange, red)
-- **Default Reset**: One-click reset to 80 for all muscles
-- **Batch Updates**: Update all priorities at once
-- **Real-time Feedback**: Immediate visual feedback on changes
-
-#### Workout Creation
-- **Form Validation**: Required fields and data validation
-- **Emoji Support**: Predefined emoji selection (stored in workout name)
-- **Muscle Activation**: 0-100 rating assignment per muscle
-- **Metadata Management**: Equipment, location, notes, type selection
-- **Public/Private**: Visibility settings for workout sharing
-
-#### Split Management
-- **Day Creation**: Add multiple days to splits
-- **Target Setting**: Per-muscle activation targets per day
-- **Real-time Analysis**: Automatic muscle volume calculations
-- **Optimal Ranges**: Color-coded muscle status (warning, below, optimal, above)
-- **Split Activation**: One-click split activation with date setting
-
-#### Workout Logging
-- **Session Tracking**: Weight, reps, RIR, rest time logging
-- **Advanced Attributes**: Dropset, assisted, partial, pause, negatives
-- **Working Timer**: Start/stop timer for work/rest periods
-- **Quick Add**: Previous session data reuse
-- **Search & Filter**: Find workouts by name or muscle activation
-
-#### Progress Tracking
-- **Statistics Display**: Total sets, weight lifted, reps, RIR with real-time updates
-- **Date Navigation**: Calendar-based workout viewing with date selection
-- **Muscle Progress**: Current vs. target activation visualization with progress bars
-- **Split Integration**: Current split day information with automatic day calculation
-- **Historical Data**: Past workout performance tracking with trend analysis
-- **Working Timer**: Integrated timer for work/rest periods during sessions
-
-### Design System Integration
-
-#### Visual Design
-- **Minimalistic**: Clean, uncluttered interface
-- **Modern**: Contemporary design elements
-- **High Contrast**: Clear visual hierarchy
-- **Responsive**: Seamless mobile and desktop experience
-
-#### UI Elements
-- **Tabbed Navigation**: Smooth transitions between sections
-- **Form Controls**: Rounded edges, clear labels, validation feedback
-- **Data Display**: Card-based layout for metrics and information
-- **Color Coding**: Priority colors and status indicators
-- **Icons**: Heroicons for consistent iconography
-
-#### Responsive Design
-- **Mobile First**: Optimized for mobile devices
-- **Desktop Enhancement**: Enhanced layout for larger screens
-- **Touch Friendly**: Appropriate touch targets for mobile
-- **Flexible Grid**: Adaptive grid system for different screen sizes
-
-### State Management
-
-#### Component State
-```javascript
-// WorkoutTracker main page
-const [activeTab, setActiveTab] = useState('muscle-priority');
-const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
-
-// WorkoutAdder component
-const [workoutName, setWorkoutName] = useState('');
-const [selectedMuscles, setSelectedMuscles] = useState([]);
-const [selectedEmoji, setSelectedEmoji] = useState('');
-
-// MusclePriority component
-const [musclePriorities, setMusclePriorities] = useState([]);
-const [expandedGroups, setExpandedGroups] = useState({});
-
-// SplitCreator component
-const [splitDays, setSplitDays] = useState([]);
-const [analysis, setAnalysis] = useState({});
-
-// WorkoutLogger component
-const [selectedWorkout, setSelectedWorkout] = useState(null);
-const [workTime, setWorkTime] = useState(0);
-const [isWorking, setIsWorking] = useState(false);
+### Running the App
+```bash
+npm start
 ```
 
-#### API Integration
-- **Error Handling**: Graceful handling of API failures
-- **Loading States**: User feedback during API calls
-- **Data Validation**: Client-side validation with server confirmation
-- **Optimistic Updates**: Immediate UI updates with rollback on failure
-
-### Testing
-
-#### Component Tests
-- **Unit Tests**: Individual component testing
-- **User Interaction**: Form submission and navigation testing
-- **State Management**: React state and context testing
-- **API Integration**: Mock API testing
-- **Responsive Design**: Mobile and desktop layout testing
-
-#### E2E Tests
-- **Complete Workflows**: End-to-end user journey testing
-- **Cross-Component**: Integration between components
-- **Data Persistence**: Data saving and retrieval testing
-- **Error Scenarios**: Validation and error handling testing
-- **Performance**: Load time and responsiveness testing
-
-### Usage Examples
-
-#### Creating a Workout
-```javascript
-const workoutData = {
-  workout_name: 'Bench Press',
-  type: 'barbell',
-  equipment_brand: 'Rogue Fitness',
-  location: 'Home Gym',
-  notes: 'Focus on form',
-  make_public: true,
-  muscles: [
-    { muscle: 1, activation_rating: 100 }, // Chest
-    { muscle: 2, activation_rating: 75 }    // Triceps
-  ],
-  emoji: '🏋️'
-};
-
-await api.createWorkout(workoutData);
+### Building for Production
+```bash
+npm run build
 ```
 
-#### Updating Muscle Priorities
-```javascript
-const priorities = [
-  { muscle_name: 1, importance: 90 }, // Chest - High priority
-  { muscle_name: 2, importance: 85 }, // Triceps - High priority
-  { muscle_name: 3, importance: 70 }  // Quads - Medium priority
-];
-
-await api.updateMusclePriorities(priorities);
+### Running Tests
+```bash
+npm test
 ```
 
-#### Logging a Workout
-```javascript
-const logData = {
-  workout: 1, // Workout ID
-  weight: 135.0,
-  reps: 10,
-  rir: 2,
-  attributes: [
-    { type: 'dropset', weight: 115, reps: 8 },
-    { type: 'pause', reps: 5, wait_time: 3 }
-  ],
-  rest_time: 120
-};
+## What Must NOT Be Changed
 
-await api.createWorkoutLog(logData);
-```
+- API service architecture (centralized in `api.js`)
+- Authentication flow (JWT tokens, refresh logic)
+- Route protection pattern
+- Design system (themes, styling approach)
+- Token storage location (`localStorage`)
 
-## Profile System - Comprehensive User Interface
+## What Can Be Safely Extended
 
-### Overview
-The profile system provides a comprehensive user interface for managing personal information, goals, body metrics, and historical data. It features a responsive tabbed interface with modern design principles and robust error handling.
+- New pages and components
+- New tracker types
+- New analytics charts
+- New API service methods
+- Utility functions
+- Styling enhancements (following design system)
 
-### Key Components
+---
 
-#### 1. Main Profile Component (`pages/Profile.js`)
-- **Purpose**: Main profile page with tabbed interface
-- **Features**: 
-  - Responsive design (mobile/desktop)
-  - Tab navigation (Personal Info, Goals, Body Metrics, History)
-  - User information display with fitness ranking
-  - Logout functionality
-- **State Management**: Comprehensive state for all profile data
-- **Error Handling**: Graceful error handling with user feedback
-
-#### 2. Sub-Components
-- **PersonalInfoTab**: Personal information editing interface
-- **GoalsTab**: Goals management with AI-powered macro calculator
-- **MetricsTab**: Body metrics display with fitness ranking system
-- **HistoryTab**: Historical data visualization and trend analysis
-
-#### 3. API Integration (`services/api.js`)
-- **Profile Methods**: Complete API integration for profile operations
-- **Error Handling**: Robust error handling for API calls
-- **Data Validation**: Client-side validation for user inputs
-
-### Features
-
-#### Personal Information Management
-- **Editable Fields**: Height, birthday, gender, unit preferences, activity level
-- **Form Validation**: Real-time validation with error messages
-- **Data Persistence**: Automatic saving with user feedback
-- **Responsive Design**: Mobile-optimized form layouts
-
-#### Goal Management
-- **Weight Goals**: Target weight, lean mass, fat mass goals
-- **Macro Goals**: Complete macro tracking (calories, protein, fat, carbs, fiber, sodium)
-- **AI Calculator**: Generate macro goals based on weight target and timeframe
-- **Smart Warnings**: System warnings for extreme goals
-- **Manual Editing**: Direct goal editing with validation
-
-#### Body Metrics Display
-- **Comprehensive Metrics**: BMI, BMR, TDEE, body ratios, body composition
-- **Fitness Ranking**: 17-tier ranking system with color-coded badges
-- **Progress Tracking**: Current rank with requirements for next rank
-- **Visual Design**: Card-based layout with clear data presentation
-
-#### Historical Data Analysis
-- **Weight Trends**: Automatic trend classification (gaining, losing, stable, no_data)
-- **Total Change**: Weight lost or gained calculation
-- **Weekly Recommendations**: Recommended weekly weight change
-- **Weight History**: Recent weight logs with dates and values
-
-### Design System Integration
-
-#### Visual Design
-- **Minimalistic**: Clean, uncluttered interface
-- **Modern**: Contemporary design elements
-- **High Contrast**: Clear visual hierarchy
-- **Responsive**: Seamless mobile and desktop experience
-
-#### UI Elements
-- **Tabbed Navigation**: Smooth transitions between sections
-- **Form Controls**: Rounded edges, clear labels, validation feedback
-- **Data Display**: Card-based layout for metrics and information
-- **Color Coding**: Fitness rank colors and trend indicators
-- **Icons**: Heroicons for consistent iconography
-
-#### Responsive Design
-- **Mobile First**: Optimized for mobile devices
-- **Desktop Enhancement**: Enhanced layout for larger screens
-- **Touch Friendly**: Appropriate touch targets for mobile
-- **Flexible Grid**: Adaptive grid system for different screen sizes
-
-### State Management
-
-#### Profile Data State
-```javascript
-const [profileData, setProfileData] = useState(null);
-const [goals, setGoals] = useState({});
-const [metrics, setMetrics] = useState({});
-const [historical, setHistorical] = useState({});
-const [loading, setLoading] = useState(true);
-const [error, setError] = useState('');
-```
-
-#### Form State Management
-- **Editing State**: Tracks which sections are being edited
-- **Form Data**: Manages form input values
-- **Validation**: Real-time validation state
-- **Submission**: Handles form submission and API calls
-
-### API Integration
-
-#### Profile Endpoints
-- **GET /api/users/profile/**: Complete profile data
-- **PUT /api/users/profile/**: Update personal information
-- **GET /api/users/goals/**: Retrieve user goals
-- **PUT /api/users/goals/**: Update user goals
-- **GET /api/users/calculate-metrics/**: Calculate body metrics
-- **POST /api/users/calculate-macros/**: Generate macro goals
-
-#### Error Handling
-- **API Errors**: Graceful handling of API failures
-- **Validation Errors**: Client-side validation with user feedback
-- **Network Errors**: Offline handling and retry logic
-- **User Feedback**: Clear error messages and success notifications
-
-### Testing
-
-#### Component Tests
-- **Unit Tests**: Individual component testing
-- **User Interaction**: Form submission and navigation testing
-- **State Management**: React state and context testing
-- **API Integration**: Mock API testing
-- **Responsive Design**: Mobile and desktop layout testing
-
-#### E2E Tests
-- **Complete Workflows**: End-to-end user journey testing
-- **Cross-Browser**: Multi-browser compatibility testing
-- **Performance**: Load time and responsiveness testing
-- **Accessibility**: Keyboard navigation and screen reader testing
-- **Data Persistence**: Data saving and retrieval testing
-
-### Usage Examples
-
-#### Profile Data Loading
-```javascript
-const loadProfileData = async () => {
-  try {
-    setLoading(true);
-    const response = await api.getUserProfile();
-    
-    if (response.data.data) {
-      setProfileData(response.data.data.user);
-      setGoals(response.data.data.goals);
-      setMetrics(response.data.data.metrics);
-      setHistorical(response.data.data.historical);
-    }
-  } catch (err) {
-    setError('Failed to load profile data');
-  } finally {
-    setLoading(false);
-  }
-};
-```
-
-#### Macro Calculator
-```javascript
-const calculateMacros = async () => {
-  try {
-    setMacroCalculation(prev => ({ ...prev, calculating: true }));
-    
-    const response = await api.generateMacroGoals(
-      macroCalculation.weight_goal,
-      macroCalculation.timeframe_weeks
-    );
-
-    if (response.data.data) {
-      setMacroCalculation(prev => ({
-        ...prev,
-        result: response.data.data,
-        calculating: false
-      }));
-    }
-  } catch (err) {
-    setError('Failed to calculate macros');
-    setMacroCalculation(prev => ({ ...prev, calculating: false }));
-  }
-};
-```
-
-#### Profile Update
-```javascript
-const updateProfile = async (updatedData) => {
-  try {
-    await api.updateUserProfile(updatedData);
-    await loadProfileData();
-    setEditing(false);
-  } catch (err) {
-    setError('Failed to update profile');
-  }
-};
-```
-
-## Common Development Tasks
-
-### Adding New Components
-1. Create component file in appropriate directory
-2. Define component interface and props
-3. Implement component logic and styling
-4. Add tests for component behavior
-5. Integrate with parent components
-
-### Adding New Pages
-1. Create page component in `pages/` directory
-2. Add route definition in `App.js`
-3. Implement page logic and styling
-4. Add navigation links if needed
-5. Test page functionality and routing
-
-### API Integration
-1. Add API method to service layer
-2. Create component state for API data
-3. Implement loading and error states
-4. Add user feedback for API responses
-5. Test API integration thoroughly
+**Remember**: Follow existing patterns. Maintain design system consistency. Test thoroughly before deploying.

@@ -365,6 +365,9 @@ const AdditionalTrackersMenu = () => {
             case 'health_metrics':
               graphDataState.health_metrics = processHealthMetricsData(data, startDate, endDate);
               break;
+            default:
+              // Unknown tracker type, skip
+              break;
           }
         }
       });
@@ -912,11 +915,6 @@ const AdditionalTrackersMenu = () => {
 
     // Filter out hidden fields
     const activeMetrics = metricKeys.filter(key => !hiddenFields[trackerId]?.includes(key));
-    
-    const hasData = activeMetrics.some(key => {
-      const values = graphDataForTracker[key];
-      return values && values.some(v => v != null && v > 0);
-    });
 
     const graphHeight = 120;
     const padding = { top: 10, right: 10, bottom: 30, left: 40 };
@@ -950,35 +948,6 @@ const AdditionalTrackersMenu = () => {
     const getXValue = (index, total) => {
       if (total === 0) return padding.left;
       return padding.left + ((index / total) * effectiveWidth);
-    };
-
-    // Determine which points to show based on date range
-    const shouldShowPoint = (index) => {
-      if (!dateRangeForTracker) return true; // Fallback to showing all
-      
-      const totalDays = graphDataForTracker.dates.length;
-      
-      if (dateRangeForTracker === '2weeks') {
-        // Every day for 2 weeks
-        return true;
-      } else if (dateRangeForTracker === '1month') {
-        // 2 points a week (every 3.5 days, so every 3 or 4 days)
-        return index % 3 === 0 || index === totalDays - 1;
-      } else if (dateRangeForTracker === '6months') {
-        // 1 point per month (approximately every 30 days)
-        const daysPerMonth = totalDays / 6;
-        return index % Math.floor(daysPerMonth) === 0 || index === totalDays - 1;
-      } else if (dateRangeForTracker === '1year') {
-        // 1 point per month (approximately every 30 days)
-        const daysPerMonth = totalDays / 12;
-        return index % Math.floor(daysPerMonth) === 0 || index === totalDays - 1;
-      } else if (dateRangeForTracker === 'custom') {
-        // Max 10 points
-        const interval = Math.max(1, Math.floor(totalDays / 10));
-        return index % interval === 0 || index === totalDays - 1;
-      }
-      
-      return true; // Default: show all
     };
 
     return (
@@ -1109,7 +1078,6 @@ const AdditionalTrackersMenu = () => {
                   : graphDataForTracker._previousValue;
                 
                 // Check if this is single-field tracker with previous value
-                const firstMetricKey = metricKeys[0];
                 const isSingleField = graphDataForTracker._previousValue != null && 
                                      (trackerId === 'weight' || trackerId === 'steps');
                 

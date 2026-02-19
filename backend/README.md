@@ -16,7 +16,7 @@ Django backend for the Tracking App with comprehensive API endpoints for user ma
 ### Prerequisites
 - Python 3.8+
 - MySQL 8.0+
-- OpenAI API key
+- OpenAI API key (optional, for AI features)
 
 ### Installation
 
@@ -83,50 +83,47 @@ When using `--full` or `--dummy` flag, two test users are created:
 - `POST /api/auth/change-password/` - Change password
 - `POST /api/auth/token/refresh/` - Refresh token
 
-### OpenAI Integration
+### Users
+- `GET /api/users/profile/` - Complete profile with metrics
+- `PUT /api/users/profile/` - Update personal information
+- `GET /api/users/goals/` - Retrieve user goals
+- `PUT /api/users/goals/` - Update user goals
+- `GET /api/users/calculate-metrics/` - Calculate body metrics
+- `POST /api/users/calculate-macros/` - Generate macro goals
+
+### Foods
+- `GET /api/foods/` - List foods
+- `POST /api/foods/` - Create food
+- `GET /api/foods/<id>/` - Get food details
+- `PUT /api/foods/<id>/` - Update food
+- `DELETE /api/foods/<id>/` - Delete food
+- `POST /api/foods/logs/` - Log food consumption
+- `GET /api/foods/logs/` - Get food logs
+
+### Workouts
+- `GET /api/workouts/` - List workouts
+- `POST /api/workouts/` - Create workout
+- `GET /api/workouts/logs/` - List workout logs
+- `POST /api/workouts/logs/` - Log workout session
+- `GET /api/workouts/splits/` - List splits
+- `POST /api/workouts/splits/` - Create split
+
+### Health & Logging
+- `POST /api/logging/weight/` - Log weight
+- `POST /api/logging/water/` - Log water
+- `POST /api/health/sleep/` - Log sleep
+- Similar endpoints for steps, cardio, body measurements, health metrics
+
+### Analytics
+- `GET /api/analytics/workouts/progression/` - Workout progression
+- `GET /api/analytics/foods/timing/` - Food timing analysis
+- `GET /api/analytics/health/weight-progression/` - Weight progression
+- Many more analytics endpoints available
+
+### OpenAI
 - `POST /api/openai/prompt/` - Send prompt to OpenAI
 - `GET /api/openai/usage/` - Get usage statistics
-
-## Database Models
-
-### Core Models
-- `User` - Custom user model with extended fields
-- `AccessLevel` - User permission levels
-- `Unit` - Measurement units
-- `ActivityLevel` - User activity levels
-
-### Data Models
-- `Food` - Nutritional information
-- `Meal` - Meal compositions
-- `FoodLog` - Food consumption tracking
-- `WeightLog` - Weight tracking
-- `Workout` - Exercise definitions
-- `WorkoutLog` - Exercise performance tracking
-
-### Analytics Models
-- `ApiUsageLog` - API usage tracking
-- `ErrorLog` - Error logging
-
-## Configuration
-
-### Environment Variables
-```env
-DB_NAME=tracking_app
-DB_USER=root
-DB_PASSWORD=your_password
-DB_HOST=localhost
-DB_PORT=3306
-SECRET_KEY=your-secret-key
-DEBUG=True
-OPENAI_API_KEY=your-openai-key
-JWT_SECRET_KEY=your-jwt-secret
-```
-
-### Settings
-- JWT token lifetime configuration
-- CORS settings for frontend integration
-- Database connection settings
-- Logging configuration
+- `POST /api/openai/parse-food/` - Parse food from natural language
 
 ## Database Management
 
@@ -167,6 +164,27 @@ Test data includes realistic entries for:
 - **Splits**: Workout split programs
 - **Logs**: ~180 days of food, workout, sleep, and health data
 
+## Configuration
+
+### Environment Variables
+```env
+DB_NAME=tracking_app
+DB_USER=root
+DB_PASSWORD=your_password
+DB_HOST=localhost
+DB_PORT=3306
+SECRET_KEY=your-secret-key
+DEBUG=True
+OPENAI_API_KEY=your-openai-key
+JWT_SECRET_KEY=your-jwt-secret
+```
+
+### Settings
+- JWT token lifetime configuration
+- CORS settings for frontend integration
+- Database connection settings
+- Logging configuration
+
 ## Development
 
 ### Running Tests
@@ -181,7 +199,10 @@ python manage.py migrate
 ```
 
 ### Django Admin
-Access admin interface at `/admin/` after creating superuser.
+Access admin interface at `/admin/` after creating superuser:
+```bash
+python manage.py createsuperuser
+```
 
 ## Architecture
 
@@ -194,6 +215,7 @@ Access admin interface at `/admin/` after creating superuser.
 - `health` - Health metrics
 - `analytics` - Usage and error tracking
 - `openai_service` - AI integration
+- `data_viewer` - Database access service
 
 ### Middleware
 - `AuthMiddleware` - JWT token validation

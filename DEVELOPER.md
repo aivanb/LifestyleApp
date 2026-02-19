@@ -1,107 +1,20 @@
 # Developer Guide for AI Agents
 
-This guide is specifically written for AI agents working on the Workout & Macro Tracking App. It provides essential context for understanding, debugging, expanding, testing, securing, and maintaining the system.
+This guide provides essential technical context for AI agents working on the Workout & Macro Tracking App. It covers architecture, data flow, APIs, invariants, edge cases, and extension points.
 
-## 🏋️ Workout Tracking System Status
+## System Architecture
 
-**✅ FULLY FUNCTIONAL** - The workout tracking system has been completely rewritten and is now working with comprehensive test coverage.
+### Technology Stack
+- **Backend**: Django 4.2.7 + Django REST Framework 3.14.0, MySQL 8.0+
+- **Frontend**: React 18.2.0, React Router 6.3.0, Axios
+- **Authentication**: JWT (django-rest-framework-simplejwt)
+- **External Services**: OpenAI API (gpt-3.5-turbo), Vosk (offline voice)
 
-### Implemented Features
-1. **Muscle Priority Management** - Set and update muscle priorities (0-100 scale)
-   - Major muscle groups displayed first (Chest, Back, Arms, Legs, Core, Other)
-   - Expandable sub-muscles for granular control
-   - Changing major group priority updates all sub-muscles
-   - Individual muscle priority adjustment within groups
-2. **Workout Adder** - Create workouts with muscle activation ratings and emoji icons
-3. **Split Creator** - Create workout splits with multiple days and target activations
-4. **Workout Logger** - Log workout sessions with detailed tracking
-5. **Workout Log** - View workout history, stats, and current split day progress
-
-### Test Coverage
-- **Backend**: Complete user workflow simulation with real database operations
-- **Frontend**: All components created and integrated
-- **API**: All endpoints tested and working
-- **Database**: All models aligned with existing schema
-
-## 🏋️ Workout Tracking System Architecture
-
-### Backend Components
-- **Models** (`apps/workouts/models.py`):
-  - `Workout` - Exercise definitions with metadata
-  - `WorkoutMuscle` - Muscle activation ratings for workouts
-  - `WorkoutLog` - Individual workout sessions
-  - `MuscleLog` - User's muscle priority settings
-  - `Split` - Workout split definitions
-  - `SplitDay` - Days within a split
-  - `SplitDayTarget` - Muscle targets for each split day
-
-- **API Endpoints** (`apps/workouts/views.py`):
-  - `GET/POST /api/workouts/` - List/create workouts
-  - `GET/POST /api/workouts/muscle-priorities/` - Get/update muscle priorities
-  - `GET/POST /api/workouts/logs/` - List/log workouts
-  - `GET/POST /api/workouts/splits/` - List/create splits
-  - `POST /api/workouts/splits/<id>/activate/` - Activate split
-  - `GET /api/workouts/current-split-day/` - Get current split day
-  - `GET /api/workouts/stats/` - Workout statistics
-
-### Frontend Components
-- **MusclePriority** - Manage muscle priorities with expandable sections
-- **WorkoutAdder** - Create workouts with muscle activation and emoji icons
-- **SplitCreator** - Create splits with multiple days and target activations
-- **WorkoutLogger** - Log workout sessions with search and filters
-- **WorkoutLog** - View workout history, stats, and current split day
-
-### Key Features
-- **Muscle Priority System**: Base priority of 80, adjustable 0-100 scale
-- **Activation Rating System**: 0-100 scale for muscle activation in workouts
-- **Split Management**: Create splits with multiple days and target activations
-- **Optimal Range Calculation**: Formulas for muscle activation optimization
-- **Workout Logging**: Detailed tracking with attributes, RIR, and progressive overload
-- **Statistics**: Comprehensive workout stats and progress tracking
-
-### Optimal Activation Formulas
-
-The system calculates optimal muscle activation ranges using these formulas:
-
-```python
-# Lower bound
-R(P,D) = 90 × (10 + 0.1P) × 7/D
-
-# Upper bound  
-R(P,D) = 90 × (20 + 0.1P) × 7 × D
-
-# Where:
-# P = Muscle priority (0-100)
-# D = Number of days in split
-# R = Optimal activation range
+### High-Level Data Flow
 ```
-
-**Example Calculation**:
-- Priority: 80
-- Split days: 3
-- Lower: 90 × (10 + 0.1×80) × 7/3 = 378
-- Upper: 90 × (20 + 0.1×80) × 7 × 3 = 5,292
-
-**Muscle Status Indicators**:
-- 🔴 **No activation** - 0 activation
-- 🟡 **Below optimal** - Below lower bound
-- 🟢 **Within optimal** - Within 15% of optimal range
-- 🔵 **Above optimal** - Above upper bound
-
-## 🏛️ System Architecture
-
-### High-Level Overview
-```
-┌─────────────┐     ┌──────────────┐     ┌────────────┐
-│   Frontend  │────▶│   Backend    │────▶│  Database  │
-│   (React)   │◀────│  (Django)    │◀────│  (MySQL)   │
-└─────────────┘     └──────────────┘     └────────────┘
-                            │
-                            ▼
-                    ┌──────────────┐
-                    │ External APIs │
-                    │   (OpenAI)    │
-                    └──────────────┘
+Frontend (React) → HTTP/JWT → Backend (Django) → MySQL Database
+                              ↓
+                        External APIs (OpenAI, Vosk)
 ```
 
 ### Directory Structure
@@ -109,811 +22,487 @@ R(P,D) = 90 × (20 + 0.1P) × 7 × D
 TrackingApp/
 ├── backend/              # Django REST API
 │   ├── apps/            # Feature-specific Django apps
-│   │   └── workouts/    # Workout tracking system
-│   │       ├── models.py      # Database models
-│   │       ├── serializers.py # API serializers
-│   │       ├── views.py       # API endpoints
-│   │       ├── urls.py        # URL routing
-│   │       └── tests.py       # Test cases
 │   ├── backend/         # Core Django configuration
 │   ├── middleware/      # Request/response processing
 │   └── database_setup/  # DB initialization scripts
 ├── frontend/            # React single-page application
 │   └── src/
 │       ├── components/  # Reusable UI components
-│       │   ├── MusclePriority.js
-│       │   ├── WorkoutAdder.js
-│       │   ├── SplitCreator.js
-│       │   ├── WorkoutLogger.js
-│       │   └── WorkoutLog.js
 │       ├── pages/       # Route components
-│       │   └── WorkoutTracker.js
 │       ├── services/    # API communication layer
-│       │   └── api.js
-│       └── contexts/    # Global state management
-└── tests/               # All test files
+│       └── contexts/   # Global state management
+├── tests/               # All test files
+│   ├── backend/         # Django tests
+│   ├── frontend/        # React tests
+│   └── e2e/            # End-to-end tests
+└── docs/ai_reference/   # Deep technical reference
 ```
 
-## 🎨 Frontend Styling Notes (November 2025 Refresh)
+## Backend Architecture
 
-- **Themes**: Only `dark` and `light` themes are supported. Both use neutral grey page backdrops with true black/white section surfaces. Use the tokens defined in `src/index.css`.
-- **Typography**: `Josefin Sans` is the default font (`--font-primary`). Do not reintroduce monospaced stacks unless explicitly requested.
-- **Surfaces**: Cards, tables, and modals are borderless with large radii and deep shadows. Prefer gradients and `--surface-overlay` instead of hard borders for separation.
-- **Floating actions**: Header bars have been removed. Reuse the floating button patterns (`.btn-primary-header`, `.btn-secondary-header`) when adding new top-level actions.
-- **Animations**: Menus and modals rely on the new `menuFloatIn` / `modalFloat` keyframes. When adding new overlays, hook into these animations for consistency.
-- **Color usage**: All accent tones were brightened. Avoid introducing new hex colors; pull from the accent variables to maintain contrast compliance.
+### Django Apps Structure
+1. **authentication** - JWT auth, user registration/login
+2. **users** - User models, profiles, goals, body metrics
+3. **foods** - Food database, meals, food logging
+4. **meals** - Meal composition (currently minimal)
+5. **logging** - Activity logs (food, weight, water, steps, cardio, body measurements)
+6. **workouts** - Exercise tracking, splits, muscle priorities
+7. **health** - Sleep tracking, health metrics
+8. **analytics** - Usage tracking, error logging, data analytics
+9. **openai_service** - AI integration, food parsing, voice transcription
+10. **data_viewer** - Database access service (standard for all DB access)
+11. **database_setup** - Database initialization commands
 
-## 🔍 How to Debug
+### API Endpoints (Complete List)
 
-### Workout System Debugging
+#### Authentication (`/api/auth/`)
+- `POST /api/auth/login/` - User login, returns JWT tokens
+- `POST /api/auth/register/` - User registration
+- `POST /api/auth/logout/` - Logout, blacklists refresh token
+- `GET /api/auth/profile/` - Get current user profile
+- `PUT /api/auth/profile/update/` - Update profile
+- `POST /api/auth/change-password/` - Change password
+- `POST /api/auth/token/refresh/` - Refresh JWT access token
 
-1. **Check Database Schema Alignment**:
-   ```bash
-   # Verify models match database
-   python manage.py makemigrations --dry-run
-   
-   # Check for schema mismatches
-   python manage.py dbshell
-   DESCRIBE workout_muscle;
-   DESCRIBE split_days;
-   ```
+#### Users (`/api/users/`)
+- `GET /api/users/profile/` - Complete profile with metrics
+- `PUT /api/users/profile/` - Update personal information
+- `GET /api/users/goals/` - Retrieve user goals
+- `PUT /api/users/goals/` - Update user goals
+- `GET /api/users/calculate-metrics/` - Calculate body metrics
+- `POST /api/users/calculate-macros/` - Generate macro goals
+- `GET /api/users/body-metrics/` - Get body metrics
+- `GET /api/users/historical-data/` - Weight history and trends
 
-2. **Test API Endpoints**:
-   ```bash
-   # Test workout creation
-   curl -X POST http://localhost:8000/api/workouts/ \
-     -H "Content-Type: application/json" \
-     -H "Authorization: Bearer YOUR_TOKEN" \
-     -d '{"workout_name": "Test Workout", "type": "barbell"}'
-   
-   # Test split activation
-   curl -X POST http://localhost:8000/api/workouts/splits/1/activate/ \
-     -H "Content-Type: application/json" \
-     -H "Authorization: Bearer YOUR_TOKEN" \
-     -d '{"start_date": "2024-01-01"}'
-   ```
+#### Foods (`/api/foods/`)
+- `GET /api/foods/` - List foods (user's + public)
+- `POST /api/foods/` - Create food
+- `GET /api/foods/<id>/` - Get food details
+- `PUT /api/foods/<id>/` - Update food
+- `DELETE /api/foods/<id>/` - Delete food
+- `GET /api/foods/<id>/analytics/` - Food analytics
+- `GET /api/foods/meals/` - List meals
+- `POST /api/foods/meals/` - Create meal
+- `GET /api/foods/meals/<id>/` - Get meal details
+- `POST /api/foods/logs/` - Log food consumption
+- `GET /api/foods/logs/` - Get food logs
+- `PUT /api/foods/logs/<id>/` - Update food log
+- `DELETE /api/foods/logs/<id>/` - Delete food log
+- `GET /api/foods/logs/recent-foods/` - Recently logged foods
 
-3. **Debug Frontend Components**:
-   ```javascript
-   // Add to component for debugging
-   console.log('Muscle priorities:', musclePriorities);
-   console.log('Current split day:', currentSplitDay);
-   console.log('Workout logs:', workoutLogs);
-   ```
+#### Logging (`/api/logging/`)
+- `POST /api/logging/weight/` - Log weight
+- `GET /api/logging/weight/` - Get weight logs
+- `PUT /api/logging/weight/<id>/` - Update weight log
+- `DELETE /api/logging/weight/<id>/` - Delete weight log
+- `GET /api/logging/weight/streak/` - Get weight streak
+- Similar endpoints for: `water/`, `steps/`, `cardio/`, `body-measurement/`
+- `GET /api/logging/streaks/` - Get all tracker streaks
 
-### Backend Debugging
+#### Workouts (`/api/workouts/`)
+- `GET /api/workouts/` - List workouts
+- `POST /api/workouts/` - Create workout
+- `GET /api/workouts/<id>/` - Get workout details
+- `PUT /api/workouts/<id>/` - Update workout
+- `DELETE /api/workouts/<id>/` - Delete workout
+- `GET /api/workouts/muscles/` - List muscles
+- `GET /api/workouts/muscle-priorities/` - Get muscle priorities
+- `POST /api/workouts/muscle-priorities/` - Update muscle priorities
+- `GET /api/workouts/logs/` - List workout logs
+- `POST /api/workouts/logs/` - Log workout session
+- `GET /api/workouts/logs/<id>/` - Get workout log
+- `PUT /api/workouts/logs/<id>/` - Update workout log
+- `DELETE /api/workouts/logs/<id>/` - Delete workout log
+- `GET /api/workouts/splits/` - List splits
+- `POST /api/workouts/splits/` - Create split
+- `GET /api/workouts/splits/<id>/` - Get split details
+- `PUT /api/workouts/splits/<id>/` - Update split
+- `DELETE /api/workouts/splits/<id>/` - Delete split
+- `POST /api/workouts/splits/<id>/activate/` - Activate split
+- `GET /api/workouts/current-split-day/` - Get current split day
+- `GET /api/workouts/stats/` - Workout statistics
+- `GET /api/workouts/recently-logged/` - Recently logged workouts
+- `GET /api/workouts/icons/` - Available workout icons
 
-1. **Enable Debug Mode** (Development only):
-   ```python
-   # .env
-   DEBUG=True
-   ```
+#### Health (`/api/health/`)
+- `POST /api/health/sleep/` - Log sleep
+- `GET /api/health/sleep/` - Get sleep logs
+- `PUT /api/health/sleep/<id>/` - Update sleep log
+- `DELETE /api/health/sleep/<id>/` - Delete sleep log
+- `GET /api/health/sleep/streak/` - Get sleep streak
+- Similar endpoints for: `health-metrics/`
 
-2. **Check Logs**:
-   ```bash
-   # Django logs
-   tail -f backend/logs/django.log
-   
-   # Database queries
-   # Add to settings.py temporarily:
-   LOGGING['loggers']['django.db.backends'] = {
-       'level': 'DEBUG',
-       'handlers': ['console'],
-   }
-   ```
+#### Analytics (`/api/analytics/`)
+- `GET /api/analytics/workouts/body-measurement-progression/` - Body measurement trends
+- `GET /api/analytics/workouts/progression/` - Workout progression
+- `GET /api/analytics/workouts/rest-time-analysis/` - Rest time analysis
+- `GET /api/analytics/workouts/attributes-analysis/` - Workout attributes analysis
+- `GET /api/analytics/workouts/steps-cardio-distance/` - Steps/cardio distance
+- `GET /api/analytics/workouts/activation-progress/` - Muscle activation progress
+- `GET /api/analytics/foods/metadata-progress/` - Food metadata completion
+- `GET /api/analytics/foods/timing/` - Food timing analysis
+- `GET /api/analytics/foods/macro-split/` - Macro distribution
+- `GET /api/analytics/foods/frequency/` - Food frequency
+- `GET /api/analytics/foods/cost/` - Food cost analysis
+- `GET /api/analytics/foods/radar-chart/` - Food radar chart data
+- `GET /api/analytics/foods/workout-tracking-heatmap/` - Workout tracking heatmap
+- `GET /api/analytics/health/weight-progression/` - Weight progression
+- `GET /api/analytics/health/metrics-radial/` - Health metrics radial chart
 
-3. **Common Backend Issues**:
-   
-   **Issue**: `OperationalError: no such table`
-   - **Solution**: Run migrations
-   ```bash
-   cd backend
-   python manage.py makemigrations
-   python manage.py migrate
-   ```
-   
-   **Issue**: `ImportError: No module named 'apps'`
-   - **Solution**: Ensure you're in the backend directory
-   
-   **Issue**: `ValueError: SECRET_KEY environment variable must be set`
-   - **Solution**: Create `.env` file with required variables
+#### OpenAI Service (`/api/openai/`)
+- `POST /api/openai/prompt/` - Send prompt to OpenAI
+- `GET /api/openai/usage/` - Get usage statistics
+- `POST /api/openai/parse-food/` - Parse food from natural language
+- `POST /api/openai/generate-metadata/` - Generate food metadata
+- `POST /api/openai/transcribe/` - Transcribe audio
+- `GET /api/openai/transcription-status/` - Check Vosk status
 
-4. **API Testing Tools**:
-   ```bash
-   # Test endpoint with curl
-   curl -X POST http://localhost:8000/api/auth/login/ \
-     -H "Content-Type: application/json" \
-     -d '{"username": "test", "password": "test123"}'
-   
-   # Use Django shell for model testing
-   python manage.py shell
-   >>> from apps.users.models import User
-   >>> User.objects.all()
-   ```
+#### Data Viewer (`/api/data-viewer/`)
+- `GET /api/data-viewer/tables/` - List available tables
+- `GET /api/data-viewer/tables/<name>/schema/` - Get table schema
+- `GET /api/data-viewer/tables/<name>/data/` - Get table data
+- `GET /api/data-viewer/tables/<name>/count/` - Get row count
 
-### Frontend Debugging
-
-1. **React Developer Tools**:
-   - Install browser extension
-   - Inspect component props and state
-   - Track context changes
-
-2. **Network Debugging**:
-   ```javascript
-   // Add to services/api.js temporarily
-   api.interceptors.request.use(request => {
-     console.log('Request:', request);
-     return request;
-   });
-   
-   api.interceptors.response.use(
-     response => {
-       console.log('Response:', response);
-       return response;
-     },
-     error => {
-       console.error('Error:', error.response);
-       return Promise.reject(error);
-     }
-   );
-   ```
-
-3. **Common Frontend Issues**:
-   
-   **Issue**: `CORS error`
-   - **Solution**: Check `CORS_ALLOWED_ORIGINS` in Django settings
-   
-   **Issue**: `401 Unauthorized` on API calls
-   - **Solution**: Check token expiration and refresh logic
-   
-   **Issue**: `Module not found`
-   - **Solution**: Run `npm install` and check import paths
-
-## 🚀 How to Expand
-
-### Adding New Workout Features
-
-1. **New Workout Types**:
-   ```python
-   # Add to models.py
-   class WorkoutType(models.Model):
-       type_name = models.CharField(max_length=50)
-       description = models.TextField()
-   
-   # Update Workout model
-   workout_type = models.ForeignKey(WorkoutType, on_delete=models.CASCADE)
-   ```
-
-2. **New Muscle Groups**:
-   ```python
-   # Add to existing Muscle model
-   muscle_subgroup = models.CharField(max_length=100, blank=True)
-   muscle_function = models.TextField(blank=True)
-   ```
-
-3. **Advanced Statistics**:
-   ```python
-   # Add to views.py
-   @api_view(['GET'])
-   @permission_classes([IsAuthenticated])
-   def advanced_stats(request):
-       # Calculate advanced metrics
-       # Volume progression, strength curves, etc.
-   ```
-
-### Adding a New Feature
-
-1. **Backend - Create Django App**:
-   ```bash
-   cd backend
-   python manage.py startapp feature_name
-   ```
-   
-2. **Define Models** (`apps/feature_name/models.py`):
-   ```python
-   from django.db import models
-   from apps.users.models import User
-   
-   class FeatureModel(models.Model):
-       user = models.ForeignKey(User, on_delete=models.CASCADE)
-       name = models.CharField(max_length=100)
-       created_at = models.DateTimeField(auto_now_add=True)
-   ```
-
-3. **Create Serializers** (`apps/feature_name/serializers.py`):
-   ```python
-   from rest_framework import serializers
-   from .models import FeatureModel
-   
-   class FeatureSerializer(serializers.ModelSerializer):
-       class Meta:
-           model = FeatureModel
-           fields = '__all__'
-   ```
-
-4. **Add Views** (`apps/feature_name/views.py`):
-   ```python
-   from rest_framework.decorators import api_view, permission_classes
-   from rest_framework.permissions import IsAuthenticated
-   from rest_framework.response import Response
-   
-   @api_view(['GET', 'POST'])
-   @permission_classes([IsAuthenticated])
-   def feature_view(request):
-       # Implementation
-   ```
-
-5. **Configure URLs** (`apps/feature_name/urls.py`):
-   ```python
-   from django.urls import path
-   from . import views
-   
-   urlpatterns = [
-       path('', views.feature_view, name='feature'),
-   ]
-   ```
-
-6. **Frontend - Add Service** (`services/featureApi.js`):
-   ```javascript
-   import api from './api';
-   
-   export const featureApi = {
-     getAll: () => api.get('/feature/'),
-     create: (data) => api.post('/feature/', data),
-   };
-   ```
-
-7. **Create React Component**:
-   ```javascript
-   import React, { useState, useEffect } from 'react';
-   import { featureApi } from '../services/featureApi';
-   
-   const FeatureComponent = () => {
-     // Component logic
-   };
-   ```
-
-### Integration Points
-
-- **Authentication**: Use `@permission_classes([IsAuthenticated])`
-- **Database**: Follow schema in `notes/database_structure.md`
-- **API Response**: Use standard format `{'data': {...}}` or `{'error': {...}}`
-- **Frontend Routing**: Add to `App.js` with `ProtectedRoute`
-
-### Workout System API Response Format
-
-All workout endpoints follow a consistent response format:
-
-```python
-# Success Response
+### API Response Format (Invariant)
+All endpoints return:
+```json
 {
-    'success': True,
-    'data': {
-        # Response data here
-    }
+  "data": { ... }  // Success response
 }
-
-# Error Response
+```
+OR
+```json
 {
-    'success': False,
-    'error': {
-        'message': 'Error description'
+  "error": {
+    "message": "Error description",
+    "details": { ... }  // Optional
     }
 }
 ```
 
-**Example API Calls**:
-```python
-# Create workout
-POST /api/workouts/
-{
-    'workout_name': 'Bench Press 💪',
-    'type': 'barbell',
-    'notes': 'Heavy compound lift',
-    'muscles': [
-        {'muscle': 1, 'activation_rating': 100},
-        {'muscle': 2, 'activation_rating': 75}
-    ]
-}
+### Authentication Flow (State Transitions)
+1. User registers/logs in → receives `access_token` (1 hour) and `refresh_token` (7 days)
+2. Frontend stores tokens in `localStorage`
+3. Axios interceptor adds `Authorization: Bearer <access_token>` to requests
+4. `AuthMiddleware` validates token, sets `request.user`
+5. On 401, frontend attempts refresh using `refresh_token`
+6. On refresh success, new `access_token` stored, original request retried
+7. On refresh failure, user redirected to login
 
-# Activate split
-POST /api/workouts/splits/1/activate/
-{
-    'start_date': '2024-01-01'
-}
+### Database Schema (Critical Invariants)
+- All user data isolated via `user` foreign key
+- Public foods/meals/workouts accessible to all users (`make_public` flag)
+- Cascade deletes: deleting user deletes all related data
+- Required reference data: `access_levels`, `activity_levels`, `muscles`, `units`
+- Primary keys: Most use `_id` suffix (e.g., `food_id`, `workout_id`), some use `id`
 
-# Log workout
-POST /api/workouts/logs/
-{
-    'workout': 1,
-    'date_time': '2024-01-01T10:00:00Z',
-    'weight': 100,
-    'reps': 10,
-    'rir': 2,
-    'notes': 'Feeling strong',
-    'attributes': ['dropset']
-}
+### Middleware Architecture
+1. **CORS Middleware** - Allows frontend origin only
+2. **Security Middleware** - CSRF, XSS protection
+3. **AuthMiddleware** (`middleware/auth.py`) - JWT validation, sets `request.user`
+4. **LoggingMiddleware** (`middleware/logging.py`) - Request/response logging, error tracking
+
+### Data Viewer System (Standard for DB Access)
+**CRITICAL**: `apps.data_viewer` is the standard foundation for all database access.
+- **MUST** use `DataAccessService` for any database viewing/access
+- Provides: SQL injection prevention, XSS protection, access control, audit logging
+- See `backend/apps/data_viewer/README.md` for integration
+
+## Frontend Architecture
+
+### Component Hierarchy
+```
+App
+├── ThemeProvider
+├── AuthProvider
+├── Router
+│   ├── Navbar
+│   └── Routes
+│       ├── Login (Public)
+│       ├── Register (Public)
+│       ├── Profile (Protected)
+│       ├── FoodLog (Protected)
+│       ├── WorkoutTracker (Protected)
+│       ├── AdditionalTrackers (Protected)
+│       ├── DataViewer (Protected)
+│       ├── Analytics (Protected)
+│       └── Personalization (Protected)
 ```
 
-## 🧪 How to Test
+### Pages (`src/pages/`)
+- `Login.js` - Authentication form
+- `Register.js` - User registration
+- `Profile.js` - User profile management
+- `FoodLog.js` - Food logging interface
+- `WorkoutTracker.js` - Workout tracking interface
+- `AdditionalTrackers.js` - Health metrics tracking
+- `DataViewer.js` - Database viewer interface
+- `Analytics.js` - Data analytics dashboard
+- `Personalization.js` - Muscle priorities, splits configuration
 
-### Workout System Testing
+### Key Components (`src/components/`)
+- `FoodLoggingDashboard.js` - Main food logging interface
+- `WorkoutLoggingDashboard.js` - Main workout logging interface
+- `FoodCreator.js` - Create foods
+- `MealCreator.js` - Create meals
+- `WorkoutAdder.js` - Create workouts
+- `WorkoutLogger.js` - Log workout sessions
+- `MusclePriority.js` - Manage muscle priorities
+- `SplitCreator.js` - Create workout splits
+- Tracker components in `trackers/`: `WeightTracker`, `WaterTracker`, `SleepTracker`, etc.
 
-1. **Run Backend Tests**:
+### State Management
+- **AuthContext** - Global authentication state, user data, token management
+- **ThemeContext** - Theme switching (dark/light only)
+- Component-level state for forms and UI
+
+### API Service Layer (`src/services/api.js`)
+- Axios instance with base URL
+- Request interceptor: Adds JWT token
+- Response interceptor: Handles token refresh on 401
+- Standardized error handling
+
+### Styling System (November 2025 Refresh)
+- **Themes**: Only `dark` and `light` (neutral grey backdrops)
+- **Typography**: `Josefin Sans` font family
+- **Surfaces**: Borderless glass panels, large radii, deep shadows
+- **Floating Actions**: No header bars, floating buttons with gradients
+- **Animations**: `menuFloatIn`, `modalFloat` keyframes
+- See `frontend/src/index.css` for CSS variables
+
+## Data Flow Patterns
+
+### Food Logging Flow
+1. User searches/creates food → `POST /api/foods/` or selects existing
+2. User sets quantity → Frontend calculates macros
+3. User logs food → `POST /api/foods/logs/`
+4. Backend calculates macros, saves to `logging_foodlog`
+5. Frontend updates daily summary display
+
+### Workout Logging Flow
+1. User selects workout → Frontend loads workout details
+2. User enters weight/reps/RIR → Frontend validates
+3. User logs workout → `POST /api/workouts/logs/`
+4. Backend saves to `workouts_workoutlog`, calculates activation
+5. Frontend updates stats, muscle progress
+
+### Authentication Flow
+1. User submits credentials → `POST /api/auth/login/`
+2. Backend validates, generates JWT tokens
+3. Frontend stores tokens, redirects to dashboard
+4. Subsequent requests include token in header
+5. Middleware validates, sets `request.user`
+
+## Critical Invariants (DO NOT BREAK)
+
+### Security
+- **ALL** endpoints except login/register require authentication
+- Users can ONLY access their own data (filtered by `user` FK)
+- Public foods/meals/workouts accessible to all authenticated users
+- JWT tokens expire: access (1 hour), refresh (7 days)
+- Passwords hashed with Django's default hasher
+- SQL injection prevention: ALWAYS use ORM, never raw SQL with string formatting
+
+### Data Integrity
+- Foreign key relationships maintain referential integrity
+- Cascade deletes: User deletion removes all related data
+- Required reference data must exist: `access_levels`, `activity_levels`, `muscles`, `units`
+- Unique constraints: Username, email, composite keys where specified
+
+### API Contracts
+- Response format: `{data: {...}}` or `{error: {...}}`
+- HTTP status codes: 200 (success), 201 (created), 400 (bad request), 401 (unauthorized), 403 (forbidden), 404 (not found), 500 (server error)
+- Pagination: Default 20 items, configurable via query params
+
+### Frontend Contracts
+- All API calls go through `services/api.js`
+- Token stored in `localStorage` as `access_token` and `refresh_token`
+- Protected routes use `ProtectedRoute` component
+- Error handling: Display user-friendly messages, log to console
+
+## Edge Cases and Failure Modes
+
+### Token Expiration
+- Access token expires → Frontend attempts refresh
+- Refresh token expires → User must re-login
+- Token invalid → 401 response, frontend redirects to login
+
+### Database Failures
+- Connection lost → Retry with exponential backoff
+- Query timeout → Return 500, log error
+- Constraint violation → Return 400 with validation errors
+
+### External Service Failures
+- OpenAI API failure → Return error, log usage attempt
+- Vosk not available → Fall back to browser speech API
+- Network timeout → Return 408, allow retry
+
+### Data Validation Failures
+- Invalid input → Return 400 with field-level errors
+- Missing required fields → Return 400 with error message
+- Type mismatches → Return 400, log validation error
+
+## Extension Points (Safe to Modify)
+
+### Adding New Trackers
+1. Create model in `apps/logging/` or `apps/health/`
+2. Add serializer, views, URLs following existing patterns
+3. Create React component in `components/trackers/`
+4. Add to `AdditionalTrackers` menu
+5. Add streak calculation if applicable
+
+### Adding New Analytics
+1. Add view in `apps/analytics/views.py`
+2. Add URL in `apps/analytics/urls.py`
+3. Create React chart component in `components/analytics/`
+4. Add to `Analytics` page
+
+### Adding New API Endpoints
+1. Create view in appropriate app's `views.py`
+2. Add serializer if needed
+3. Add URL in app's `urls.py`
+4. Add frontend service method in `services/api.js`
+5. Create/update React component if needed
+
+### Database Schema Changes
+1. Modify model in `models.py`
+2. Create migration: `python manage.py makemigrations`
+3. Review migration file
+4. Apply: `python manage.py migrate`
+5. Update `DataAccessService` table mappings if needed
+
+## Known Issues and Fixes
+
+### OpenAI Food Parser (Fixed: October 2025)
+- **Issue**: Invalid fields in AI responses, JSON serialization errors
+- **Fix**: Filter invalid fields at all entry points, serialize objects before returning
+- **Prevention**: Always validate external data, use whitelist of valid fields
+
+### FoodLog Serializer (Fixed: October 2025)
+- **Issue**: `created_at` field doesn't exist in `FoodLog` model
+- **Fix**: Removed `created_at` from serializer
+- **Prevention**: Verify serializer fields match model fields
+
+### OpenAI Token Limits (Fixed: October 2025)
+- **Issue**: Reasoning models using all tokens for reasoning, empty responses
+- **Fix**: Increased `max_completion_tokens` to 5000 for reasoning models
+- **Prevention**: Monitor `finish_reason`, check `reasoning_tokens`
+
+### Data Viewer Table Mapping (Fixed: October 2025)
+- **Issue**: Generic pluralization causing table name mismatches
+- **Fix**: Direct mapping dictionary for all 26 tables
+- **Prevention**: Use explicit mappings, test with actual data
+
+## Testing Requirements
+
+### Backend Tests
+- Unit tests for models, serializers, services
+- Integration tests for API endpoints
+- Test authentication, authorization, data isolation
+- Test error handling, edge cases
+
+### Frontend Tests
+- Component unit tests
+- Integration tests for user flows
+- API service mocking
+- Error boundary testing
+
+### E2E Tests
+- Complete user workflows
+- Authentication flows
+- Data persistence
+- Error scenarios
+
+## Environment Variables (Required)
+
+```env
+# Database (Required)
+DB_NAME=tracking_app
+DB_USER=root
+DB_PASSWORD=your_password
+DB_HOST=localhost
+DB_PORT=3306
+
+# Security (Required)
+SECRET_KEY=your-secret-key-here
+JWT_SECRET_KEY=your-jwt-secret-key
+JWT_ACCESS_TOKEN_LIFETIME=3600
+JWT_REFRESH_TOKEN_LIFETIME=604800
+
+# Django (Required)
+DEBUG=True
+ALLOWED_HOSTS=localhost,127.0.0.1
+
+# OpenAI (Optional)
+OPENAI_API_KEY=your-openai-api-key
+OPENAI_MODEL=gpt-3.5-turbo
+
+# Frontend (Optional)
+REACT_APP_API_URL=http://localhost:8000/api
+```
+
+## Development Workflow
+
+### Adding New Features
+1. Create Django app or extend existing
+2. Define models, serializers, views
+3. Add URLs, test endpoints
+4. Create frontend components
+5. Add API service methods
+6. Write tests (backend, frontend, E2E)
+7. Update documentation
+
+### Database Setup
    ```bash
-   cd backend
-   python manage.py test apps.workouts.tests.RealUserWorkflowTestCase
+# Initial setup
+python manage.py migrate
+python manage.py setup_database --required  # Reference data only
+python manage.py setup_database --full      # With dummy test data
+
+# Test users (if using --full):
+# john_doe / testpass123
+# jane_smith / testpass456
    ```
 
-2. **Test Complete User Workflow**:
-   - Creates workouts with emoji icons
-   - Creates splits with multiple days
-   - Activates splits with start dates
-   - Logs workouts to the split
-   - Updates muscle priorities
-   - Verifies current split day calculation
-   - Checks workout statistics
-
-3. **Frontend Component Testing**:
-   ```bash
-   cd frontend
-   npm test -- --testPathPattern=WorkoutTracker
-   ```
-
-4. **API Endpoint Testing**:
-   ```bash
-   # Test all workout endpoints
-   python manage.py test apps.workouts.tests
-   
-   # Test specific functionality
-   python manage.py test apps.workouts.tests.RealUserWorkflowTestCase.test_complete_user_workflow_real_database
-   ```
-
-### Backend Testing
-
-1. **Create Test File** (`apps/feature_name/tests.py`):
-   ```python
-   from django.test import TestCase
-   from rest_framework.test import APIClient
-   from apps.users.models import User
-   
-   class FeatureTestCase(TestCase):
-       def setUp(self):
-           self.client = APIClient()
-           self.user = User.objects.create_user(
-               username='testuser',
-               password='testpass123'
-           )
-           self.client.force_authenticate(user=self.user)
-       
-       def test_feature_endpoint(self):
-           response = self.client.get('/api/feature/')
-           self.assertEqual(response.status_code, 200)
-   ```
-
-2. **Run Tests**:
-   ```bash
-   # Single app
-   python manage.py test apps.feature_name
-   
-   # All tests
-   python manage.py test
-   
-   # With coverage
-   coverage run --source='.' manage.py test
-   coverage report
-   ```
-
-### Frontend Testing
-
-1. **Component Test** (`FeatureComponent.test.js`):
-   ```javascript
-   import { render, screen, waitFor } from '@testing-library/react';
-   import userEvent from '@testing-library/user-event';
-   import FeatureComponent from './FeatureComponent';
-   
-   test('renders feature component', async () => {
-     render(<FeatureComponent />);
-     expect(screen.getByText('Feature')).toBeInTheDocument();
-   });
-   ```
-
-2. **Run Tests**:
-   ```bash
-   # Interactive mode
-   npm test
-   
-   # Coverage report
-   npm test -- --coverage
-   ```
-
-### E2E Testing
-
-1. **Create E2E Test** (`tests/e2e/test_feature_e2e.js`):
-   ```javascript
-   const { test, expect } = require('@playwright/test');
-   
-   test('feature workflow', async ({ page }) => {
-     await page.goto('http://localhost:3000');
-     // Test implementation
-   });
-   ```
-
-## 🔒 How to Secure
-
-### Workout System Security
-
-1. **Input Validation**:
-   ```python
-   # Validate activation ratings
-   activation_rating = serializers.IntegerField(
-       validators=[MinValueValidator(0), MaxValueValidator(100)]
-   )
-   
-   # Validate muscle priorities
-   priority = serializers.IntegerField(
-       validators=[MinValueValidator(0), MaxValueValidator(100)]
-   )
-   ```
-
-2. **User Data Isolation**:
-   ```python
-   # Always filter by user
-   workouts = Workout.objects.filter(user=request.user)
-   splits = Split.objects.filter(user=request.user)
-   workout_logs = WorkoutLog.objects.filter(user=request.user)
-   ```
-
-3. **SQL Injection Prevention**:
-   ```python
-   # Use ORM queries
-   muscle = Muscle.objects.get(muscles_id=muscle_id)
-   
-   # Avoid raw SQL
-   # BAD: Muscle.objects.raw(f"SELECT * FROM muscles WHERE id = {muscle_id}")
-   ```
-
-### Security Checklist
-
-1. **Authentication**:
-   - ✅ All sensitive endpoints require `IsAuthenticated`
-   - ✅ JWT tokens expire (1 hour access, 7 days refresh)
-   - ✅ Passwords hashed with Django's default hasher
-
-2. **Input Validation**:
-   ```python
-   # Use serializers for validation
-   serializer = FeatureSerializer(data=request.data)
-   if serializer.is_valid():
-       serializer.save()
-   else:
-       return Response({'error': serializer.errors}, status=400)
-   ```
-
-3. **SQL Injection Prevention**:
-   ```python
-   # BAD - Never do this
-   query = f"SELECT * FROM users WHERE id = {user_id}"
-   
-   # GOOD - Use ORM
-   user = User.objects.get(id=user_id)
-   
-   # GOOD - Use parameterized queries if needed
-   User.objects.raw("SELECT * FROM users WHERE id = %s", [user_id])
-   ```
-
-4. **Environment Variables**:
-   ```python
-   # Never commit secrets
-   SECRET_KEY = os.getenv('SECRET_KEY')  # Good
-   SECRET_KEY = 'hardcoded-secret'       # Bad
-   ```
-
-5. **CORS Configuration**:
-   ```python
-   # Restrict to specific origins
-   CORS_ALLOWED_ORIGINS = [
-       "http://localhost:3000",
-       "https://yourdomain.com",
-   ]
-   ```
-
-## 🔧 How to Maintain
-
-### Workout System Maintenance
-
-1. **Regular Database Checks**:
-   ```sql
-   -- Check workout data integrity
-   SELECT COUNT(*) FROM workouts;
-   SELECT COUNT(*) FROM workout_muscle;
-   SELECT COUNT(*) FROM splits;
-   SELECT COUNT(*) FROM split_days;
-   
-   -- Check for orphaned records
-   SELECT * FROM workout_muscle wm 
-   LEFT JOIN workouts w ON wm.workout_id = w.workout_id 
-   WHERE w.workout_id IS NULL;
-   ```
-
-2. **Performance Monitoring**:
-   ```python
-   # Add to views.py for query monitoring
-   from django.db import connection
-   
-   def workout_stats(request):
-       queries_before = len(connection.queries)
-       # ... existing code ...
-       queries_after = len(connection.queries)
-       print(f"Workout stats executed {queries_after - queries_before} queries")
-   ```
-
-3. **Data Cleanup**:
-   ```bash
-   # Remove old workout logs (older than 1 year)
-   python manage.py shell
-   >>> from apps.workouts.models import WorkoutLog
-   >>> from datetime import datetime, timedelta
-   >>> old_date = datetime.now() - timedelta(days=365)
-   >>> WorkoutLog.objects.filter(date_time__lt=old_date).delete()
-   ```
-
-### Regular Maintenance Tasks
-
-1. **Update Dependencies**:
+### Running Tests
    ```bash
    # Backend
-   pip list --outdated
-   pip install --upgrade package_name
+cd backend && python manage.py test
    
    # Frontend
-   npm outdated
-   npm update package_name
-   ```
+cd frontend && npm test
 
-2. **Database Maintenance**:
-   ```sql
-   -- Check table sizes
-   SELECT table_name, round(((data_length + index_length) / 1024 / 1024), 2) AS "Size (MB)"
-   FROM information_schema.TABLES
-   WHERE table_schema = "tracking_app"
-   ORDER BY (data_length + index_length) DESC;
-   
-   -- Optimize tables
-   OPTIMIZE TABLE food_logs;
-   ```
+# E2E
+npm run test:e2e  # If configured
+```
 
-3. **Log Rotation**:
-   ```python
-   # Add to settings.py
-   LOGGING['handlers']['file'] = {
-       'class': 'logging.handlers.RotatingFileHandler',
-       'filename': 'logs/django.log',
-       'maxBytes': 1024 * 1024 * 15,  # 15MB
-       'backupCount': 10,
-   }
-   ```
+## Documentation References
 
-4. **Performance Monitoring**:
-   ```python
-   # Add query counting middleware (dev only)
-   from django.db import connection
-   
-   def query_debugger(func):
-       def wrapper(*args, **kwargs):
-           queries_before = len(connection.queries)
-           result = func(*args, **kwargs)
-           queries_after = len(connection.queries)
-           print(f"{func.__name__} executed {queries_after - queries_before} queries")
-           return result
-       return wrapper
-   ```
+- **Architecture Details**: `docs/ai_reference/architecture.md`
+- **Code Style**: `docs/ai_reference/code_style.md`
+- **Security**: `docs/ai_reference/security.md`
+- **Agent Guidelines**: `docs/ai_reference/agent_guidelines.md`
+- **Testing**: `docs/ai_reference/testing_guide.md`
+- **Debugging**: `docs/ai_reference/debugging.md`
 
-### Health Checks
+## What Must NOT Be Changed
 
-1. **API Health Endpoint**:
-   ```python
-   @api_view(['GET'])
-   def health_check(request):
-       try:
-           # Check database
-           User.objects.exists()
-           
-           # Check external services
-           openai_available = bool(os.getenv('OPENAI_API_KEY'))
-           
-           return Response({
-               'data': {
-                   'status': 'healthy',
-                   'database': 'connected',
-                   'openai': 'configured' if openai_available else 'not configured'
-               }
-           })
-       except Exception as e:
-           return Response({
-               'error': {'message': str(e)}
-           }, status=500)
-   ```
+- JWT authentication flow
+- User data isolation (filtering by `user` FK)
+- API response format (`{data: {...}}` or `{error: {...}}`)
+- Database schema without migrations
+- Required reference data tables
+- Data Viewer system as standard for DB access
 
-2. **Frontend Health Check**:
-   ```javascript
-   // Add to App.js
-   useEffect(() => {
-     api.get('/health/')
-       .then(response => console.log('API healthy'))
-       .catch(error => console.error('API unhealthy', error));
-   }, []);
-   ```
+## What Can Be Safely Extended
 
-## 📊 Known Issues and Solutions
-
-### Workout System Issues
-
-1. **Database Schema Mismatches**:
-   - **Issue**: Models don't match existing database schema
-   - **Solution**: Ensure primary key names match (`id` vs `_id`)
-   - **Check**: Verify foreign key relationships and field names
-
-2. **Foreign Key Errors**:
-   - **Issue**: `ValueError: Cannot assign "1": "MuscleLog.muscle_name" must be a "Muscle" instance`
-   - **Solution**: Fetch the model instance before assignment
-   ```python
-   muscle = Muscle.objects.get(muscles_id=log_data['muscle_name'])
-   muscle_log, created = MuscleLog.objects.update_or_create(
-       user=request.user,
-       muscle_name=muscle,  # Pass instance, not ID
-       defaults={'priority': log_data['priority']}
-   )
-   ```
-
-3. **Related Manager Access**:
-   - **Issue**: `AttributeError: 'Split' object has no attribute 'split_days'`
-   - **Solution**: Use correct related manager name
-   ```python
-   # Correct
-   obj.splitday_set.exists()
-   obj.splitday_set.count()
-   
-   # Incorrect
-   obj.split_days.exists()
-   obj.split_days.count()
-   ```
-
-### Current Limitations
-
-1. **Voice Transcription**: Requires Vosk model download for offline use
-2. **MySQL Dependency**: System requires MySQL 8.0+
-3. **OpenAI Rate Limits**: No built-in rate limiting for OpenAI API
-
-### Common Failure Points
-
-1. **Token Refresh**: May fail if refresh token expires
-   - Solution: Force re-login on refresh failure
-
-2. **Large Data Exports**: Can timeout on large datasets
-   - Solution: Implement pagination or async export
-
-3. **Concurrent Edits**: No optimistic locking on models
-   - Solution: Add version fields for critical models
-
-## 🚀 Deployment Considerations
-
-### Workout System Deployment
-
-1. **Database Migration**:
-   ```bash
-   # Ensure all migrations are applied
-   python manage.py makemigrations
-   python manage.py migrate
-   
-   # Check for any pending migrations
-   python manage.py showmigrations
-   ```
-
-2. **Environment Configuration**:
-   ```python
-   # .env file for production
-   DEBUG=False
-   SECRET_KEY=your-secret-key
-   DATABASE_URL=mysql://user:password@host:port/database
-   ALLOWED_HOSTS=yourdomain.com,www.yourdomain.com
-   ```
-
-3. **Static Files**:
-   ```bash
-   # Collect static files
-   python manage.py collectstatic --noinput
-   
-   # Serve static files with nginx
-   location /static/ {
-       alias /path/to/staticfiles/;
-   }
-   ```
-
-4. **Performance Optimization**:
-   ```python
-   # Add database indexes for workout queries
-   class WorkoutLog(models.Model):
-       # ... existing fields ...
-       
-       class Meta:
-           indexes = [
-               models.Index(fields=['user', 'date_time']),
-               models.Index(fields=['workout', 'date_time']),
-           ]
-   ```
-
-## 🤖 Agent-Specific Guidelines
-
-### Do's
-- ✅ Read existing code patterns before implementing
-- ✅ Test changes with both unit and integration tests
-- ✅ Update documentation when changing functionality
-- ✅ Follow the established error handling patterns
-- ✅ Use environment variables for configuration
-
-### Don'ts
-- ❌ Don't bypass authentication for convenience
-- ❌ Don't remove error handling to "simplify" code
-- ❌ Don't hardcode values that should be configurable
-- ❌ Don't modify database schema without migrations
-- ❌ Don't commit sensitive data or API keys
-
-### Before Making Changes
-1. Check if similar functionality exists
-2. Verify changes won't break existing features
-3. Ensure new code follows established patterns
-4. Write tests for new functionality
-5. Update relevant documentation
-
-## 🔮 Future Enhancements
-
-### Workout System Roadmap
-
-1. **Advanced Analytics**:
-   - Volume progression tracking
-   - Strength curve analysis
-   - Muscle balance assessment
-   - Recovery time optimization
-
-2. **Social Features**:
-   - Workout sharing
-   - Friend challenges
-   - Leaderboards
-   - Community workouts
-
-3. **Mobile App**:
-   - React Native implementation
-   - Offline workout logging
-   - Push notifications
-   - Camera integration for form checking
-
-4. **AI Integration**:
-   - Workout recommendations
-   - Form analysis
-   - Injury prevention
-   - Personalized training plans
-
-### Technical Improvements
-
-1. **Performance**:
-   - Database query optimization
-   - Caching layer implementation
-   - CDN for static assets
-   - API rate limiting
-
-2. **Scalability**:
-   - Microservices architecture
-   - Load balancing
-   - Database sharding
-   - Message queues
-
-3. **Monitoring**:
-   - Application performance monitoring
-   - Error tracking
-   - User analytics
-   - Health checks
+- New tracker types (follow existing patterns)
+- New analytics endpoints
+- New API endpoints (with proper auth)
+- Frontend components (following design system)
+- Database models (with migrations)
+- External service integrations
 
 ---
 
-**Remember**: This system is in active use. Always preserve existing functionality while making improvements.
+**Remember**: This system is in active use. Always preserve existing functionality while making improvements. Test thoroughly before deploying changes.

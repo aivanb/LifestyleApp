@@ -488,6 +488,86 @@ class ApiService {
   getAllTrackerStreaks() {
     return this.get('/logging/streaks/');
   }
+
+  // ========== ANALYTICS API METHODS ==========
+
+  // Workout Analytics
+  getBodyMeasurementProgression(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    return this.get(`/analytics/workouts/body-measurement-progression/?${queryString}`);
+  }
+
+  getWorkoutProgression(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    return this.get(`/analytics/workouts/progression/?${queryString}`);
+  }
+
+  getWorkoutRestTimeAnalysis(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    return this.get(`/analytics/workouts/rest-time-analysis/?${queryString}`);
+  }
+
+  getWorkoutAttributesAnalysis(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    return this.get(`/analytics/workouts/attributes-analysis/?${queryString}`);
+  }
+
+  getStepsCardioDistance(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    return this.get(`/analytics/workouts/steps-cardio-distance/?${queryString}`);
+  }
+
+  getActivationProgress(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    return this.get(`/analytics/workouts/activation-progress/?${queryString}`);
+  }
+
+  // Food Analytics
+  getFoodMetadataProgress(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    return this.get(`/analytics/foods/metadata-progress/?${queryString}`);
+  }
+
+  getFoodTiming(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    return this.get(`/analytics/foods/timing/?${queryString}`);
+  }
+
+  getMacroSplit(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    return this.get(`/analytics/foods/macro-split/?${queryString}`);
+  }
+
+  getFoodFrequency(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    return this.get(`/analytics/foods/frequency/?${queryString}`);
+  }
+
+  getFoodCost(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    return this.get(`/analytics/foods/cost/?${queryString}`);
+  }
+
+  getFoodRadarChart(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    return this.get(`/analytics/foods/radar-chart/?${queryString}`);
+  }
+
+  getWorkoutTrackingHeatmap(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    return this.get(`/analytics/foods/workout-tracking-heatmap/?${queryString}`);
+  }
+
+  // Health Analytics
+  getWeightProgression(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    return this.get(`/analytics/health/weight-progression/?${queryString}`);
+  }
+
+  getHealthMetricsRadial(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    return this.get(`/analytics/health/metrics-radial/?${queryString}`);
+  }
 }
 
 const api = new ApiService();

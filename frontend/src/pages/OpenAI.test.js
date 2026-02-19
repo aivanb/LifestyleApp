@@ -50,8 +50,8 @@ describe('OpenAI Component', () => {
       return Promise.reject(new Error('Unexpected API call'));
     });
     
-    // Mock usage stats
-    api.getUsageStats.mockResolvedValueOnce({
+    // Mock usage stats (use mockResolvedValue so it works for multiple calls)
+    api.getUsageStats.mockResolvedValue({
       data: {
         data: {
           total_tokens: 0,

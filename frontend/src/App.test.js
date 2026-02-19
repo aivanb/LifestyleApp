@@ -29,6 +29,19 @@ describe('App Component', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     localStorageMock.getItem.mockReturnValue(null);
+    
+    // Mock API calls for AuthContext
+    const api = require('./services/api');
+    api.get.mockImplementation((url) => {
+      if (url === '/auth/profile/') {
+        return Promise.resolve({
+          data: {
+            data: { username: 'testuser', email: 'test@example.com' }
+          }
+        });
+      }
+      return Promise.reject(new Error('Unexpected API call'));
+    });
   });
 
   test('renders login page by default when not authenticated', () => {
