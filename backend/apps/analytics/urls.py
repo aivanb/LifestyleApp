@@ -6,9 +6,11 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
+    path('date-bounds/', views.analytics_date_bounds, name='analytics_date_bounds'),
     # Workout Analytics
     path('workouts/body-measurement-progression/', views.body_measurement_progression, name='body_measurement_progression'),
     path('workouts/progression/', views.workout_progression, name='workout_progression'),
+    path('workouts/sets-per-day/', views.workout_sets_per_day, name='workout_sets_per_day'),
     path('workouts/rest-time-analysis/', views.workout_rest_time_analysis, name='workout_rest_time_analysis'),
     path('workouts/attributes-analysis/', views.workout_attributes_analysis, name='workout_attributes_analysis'),
     path('workouts/steps-cardio-distance/', views.steps_cardio_distance, name='steps_cardio_distance'),

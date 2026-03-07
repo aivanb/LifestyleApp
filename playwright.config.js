@@ -73,7 +73,8 @@ module.exports = defineConfig({
   webServer: [
     {
       command: 'cd backend && python manage.py runserver',
-      url: 'http://localhost:8000',
+      // Django returns 404 at "/" in this project; use a stable 200 endpoint for readiness checks.
+      url: 'http://localhost:8000/admin/',
       reuseExistingServer: !process.env.CI,
       timeout: 120 * 1000,
     },

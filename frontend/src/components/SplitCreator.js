@@ -23,6 +23,8 @@ const SplitCreator = ({
   const [isCreating, setIsCreating] = useState(false);
   const [analysis, setAnalysis] = useState({});
   const [activeMuscleDescription, setActiveMuscleDescription] = useState(null);
+  const [openCalendarKey, setOpenCalendarKey] = useState(null);
+  const [calendarMonth, setCalendarMonth] = useState(() => new Date());
   
   // UI State
   const [activeTab, setActiveTab] = useState('manage'); // 'manage' or 'new'
@@ -128,6 +130,64 @@ const SplitCreator = ({
     if (!isSplitsPage) return;
     setActiveMuscleDescription((prev) => (prev === muscleName ? null : muscleName));
   };
+
+  const toYmd = (date) => {
+    const yyyy = date.getFullYear();
+    const mm = String(date.getMonth() + 1).padStart(2, '0');
+    const dd = String(date.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  };
+
+  const parseYmdToDate = (ymd) => {
+    if (!ymd || typeof ymd !== 'string') return null;
+    const [yyyy, mm, dd] = ymd.split('-').map((v) => parseInt(v, 10));
+    if (!yyyy || !mm || !dd) return null;
+    return new Date(yyyy, mm - 1, dd);
+  };
+
+  const getCalendarDaysForMonth = useCallback(() => {
+    const year = calendarMonth.getFullYear();
+    const month = calendarMonth.getMonth();
+    const firstOfMonth = new Date(year, month, 1);
+    const firstDow = firstOfMonth.getDay(); // 0..6 (Sun..Sat)
+
+    const gridStart = new Date(year, month, 1 - firstDow);
+    const days = [];
+    for (let i = 0; i < 42; i += 1) {
+      const d = new Date(gridStart);
+      d.setDate(gridStart.getDate() + i);
+      days.push({
+        day: d.getDate(),
+        date: toYmd(d),
+        isCurrentMonth: d.getMonth() === month,
+      });
+    }
+    return days;
+  }, [calendarMonth]);
+
+  const toggleCalendar = (key, existingValue = '') => {
+    if (!isSplitsPage) return;
+    setOpenCalendarKey((prev) => {
+      const next = prev === key ? null : key;
+      if (next) {
+        const parsed = parseYmdToDate(existingValue);
+        setCalendarMonth(parsed || new Date());
+      }
+      return next;
+    });
+  };
+
+  useEffect(() => {
+    if (!openCalendarKey) return undefined;
+    const handleClickOutside = (event) => {
+      const target = event.target;
+      if (target && target.closest && target.closest('.sc-date-picker')) return;
+      setOpenCalendarKey(null);
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [openCalendarKey]);
 
   const getMuscleNameById = (muscleId) => {
     const found = muscles.find((m) => `${m.muscles_id}` === `${muscleId}`);
@@ -468,14 +528,85 @@ const SplitCreator = ({
             {/* Start Date */}
             <div className="split-creator-field">
               <label htmlFor="start_date" className="form-label">Start Date</label>
-              <input
-                type="date"
-                id="start_date"
-                name="start_date"
-                value={formData.start_date}
-                onChange={handleInputChange}
-                className="form-input"
-              />
+              {isSplitsPage ? (
+                <div className={`sc-date-picker sc-date-picker--full ${openCalendarKey === 'form-start-date' ? 'sc-date-picker--open' : ''}`}>
+                  <input
+                    type="text"
+                    id="start_date"
+                    name="start_date"
+                    value={formData.start_date}
+                    readOnly
+                    className="form-input sc-date-input"
+                    onClick={() => toggleCalendar('form-start-date', formData.start_date)}
+                    title="Click to open calendar"
+                  />
+
+                  {openCalendarKey === 'form-start-date' && (
+                    <div className="sc-calendar-popup" role="dialog" aria-modal="true">
+                      <div className="sc-calendar-header">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() - 1, 1))
+                          }
+                          aria-label="Previous month"
+                          title="Previous month"
+                        >
+                          ←
+                        </button>
+                        <span>
+                          {calendarMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 1))
+                          }
+                          aria-label="Next month"
+                          title="Next month"
+                        >
+                          →
+                        </button>
+                      </div>
+
+                      <div className="sc-calendar-grid">
+                        <div className="sc-calendar-day-header">Sun</div>
+                        <div className="sc-calendar-day-header">Mon</div>
+                        <div className="sc-calendar-day-header">Tue</div>
+                        <div className="sc-calendar-day-header">Wed</div>
+                        <div className="sc-calendar-day-header">Thu</div>
+                        <div className="sc-calendar-day-header">Fri</div>
+                        <div className="sc-calendar-day-header">Sat</div>
+                        {getCalendarDaysForMonth().map((day, idx) => (
+                          <button
+                            key={idx}
+                            type="button"
+                            className={`sc-calendar-day ${day.isCurrentMonth ? 'current-month' : 'other-month'} ${
+                              day.date === (formData.start_date || '') ? 'selected' : ''
+                            }`}
+                            disabled={!day.isCurrentMonth}
+                            onClick={() => {
+                              setFormData((prev) => ({ ...prev, start_date: day.date }));
+                              setOpenCalendarKey(null);
+                            }}
+                          >
+                            {day.day}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <input
+                  type="date"
+                  id="start_date"
+                  name="start_date"
+                  value={formData.start_date}
+                  onChange={handleInputChange}
+                  className="form-input"
+                />
+              )}
             </div>
           </div>
 
@@ -793,7 +924,7 @@ const SplitCreator = ({
               {sortedSplits.map((split) => (
                 <div
                   key={split.splits_id}
-                  className={`split-creator-split-card ${split.splits_id === latestActiveSplitId ? 'split-creator-split-card--latest' : ''}`}
+                  className={`split-creator-split-card ${split.splits_id === latestActiveSplitId ? 'split-creator-split-card--latest' : ''} ${openCalendarKey === `split-start-${split.splits_id}` ? 'split-creator-split-card--calendar-open' : ''}`}
                 >
                   <div className="split-creator-split-card__header">
                     <div className="split-creator-split-card__meta">
@@ -819,18 +950,92 @@ const SplitCreator = ({
                     <label className="split-creator-inline-label" htmlFor={`split-start-${split.splits_id}`}>
                       Set Start Date
                     </label>
-                    <input
-                      id={`split-start-${split.splits_id}`}
-                      key={`split-start-${split.splits_id}-${split.start_date || 'none'}`}
-                      type="date"
-                      className="form-input split-creator-date-input"
-                      defaultValue={split.start_date || ''}
-                      onChange={(e) => {
-                        if (e.target.value) {
-                          handleSplitActivation(split.splits_id, e.target.value);
-                        }
-                      }}
-                    />
+                    {isSplitsPage ? (
+                      <div className={`sc-date-picker sc-date-picker--inline ${openCalendarKey === `split-start-${split.splits_id}` ? 'sc-date-picker--open' : ''}`}>
+                        <input
+                          id={`split-start-${split.splits_id}`}
+                          type="text"
+                          readOnly
+                          className="form-input split-creator-date-input sc-date-input"
+                          value={split.start_date || ''}
+                          onClick={() => toggleCalendar(`split-start-${split.splits_id}`, split.start_date || '')}
+                          title="Click to open calendar"
+                        />
+
+                        {openCalendarKey === `split-start-${split.splits_id}` && (
+                          <div className="sc-calendar-popup" role="dialog" aria-modal="true">
+                            <div className="sc-calendar-header">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setCalendarMonth(
+                                    new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() - 1, 1)
+                                  )
+                                }
+                                aria-label="Previous month"
+                                title="Previous month"
+                              >
+                                ←
+                              </button>
+                              <span>
+                                {calendarMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setCalendarMonth(
+                                    new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 1)
+                                  )
+                                }
+                                aria-label="Next month"
+                                title="Next month"
+                              >
+                                →
+                              </button>
+                            </div>
+
+                            <div className="sc-calendar-grid">
+                              <div className="sc-calendar-day-header">Sun</div>
+                              <div className="sc-calendar-day-header">Mon</div>
+                              <div className="sc-calendar-day-header">Tue</div>
+                              <div className="sc-calendar-day-header">Wed</div>
+                              <div className="sc-calendar-day-header">Thu</div>
+                              <div className="sc-calendar-day-header">Fri</div>
+                              <div className="sc-calendar-day-header">Sat</div>
+                              {getCalendarDaysForMonth().map((day, idx) => (
+                                <button
+                                  key={idx}
+                                  type="button"
+                                  className={`sc-calendar-day ${day.isCurrentMonth ? 'current-month' : 'other-month'} ${
+                                    day.date === (split.start_date || '') ? 'selected' : ''
+                                  }`}
+                                  disabled={!day.isCurrentMonth}
+                                  onClick={() => {
+                                    handleSplitActivation(split.splits_id, day.date);
+                                    setOpenCalendarKey(null);
+                                  }}
+                                >
+                                  {day.day}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <input
+                        id={`split-start-${split.splits_id}`}
+                        key={`split-start-${split.splits_id}-${split.start_date || 'none'}`}
+                        type="date"
+                        className="form-input split-creator-date-input"
+                        defaultValue={split.start_date || ''}
+                        onChange={(e) => {
+                          if (e.target.value) {
+                            handleSplitActivation(split.splits_id, e.target.value);
+                          }
+                        }}
+                      />
+                    )}
                   </div>
                 </div>
               ))}
@@ -1602,6 +1807,172 @@ const SplitCreator = ({
 
         .split-creator[data-variant="splitsPage"] input[type="date"]::-webkit-calendar-picker-indicator:hover {
           opacity: 1;
+        }
+
+        /* Custom calendar popup (match /workout-tracker date picker) */
+        .sc-date-picker {
+          position: relative;
+          display: inline-flex;
+          align-items: center;
+          gap: var(--space-2);
+        }
+
+        .sc-date-picker--open {
+          z-index: 10000;
+        }
+
+        .sc-date-picker--full {
+          width: 100%;
+          max-width: none;
+        }
+
+        .sc-date-picker--full .sc-date-input {
+          width: 100%;
+          min-width: 0;
+        }
+
+        .sc-date-picker--inline .sc-date-input {
+          width: auto;
+          min-width: 220px;
+        }
+
+        .sc-date-input {
+          padding: var(--space-4) var(--space-5);
+          border: 1px solid var(--surface-overlay);
+          border-radius: var(--radius-md);
+          background: transparent;
+          font-size: var(--text-base);
+          color: var(--text-primary);
+          transition: border-color 0.3s ease, background 0.3s ease, color 0.3s ease;
+          font-family: var(--font-primary);
+          min-width: 220px;
+          font-weight: var(--font-weight-medium);
+          cursor: pointer;
+          text-align: center;
+          letter-spacing: 0.08em;
+          box-shadow: none;
+          height: 56px;
+        }
+
+        .sc-date-input:focus {
+          outline: none;
+          border-color: var(--accent-primary);
+          background: rgba(90, 166, 255, 0.12);
+        }
+
+        .sc-date-input:hover {
+          border-color: var(--accent-primary);
+          background: rgba(90, 166, 255, 0.08);
+        }
+
+        .sc-calendar-popup {
+          position: absolute;
+          top: 100%;
+          right: 0;
+          left: auto;
+          background: var(--bg-tertiary);
+          border-radius: var(--radius-xl);
+          box-shadow: 0 30px 60px rgba(0, 0, 0, 0.45);
+          z-index: 10001;
+          padding: var(--space-6);
+          min-width: 350px;
+          max-width: 400px;
+          margin-top: var(--space-3);
+          border: none;
+          animation: scMenuFloatIn 0.25s var(--ease-out-cubic);
+        }
+
+        .split-creator-split-card--calendar-open {
+          position: relative;
+          z-index: 10000;
+        }
+
+        @keyframes scMenuFloatIn {
+          from {
+            transform: translateY(-6px);
+            opacity: 0;
+          }
+          to {
+            transform: translateY(0);
+            opacity: 1;
+          }
+        }
+
+        .sc-calendar-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: var(--space-5);
+          padding-bottom: var(--space-4);
+        }
+
+        .sc-calendar-header button {
+          background: transparent;
+          border: none;
+          border-radius: var(--radius-full);
+          color: var(--text-secondary);
+          padding: var(--space-2) var(--space-3);
+          cursor: pointer;
+          font-size: var(--text-base);
+          font-weight: var(--font-weight-medium);
+          transition: transform 0.3s ease, color 0.3s ease;
+        }
+
+        .sc-calendar-header button:hover {
+          color: var(--accent-primary);
+          transform: translateY(-2px);
+        }
+
+        .sc-calendar-header span {
+          font-size: var(--text-lg);
+          font-weight: var(--font-weight-bold);
+          color: var(--text-primary);
+        }
+
+        .sc-calendar-grid {
+          display: grid;
+          grid-template-columns: repeat(7, 1fr);
+          gap: var(--space-2);
+        }
+
+        .sc-calendar-day-header {
+          color: var(--text-tertiary);
+          font-size: var(--text-xs);
+          text-transform: uppercase;
+          letter-spacing: 0.12em;
+          font-weight: var(--font-weight-semibold);
+          text-align: center;
+          padding-bottom: var(--space-2);
+        }
+
+        .sc-calendar-day {
+          border: none;
+          border-radius: var(--radius-md);
+          background: rgba(255, 255, 255, 0.04);
+          color: var(--text-primary);
+          cursor: pointer;
+          height: 40px;
+          font-weight: var(--font-weight-medium);
+          transition: transform 0.2s var(--ease-out-cubic), background 0.2s var(--ease-out-cubic);
+        }
+
+        .sc-calendar-day:hover {
+          background: rgba(90, 166, 255, 0.18);
+          transform: translateY(-2px);
+        }
+
+        .sc-calendar-day.other-month {
+          opacity: 0.35;
+        }
+
+        .sc-calendar-day:disabled {
+          cursor: not-allowed;
+          opacity: 0.25;
+        }
+
+        .sc-calendar-day.selected {
+          background: var(--accent-primary);
+          color: #ffffff;
         }
 
         .split-creator[data-variant="splitsPage"] .split-creator-header {

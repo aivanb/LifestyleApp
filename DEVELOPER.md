@@ -133,21 +133,13 @@ TrackingApp/
 - Similar endpoints for: `health-metrics/`
 
 #### Analytics (`/api/analytics/`)
-- `GET /api/analytics/workouts/body-measurement-progression/` - Body measurement trends
-- `GET /api/analytics/workouts/progression/` - Workout progression
-- `GET /api/analytics/workouts/rest-time-analysis/` - Rest time analysis
-- `GET /api/analytics/workouts/attributes-analysis/` - Workout attributes analysis
-- `GET /api/analytics/workouts/steps-cardio-distance/` - Steps/cardio distance
-- `GET /api/analytics/workouts/activation-progress/` - Muscle activation progress
-- `GET /api/analytics/foods/metadata-progress/` - Food metadata completion
-- `GET /api/analytics/foods/timing/` - Food timing analysis
-- `GET /api/analytics/foods/macro-split/` - Macro distribution
-- `GET /api/analytics/foods/frequency/` - Food frequency
-- `GET /api/analytics/foods/cost/` - Food cost analysis
-- `GET /api/analytics/foods/radar-chart/` - Food radar chart data
-- `GET /api/analytics/foods/workout-tracking-heatmap/` - Workout tracking heatmap
-- `GET /api/analytics/health/weight-progression/` - Weight progression
-- `GET /api/analytics/health/metrics-radial/` - Health metrics radial chart
+- `GET /api/analytics/date-bounds/?section=workouts|foods` - First valid date and today for custom range default
+- Workout and food chart endpoints accept shared date range: `range` (1week|2weeks|1month|6months|1year|custom) and for custom `date_from`, `date_to`. Default: 2weeks.
+- `GET /api/analytics/workouts/progression/?range=...&workout_id=<id>&progression_type=...&metrics=...&metric_offset=0` - Workout progression (workout_id optional: omit for all-workouts sum per day; progression_type: avg_weight_reps Epley 1RM|avg_weight_sets|avg_weight|max_weight; optional single metric)
+- `GET /api/analytics/workouts/sets-per-day/?range=...` - Total sets and attribute sets per day (layered bar)
+- `GET /api/analytics/workouts/activation-progress/?range=...` - Activation progress vs expected (area line chart)
+- `GET /api/analytics/foods/metadata-progress/`, `timing/`, `macro-split/`, `frequency/`, `cost/` - All accept `range=...`. Food timing: average metadata at each hour over range. Macro split: totals (g) per day. Food frequency: `entry_type=both` returns `food_groups` and `brands` with name, count, percentage for doughnut charts.
+- Legacy endpoints (not used by dashboard): body-measurement-progression, rest-time-analysis, attributes-analysis, steps-cardio-distance, radar-chart, workout-tracking-heatmap, health weight-progression, health metrics-radial
 
 #### OpenAI Service (`/api/openai/`)
 - `POST /api/openai/prompt/` - Send prompt to OpenAI
@@ -352,10 +344,12 @@ App
 5. Add streak calculation if applicable
 
 ### Adding New Analytics
-1. Add view in `apps/analytics/views.py`
+1. Add view in `apps/analytics/views.py` (use `parse_analytics_date_range(request)` for date range)
 2. Add URL in `apps/analytics/urls.py`
-3. Create React chart component in `components/analytics/`
-4. Add to `Analytics` page
+3. Create React chart component in `components/analytics/`; pass `dateRangeParams` from page (from shared DateRangeSelector)
+4. Add to `Analytics` page (Workout or Food section); charts are full-width
+
+**Analytics page UI (Workout / Food):** Workout section has one progression graph that switches between "All Workouts" and the selected workout; date range on the right. Metric comparison line is red-orange. Food section: date range in separate card on the right; Metadata Progress vs Goal uses red-orange solid goal line; Macro Split is stacked (carbs bottom, fat middle, protein top) with high-contrast palette. Food Frequency section has no card title; larger doughnuts with "Food Group" and "Brand" sub-headers and legend keys to the right of each chart. All analytics charts use the shared palette in `frontend/src/components/analytics/analyticsChartColors.js`.
 
 ### Adding New API Endpoints
 1. Create view in appropriate app's `views.py`

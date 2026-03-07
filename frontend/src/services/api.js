@@ -491,6 +491,10 @@ class ApiService {
 
   // ========== ANALYTICS API METHODS ==========
 
+  getAnalyticsDateBounds(section = 'workouts') {
+    return this.get(`/analytics/date-bounds/?section=${section}`);
+  }
+
   // Workout Analytics
   getBodyMeasurementProgression(params = {}) {
     const queryString = new URLSearchParams(params).toString();
@@ -500,6 +504,11 @@ class ApiService {
   getWorkoutProgression(params = {}) {
     const queryString = new URLSearchParams(params).toString();
     return this.get(`/analytics/workouts/progression/?${queryString}`);
+  }
+
+  getWorkoutSetsPerDay(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    return this.get(`/analytics/workouts/sets-per-day/?${queryString}`);
   }
 
   getWorkoutRestTimeAnalysis(params = {}) {

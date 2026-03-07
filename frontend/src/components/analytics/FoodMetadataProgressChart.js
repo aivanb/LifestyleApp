@@ -2,13 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import AnalyticsChartBase from './AnalyticsChartBase';
 import api from '../../services/api';
+import { ANALYTICS_COLORS } from './analyticsChartColors';
 
-const FoodMetadataProgressChart = () => {
+const FoodMetadataProgressChart = ({ dateRangeParams = {} }) => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [metadataType, setMetadataType] = useState('calories');
-  const [dateFrom, setDateFrom] = useState('');
-  const [dateTo, setDateTo] = useState('');
   const [stats, setStats] = useState(null);
 
   const metadataOptions = [
@@ -19,13 +18,11 @@ const FoodMetadataProgressChart = () => {
 
   useEffect(() => {
     const loadData = async () => {
-      if (!dateFrom || !dateTo) return;
       setLoading(true);
       try {
         const response = await api.getFoodMetadataProgress({
-          metadata_type: metadataType,
-          date_from: dateFrom,
-          date_to: dateTo
+          ...dateRangeParams,
+          metadata_type: metadataType
         });
         if (response.data.success) {
           setData(response.data.data.points.map(p => ({
@@ -46,28 +43,15 @@ const FoodMetadataProgressChart = () => {
         setLoading(false);
       }
     };
-
-    if (!dateTo) {
-      const today = new Date();
-      setDateTo(today.toISOString().split('T')[0]);
-      const oneMonthAgo = new Date();
-      oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
-      setDateFrom(oneMonthAgo.toISOString().split('T')[0]);
-    }
-
     loadData();
-  }, [metadataType, dateFrom, dateTo]);
+  }, [metadataType, dateRangeParams]);
 
   const controls = (
-    <>
-      <select value={metadataType} onChange={(e) => setMetadataType(e.target.value)} className="chart-select">
-        {metadataOptions.map(opt => (
-          <option key={opt} value={opt}>{opt.charAt(0).toUpperCase() + opt.slice(1)}</option>
-        ))}
-      </select>
-      <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="chart-date-input" />
-      <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="chart-date-input" />
-    </>
+    <select value={metadataType} onChange={(e) => setMetadataType(e.target.value)} className="chart-select">
+      {metadataOptions.map(opt => (
+        <option key={opt} value={opt}>{opt.charAt(0).toUpperCase() + opt.slice(1)}</option>
+      ))}
+    </select>
   );
 
   return (
@@ -81,14 +65,14 @@ const FoodMetadataProgressChart = () => {
         <div className="chart-loading">Loading...</div>
       ) : data.length > 0 ? (
         <ResponsiveContainer width="100%" height={300}>
-          <LineChart data={data}>
+          <LineChart data={data} margin={{ top: 24, right: 24, left: 24, bottom: 24 }}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="date" />
             <YAxis />
-            <Tooltip />
+            <Tooltip contentStyle={{ color: '#1a1a1a', fontWeight: 500 }} />
             <Legend />
-            <Line type="monotone" dataKey="actual" stroke="#5AA6FF" strokeWidth={2} name="Actual" />
-            <Line type="monotone" dataKey="goal" stroke="#4ADE80" strokeWidth={2} strokeDasharray="5 5" name="Goal" />
+            <Line type="monotone" dataKey="actual" stroke={ANALYTICS_COLORS.primary} strokeWidth={2} name="Actual" />
+            <Line type="monotone" dataKey="goal" stroke={ANALYTICS_COLORS.accent} strokeWidth={2} name="Goal" />
           </LineChart>
         </ResponsiveContainer>
       ) : (

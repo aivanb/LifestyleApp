@@ -6,7 +6,7 @@ import React from 'react';
 const AnalyticsChartBase = ({ title, children, controls }) => {
   return (
     <div className="analytics-chart">
-      <h3>{title}</h3>
+      {title ? <h3>{title}</h3> : null}
       {controls && <div className="chart-controls">{controls}</div>}
       {children}
       <style>{`

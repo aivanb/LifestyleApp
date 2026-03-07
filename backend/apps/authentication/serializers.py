@@ -2,7 +2,9 @@ from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password
-from apps.users.models import User, AccessLevel, Unit, ActivityLevel
+from django.db import transaction
+from apps.users.models import User, AccessLevel, Unit, ActivityLevel, UserGoal
+from apps.workouts.models import Muscle, MuscleLog
 
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
@@ -62,20 +64,33 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         validated_data.pop('password_confirm')
         
-        # Set default access level to 'user'
-        user_level, _ = AccessLevel.objects.get_or_create(role_name='user')
-        
-        user = User.objects.create_user(
-            username=validated_data['username'],
-            email=validated_data['email'],
-            password=validated_data['password'],
-            access_level=user_level,
-            height=validated_data.get('height'),
-            birthday=validated_data.get('birthday'),
-            gender=validated_data.get('gender'),
-        )
-        
-        return user
+        with transaction.atomic():
+            # Set default access level to 'user'
+            user_level, _ = AccessLevel.objects.get_or_create(role_name='user')
+
+            user = User.objects.create_user(
+                username=validated_data['username'],
+                email=validated_data['email'],
+                password=validated_data['password'],
+                access_level=user_level,
+                height=validated_data.get('height'),
+                birthday=validated_data.get('birthday'),
+                gender=validated_data.get('gender'),
+            )
+
+            # Ensure new users have a baseline goal row so profile endpoints
+            # don't return null goals for first-time accounts.
+            UserGoal.objects.create(user=user, tokens_goal=1000)
+
+            # Seed muscle priorities for all known muscles at default priority 80.
+            muscles = list(Muscle.objects.all())
+            if muscles:
+                MuscleLog.objects.bulk_create(
+                    [MuscleLog(user=user, muscle_name=muscle, priority=80) for muscle in muscles],
+                    ignore_conflicts=True,
+                )
+
+            return user
 
 
 class UserSerializer(serializers.ModelSerializer):

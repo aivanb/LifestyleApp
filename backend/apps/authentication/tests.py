@@ -6,7 +6,8 @@ from django.contrib.auth import get_user_model
 from rest_framework.test import APITestCase
 from rest_framework import status
 from rest_framework_simplejwt.tokens import RefreshToken
-from apps.users.models import AccessLevel
+from apps.users.models import AccessLevel, UserGoal
+from apps.workouts.models import Muscle, MuscleLog
 
 User = get_user_model()
 
@@ -16,24 +17,42 @@ class AuthenticationAPITest(APITestCase):
     
     def setUp(self):
         self.access_level, _ = AccessLevel.objects.get_or_create(role_name='user')
-        self.client = Client()
     
     def test_user_registration(self):
         """Test user registration endpoint"""
+        # Ensure there are muscles to seed into muscle_log
+        Muscle.objects.create(muscle_name='Chest', muscle_group='chest')
+        Muscle.objects.create(muscle_name='Back', muscle_group='back')
+        Muscle.objects.create(muscle_name='Quadriceps', muscle_group='legs')
+
         url = '/api/auth/register/'
         data = {
             'username': 'newuser',
             'email': 'newuser@example.com',
             'password': 'newpass123',
-            'password_confirm': 'newpass123'
+            'password_confirm': 'newpass123',
+            # Mimic frontend optional fields when left blank
+            'height': '',
+            'birthday': '',
+            'gender': ''
         }
         
-        response = self.client.post(url, data, content_type='application/json')
+        response = self.client.post(url, data, format='json')
         
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertIn('data', response.data)
         self.assertIn('tokens', response.data['data'])
         self.assertEqual(response.data['data']['user']['username'], 'newuser')
+
+        created_user = User.objects.get(username='newuser')
+
+        # Verify user_goal baseline exists
+        self.assertTrue(UserGoal.objects.filter(user=created_user, tokens_goal=1000).exists())
+
+        # Verify full muscle_log seeding with default priority 80
+        muscles_count = Muscle.objects.count()
+        self.assertEqual(MuscleLog.objects.filter(user=created_user).count(), muscles_count)
+        self.assertFalse(MuscleLog.objects.filter(user=created_user).exclude(priority=80).exists())
     
     def test_user_login(self):
         """Test user login endpoint"""
@@ -51,7 +70,7 @@ class AuthenticationAPITest(APITestCase):
             'password': 'testpass123'
         }
         
-        response = self.client.post(url, data, content_type='application/json')
+        response = self.client.post(url, data, format='json')
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn('data', response.data)
@@ -79,8 +98,7 @@ class AuthenticationAPITest(APITestCase):
         access_token = str(refresh.access_token)
         
         url = '/api/auth/profile/'
-        headers = {'Authorization': f'Bearer {access_token}'}
-        response = self.client.get(url, headers=headers)
+        response = self.client.get(url, HTTP_AUTHORIZATION=f'Bearer {access_token}')
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['data']['username'], 'testuser')

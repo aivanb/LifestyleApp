@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import Overview from './Overview';
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -10,8 +11,14 @@ const Login = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   
-  const { login } = useAuth();
+  const { login, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/profile', { replace: true });
+    }
+  }, [isAuthenticated, navigate]);
 
   const handleChange = (e) => {
     setFormData({
@@ -37,59 +44,80 @@ const Login = () => {
   };
 
   return (
-    <div className="card" style={{ maxWidth: '400px', margin: '50px auto' }}>
-      <h2>Login</h2>
-      
-      {error && (
-        <div className="error-message">
-          {error}
-        </div>
-      )}
+    <div className="auth-layout" style={{ width: '100%', maxWidth: '1100px', margin: '50px auto', display: 'grid', gap: 'var(--space-6)' }}>
+      <div className="card" style={{ width: '100%', maxWidth: '460px', margin: 0 }}>
+        <h2>Login</h2>
+        
+        {error && (
+          <div className="error-message">
+            {error}
+          </div>
+        )}
 
-      <form onSubmit={handleSubmit}>
-        <div className="form-group">
-          <label className="form-label" htmlFor="username">
-            Username
-          </label>
-          <input
-            type="text"
-            id="username"
-            name="username"
-            className="form-input"
-            value={formData.username}
-            onChange={handleChange}
-            required
-          />
-        </div>
+        <form onSubmit={handleSubmit}>
+          <div className="form-group">
+            <label className="form-label" htmlFor="username">
+              Username
+            </label>
+            <input
+              type="text"
+              id="username"
+              name="username"
+              className="form-input"
+              style={{ width: '100%' }}
+              value={formData.username}
+              onChange={handleChange}
+              required
+            />
+          </div>
 
-        <div className="form-group">
-          <label className="form-label" htmlFor="password">
-            Password
-          </label>
-          <input
-            type="password"
-            id="password"
-            name="password"
-            className="form-input"
-            value={formData.password}
-            onChange={handleChange}
-            required
-          />
-        </div>
+          <div className="form-group">
+            <label className="form-label" htmlFor="password">
+              Password
+            </label>
+            <input
+              type="password"
+              id="password"
+              name="password"
+              className="form-input"
+              style={{ width: '100%' }}
+              value={formData.password}
+              onChange={handleChange}
+              required
+            />
+          </div>
 
-        <button 
-          type="submit" 
-          className="btn btn-primary" 
-          disabled={loading}
-          style={{ width: '100%' }}
-        >
-          {loading ? 'Logging in...' : 'Login'}
-        </button>
-      </form>
+          <button 
+            type="submit" 
+            className="btn btn-primary" 
+            disabled={loading}
+            style={{ width: '100%' }}
+          >
+            {loading ? 'Logging in...' : 'Login'}
+          </button>
+        </form>
 
-      <p style={{ textAlign: 'center', marginTop: '20px' }}>
-        Don't have an account? <Link to="/register">Register here</Link>
-      </p>
+        <p style={{ textAlign: 'center', marginTop: '20px' }}>
+          Don't have an account? <Link to="/register">Register here</Link>
+        </p>
+      </div>
+
+      <div style={{ width: '100%' }}>
+        <Overview />
+      </div>
+
+      <style>{`
+        @media (min-width: 980px) {
+          .auth-layout {
+            grid-template-columns: 460px 1fr;
+            align-items: start;
+          }
+          .auth-layout > div:last-child {
+            grid-column: 2;
+            grid-row: 1;
+          }
+        }
+      `}</style>
     </div>
   );
 };

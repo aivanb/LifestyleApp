@@ -83,7 +83,7 @@ const Personalization = () => {
         Object.entries(updatedGoals || {}).map(([k, v]) => [k, v === '' ? null : v])
       );
       await api.put('/users/goals/', sanitizedGoals);
-      setGoals(sanitizedGoals);
+      await loadPersonalizationData();
       setEditingBodyComposition(false);
       setEditingMacroGoals(false);
     } catch (err) {

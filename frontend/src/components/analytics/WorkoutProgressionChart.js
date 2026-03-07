@@ -1,129 +1,126 @@
 import React, { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import api from '../../services/api';
+import { METRIC_OPTIONS } from './WorkoutAnalyticsControlsCard';
+import { ANALYTICS_COLORS } from './analyticsChartColors';
 
-const WorkoutProgressionChart = () => {
+const TOOLTIP_STYLE = { color: '#1a1a1a', fontWeight: 500 };
+const CHART_MARGIN = { top: 24, right: 48, left: 24, bottom: 24 };
+
+const WorkoutProgressionChart = ({
+  dateRangeParams = {},
+  workoutId = '',
+  progressionType = 'avg_weight_reps',
+  comparisonMetric = '',
+  metricOffset = 0,
+  title = null
+}) => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [workoutId, setWorkoutId] = useState('');
-  const [workouts, setWorkouts] = useState([]);
-  const [dateFrom, setDateFrom] = useState('');
-  const [dateTo, setDateTo] = useState('');
-  const [includeMetrics, setIncludeMetrics] = useState(false);
+
+  const metricLabel = comparisonMetric ? (METRIC_OPTIONS.find((m) => m.key === comparisonMetric)?.label || comparisonMetric) : '';
 
   useEffect(() => {
-    const loadWorkouts = async () => {
-      try {
-        const response = await api.getWorkouts();
-        if (response.data.success) {
-          setWorkouts(response.data.data);
-        }
-      } catch (error) {
-        console.error('Failed to load workouts:', error);
-      }
-    };
-    loadWorkouts();
-  }, []);
-
-  useEffect(() => {
-    const loadData = async () => {
-      if (!dateFrom || !dateTo) return;
-      
+    const load = async () => {
       setLoading(true);
       try {
         const params = {
-          date_from: dateFrom,
-          date_to: dateTo,
-          include_metrics: includeMetrics
+          ...dateRangeParams,
+          progression_type: progressionType,
+          metric_offset: metricOffset
         };
         if (workoutId) params.workout_id = workoutId;
-        
-        const response = await api.getWorkoutProgression(params);
-        
-        if (response.data.success) {
-          setData(response.data.data.points);
-        }
-      } catch (error) {
-        console.error('Failed to load workout progression:', error);
+        if (comparisonMetric) params.metrics = comparisonMetric;
+        const res = await api.getWorkoutProgression(params);
+        if (res.data?.success) setData(res.data.data.points || []);
+        else setData([]);
+      } catch {
+        setData([]);
       } finally {
         setLoading(false);
       }
     };
+    load();
+  }, [workoutId, progressionType, comparisonMetric, metricOffset, dateRangeParams]);
 
-    if (!dateTo) {
-      const today = new Date();
-      setDateTo(today.toISOString().split('T')[0]);
-    }
-    if (!dateFrom) {
-      const threeMonthsAgo = new Date();
-      threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
-      setDateFrom(threeMonthsAgo.toISOString().split('T')[0]);
-    }
+  const hasMetric = Boolean(comparisonMetric && data.some((d) => d[comparisonMetric] != null));
 
-    loadData();
-  }, [workoutId, dateFrom, dateTo, includeMetrics]);
+  const titleBlock = title ? <div className="workout-progression-chart-title">{title}</div> : null;
+  const chartStyles = (
+    <style>{`
+      .workout-progression-chart-title {
+        font-size: var(--text-lg);
+        font-weight: var(--font-weight-bold);
+        color: var(--text-primary);
+        margin-bottom: var(--space-4);
+      }
+    `}</style>
+  );
+  if (loading) {
+    return (
+      <div className="workout-progression-chart">
+        {titleBlock}
+        <div className="chart-loading">Loading...</div>
+        {chartStyles}
+      </div>
+    );
+  }
+  if (!workoutId && !data.length) {
+    return (
+      <div className="workout-progression-chart">
+        {titleBlock}
+        <div className="chart-no-data">No workout data in range</div>
+        {chartStyles}
+      </div>
+    );
+  }
+  if (workoutId && !data.length) {
+    return (
+      <div className="workout-progression-chart">
+        {titleBlock}
+        <div className="chart-no-data">No data for this workout in range</div>
+        {chartStyles}
+      </div>
+    );
+  }
 
   return (
-    <div className="analytics-chart">
-      <h3>Workout Progression</h3>
-      <div className="chart-controls">
-        <select
-          value={workoutId}
-          onChange={(e) => setWorkoutId(e.target.value)}
-          className="chart-select"
-        >
-          <option value="">All Workouts</option>
-          {workouts.map(workout => (
-            <option key={workout.workouts_id} value={workout.workouts_id}>{workout.workout_name}</option>
-          ))}
-        </select>
-        <input
-          type="date"
-          value={dateFrom}
-          onChange={(e) => setDateFrom(e.target.value)}
-          className="chart-date-input"
-        />
-        <input
-          type="date"
-          value={dateTo}
-          onChange={(e) => setDateTo(e.target.value)}
-          className="chart-date-input"
-        />
-        <label>
-          <input
-            type="checkbox"
-            checked={includeMetrics}
-            onChange={(e) => setIncludeMetrics(e.target.checked)}
+    <div className="workout-progression-chart">
+      {titleBlock}
+      <ResponsiveContainer width="100%" height={360}>
+        <LineChart data={data} margin={{ ...CHART_MARGIN, right: hasMetric ? 56 : 32 }}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey="date" />
+          <YAxis yAxisId="left" orientation="left" />
+          {hasMetric && <YAxis yAxisId="right" orientation="right" />}
+          <Tooltip contentStyle={TOOLTIP_STYLE} />
+          <Legend />
+          <Line
+            yAxisId="left"
+            type="monotone"
+            dataKey="progression"
+            stroke={ANALYTICS_COLORS.primary}
+            strokeWidth={2}
+            name="Progression"
+            dot={{ r: 4 }}
           />
-          Include Metrics
-        </label>
-      </div>
-      
-      {loading ? (
-        <div className="chart-loading">Loading...</div>
-      ) : data.length > 0 ? (
-        <ResponsiveContainer width="100%" height={300}>
-          <LineChart data={data}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="date" />
-            <YAxis />
-            <Tooltip />
-            <Legend />
-            <Line type="monotone" dataKey="progression" stroke="#5AA6FF" strokeWidth={2} name="Progression" />
-            {includeMetrics && (
-              <>
-                {data.some(d => d.weight) && <Line type="monotone" dataKey="weight" stroke="#4ADE80" strokeWidth={2} name="Weight" />}
-                {data.some(d => d.calories_before_workout) && <Line type="monotone" dataKey="calories_before_workout" stroke="#FACC15" strokeWidth={2} name="Calories Before" />}
-              </>
-            )}
-          </LineChart>
-        </ResponsiveContainer>
-      ) : (
-        <div className="chart-no-data">No data available</div>
-      )}
+          {hasMetric && (
+            <Line
+              yAxisId="right"
+              type="monotone"
+              dataKey={comparisonMetric}
+              stroke={ANALYTICS_COLORS.accent}
+              strokeWidth={2}
+              name={metricLabel}
+              dot={{ r: 3 }}
+              connectNulls
+            />
+          )}
+        </LineChart>
+      </ResponsiveContainer>
+      {chartStyles}
     </div>
   );
 };
 
 export default WorkoutProgressionChart;
-

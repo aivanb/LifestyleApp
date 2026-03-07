@@ -83,13 +83,11 @@ App
 - **HealthMetricsTracker.js** - Daily wellness metrics
 
 ### Analytics Components (`src/components/analytics/`)
+- **DateRangeSelector.js** - Shared date range (1 week–1 year + custom) for Workout and Food sections; default 2 weeks; custom default uses `getAnalyticsDateBounds(section)`.
 - **AnalyticsChartBase.js** - Base chart component
-- **WeightProgressionChart.js** - Weight trends
-- **MacroSplitChart.js** - Macro distribution
-- **FoodTimingChart.js** - Food timing analysis
-- **WorkoutProgressionChart.js** - Workout progress
-- **ActivationProgressChart.js** - Muscle activation progress
-- And many more chart components
+- **WorkoutProgressionChart.js** - Single-workout progression (workout required, searchable); progression type (avg weight×reps, avg weight×sets, avg weight, max weight); optional comparison metrics (cardio, food, health, sleep, steps, weight, water, workout_log) with optional 1-day offset; second y-axis for metrics.
+- **ActivationProgressChart.js** - Activation progress vs expected
+- **FoodMetadataProgressChart.js**, **FoodTimingChart.js**, **MacroSplitChart.js**, **FoodFrequencyChart.js**, **FoodCostChart.js** - All receive `dateRangeParams` from page (no per-chart date pickers). Charts are full-width. Health Analytics section removed.
 
 ### Utility Components
 - **Navbar.js** - Navigation with user menu
@@ -307,10 +305,10 @@ try {
 5. Add streak calculation if applicable
 
 ### Adding New Analytics
-1. Create chart component in `src/components/analytics/`
-2. Extend `AnalyticsChartBase` if applicable
-3. Add to `Analytics` page
-4. Create API service method
+1. Create chart component in `src/components/analytics/` that accepts `dateRangeParams` (from page’s DateRangeSelector).
+2. Extend `AnalyticsChartBase` if applicable.
+3. Add to `Analytics` page (Workout or Food section only); cards are full-width. Use `getAnalyticsParams(range, customFrom, customTo)` from `Analytics.js` for API params.
+4. Add API method in `services/api.js`; backend should use `parse_analytics_date_range(request)` for date range.
 
 ## Critical Invariants
 

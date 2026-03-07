@@ -90,6 +90,7 @@ def profile_detail(request):
                     'updated_at': user.updated_at.isoformat()
                 },
                 'goals': {
+                    'tokens_goal': goals.tokens_goal if goals and goals.tokens_goal is not None else (1000 if goals else None),
                     'weight_goal': float(goals.weight_goal) if goals and goals.weight_goal else None,
                     'lean_mass_goal': float(goals.lean_mass_goal) if goals and goals.lean_mass_goal else None,
                     'fat_mass_goal': float(goals.fat_mass_goal) if goals and goals.fat_mass_goal else None,
@@ -188,9 +189,10 @@ def goals_detail(request):
         # Get most recent goal, or create one if none exist
         goals = UserGoal.objects.filter(user=user).order_by('-updated_at', '-created_at').first()
         if not goals:
-            goals = UserGoal.objects.create(user=user)
+            goals = UserGoal.objects.create(user=user, tokens_goal=1000)
         
         goals_data = {
+            'tokens_goal': goals.tokens_goal if goals.tokens_goal is not None else 1000,
             'weight_goal': float(goals.weight_goal) if goals.weight_goal else None,
             'lean_mass_goal': float(goals.lean_mass_goal) if goals.lean_mass_goal else None,
             'fat_mass_goal': float(goals.fat_mass_goal) if goals.fat_mass_goal else None,
@@ -221,12 +223,9 @@ def goals_detail(request):
         
         try:
             with transaction.atomic():
-                # Get most recent goal, or create one if none exist
-                goals = UserGoal.objects.filter(user=user).order_by('-updated_at', '-created_at').first()
-                if not goals:
-                    goals = UserGoal.objects.create(user=user)
-                
-                # Update goals
+                # Create a NEW goal row on every update (preserve history).
+                latest = UserGoal.objects.filter(user=user).order_by('-updated_at', '-created_at').first()
+
                 goal_fields = [
                     'weight_goal', 'lean_mass_goal', 'fat_mass_goal', 'cost_goal',
                     'calories_goal', 'protein_goal', 'fat_goal', 'carbohydrates_goal',
@@ -235,15 +234,33 @@ def goals_detail(request):
                     'cholesterol_goal', 'vitamin_a_goal', 'vitamin_c_goal',
                     'vitamin_d_goal', 'caffeine_goal'
                 ]
-                
+
+                # Start from latest values so partial payloads don't erase fields.
+                payload = {}
+                for field in goal_fields:
+                    if latest is not None:
+                        payload[field] = getattr(latest, field)
+                    else:
+                        payload[field] = None
+
+                # Overlay request data (treat empty string as null).
                 for field in goal_fields:
                     if field in data:
-                        if field == 'calories_goal':
-                            goals.calories_goal = data[field]
-                        else:
-                            setattr(goals, field, Decimal(str(data[field])) if data[field] is not None else None)
-                
-                goals.save()
+                        value = data.get(field)
+                        payload[field] = None if value == '' else value
+
+                new_goal = UserGoal(user=user)
+
+                # Token goal always defaults to 1000 on new rows.
+                new_goal.tokens_goal = 1000
+
+                for field, value in payload.items():
+                    if field == 'calories_goal':
+                        setattr(new_goal, field, int(value) if value is not None else None)
+                    else:
+                        setattr(new_goal, field, Decimal(str(value)) if value is not None else None)
+
+                new_goal.save()
                 
                 return Response({
                     'data': {'message': 'Goals updated successfully'}

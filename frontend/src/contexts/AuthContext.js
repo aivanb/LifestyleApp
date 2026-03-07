@@ -16,6 +16,25 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [token, setToken] = useState(localStorage.getItem('access_token'));
 
+  const formatApiError = (error, fallbackMessage) => {
+    const payload = error?.response?.data;
+    const apiError = payload?.error;
+
+    if (typeof apiError === 'string') return apiError;
+    if (apiError?.message) {
+      // If backend provides field-level details, surface the first one as context.
+      const details = apiError.details;
+      if (details && typeof details === 'object') {
+        const firstField = Object.keys(details)[0];
+        const firstMsg = Array.isArray(details[firstField]) ? details[firstField][0] : details[firstField];
+        if (firstField && firstMsg) return `${apiError.message}: ${firstField} — ${firstMsg}`;
+      }
+      return apiError.message;
+    }
+
+    return fallbackMessage;
+  };
+
   useEffect(() => {
     const initAuth = async () => {
       const storedToken = localStorage.getItem('access_token');
@@ -71,7 +90,7 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       return { 
         success: false, 
-        error: error.response?.data?.error?.message || 'Login failed' 
+        error: formatApiError(error, 'Login failed')
       };
     }
   };
@@ -96,7 +115,7 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       return { 
         success: false, 
-        error: error.response?.data?.error?.message || 'Registration failed' 
+        error: formatApiError(error, 'Registration failed')
       };
     }
   };
@@ -127,7 +146,7 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       return { 
         success: false, 
-        error: error.response?.data?.error?.message || 'Profile update failed' 
+        error: formatApiError(error, 'Profile update failed')
       };
     }
   };

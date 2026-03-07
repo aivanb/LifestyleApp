@@ -1,39 +1,52 @@
 import React, { useState } from 'react';
-import { ChartBarIcon } from '@heroicons/react/24/outline';
-import BodyMeasurementProgressionChart from '../components/analytics/BodyMeasurementProgressionChart';
+import DateRangeSelector from '../components/analytics/DateRangeSelector';
+import WorkoutAnalyticsControlsCard from '../components/analytics/WorkoutAnalyticsControlsCard';
 import WorkoutProgressionChart from '../components/analytics/WorkoutProgressionChart';
-import WorkoutRestTimeChart from '../components/analytics/WorkoutRestTimeChart';
-import WorkoutAttributesChart from '../components/analytics/WorkoutAttributesChart';
-import StepsCardioDistanceChart from '../components/analytics/StepsCardioDistanceChart';
 import ActivationProgressChart from '../components/analytics/ActivationProgressChart';
+import SetsPerDayChart from '../components/analytics/SetsPerDayChart';
 import FoodMetadataProgressChart from '../components/analytics/FoodMetadataProgressChart';
 import FoodTimingChart from '../components/analytics/FoodTimingChart';
 import MacroSplitChart from '../components/analytics/MacroSplitChart';
 import FoodFrequencyChart from '../components/analytics/FoodFrequencyChart';
 import FoodCostChart from '../components/analytics/FoodCostChart';
-import FoodRadarChart from '../components/analytics/FoodRadarChart';
-import WorkoutTrackingHeatmap from '../components/analytics/WorkoutTrackingHeatmap';
-import WeightProgressionChart from '../components/analytics/WeightProgressionChart';
-import HealthMetricsRadialChart from '../components/analytics/HealthMetricsRadialChart';
+
+const DEFAULT_RANGE = '2weeks';
+
+export function getAnalyticsParams(range, customFrom, customTo) {
+  const params = { range };
+  if (range === 'custom' && customFrom && customTo) {
+    params.date_from = customFrom;
+    params.date_to = customTo;
+  }
+  return params;
+}
 
 const Analytics = () => {
   const [activeSection, setActiveSection] = useState('workouts');
+  const [workoutRange, setWorkoutRange] = useState(DEFAULT_RANGE);
+  const [workoutCustomFrom, setWorkoutCustomFrom] = useState('');
+  const [workoutCustomTo, setWorkoutCustomTo] = useState('');
+  const [workoutId, setWorkoutId] = useState('');
+  const [selectedWorkoutName, setSelectedWorkoutName] = useState('');
+  const [workoutSearch, setWorkoutSearch] = useState('');
+  const [progressionType, setProgressionType] = useState('avg_weight_reps');
+  const [comparisonMetric, setComparisonMetric] = useState('');
+  const [metricOffset, setMetricOffset] = useState(0);
+
+  const [foodRange, setFoodRange] = useState(DEFAULT_RANGE);
+  const [foodCustomFrom, setFoodCustomFrom] = useState('');
+  const [foodCustomTo, setFoodCustomTo] = useState('');
+
+  const workoutParams = getAnalyticsParams(workoutRange, workoutCustomFrom, workoutCustomTo);
+  const foodParams = getAnalyticsParams(foodRange, foodCustomFrom, foodCustomTo);
 
   const sections = [
     { id: 'workouts', label: 'Workout Analytics' },
-    { id: 'foods', label: 'Food Analytics' },
-    { id: 'health', label: 'Health Analytics' }
+    { id: 'foods', label: 'Food Analytics' }
   ];
 
   return (
     <div className="analytics-page">
-      <div className="analytics-header">
-        <div className="analytics-title">
-          <ChartBarIcon className="analytics-header-icon" />
-          <h1>Analytics Dashboard</h1>
-        </div>
-      </div>
-
       <div className="analytics-tabs">
         {sections.map(section => (
           <button
@@ -49,25 +62,41 @@ const Analytics = () => {
       <div className="analytics-content">
         {activeSection === 'workouts' && (
           <div className="analytics-section">
-            <h2>Workout Analytics</h2>
-            <div className="analytics-charts-grid">
+            <WorkoutAnalyticsControlsCard
+              workoutRange={workoutRange}
+              setWorkoutRange={setWorkoutRange}
+              workoutCustomFrom={workoutCustomFrom}
+              setWorkoutCustomFrom={setWorkoutCustomFrom}
+              workoutCustomTo={workoutCustomTo}
+              setWorkoutCustomTo={setWorkoutCustomTo}
+              workoutId={workoutId}
+              setWorkoutId={setWorkoutId}
+              onWorkoutSelect={(id, name) => setSelectedWorkoutName(name || '')}
+              workoutSearch={workoutSearch}
+              setWorkoutSearch={setWorkoutSearch}
+              progressionType={progressionType}
+              setProgressionType={setProgressionType}
+              comparisonMetric={comparisonMetric}
+              setComparisonMetric={setComparisonMetric}
+              metricOffset={metricOffset}
+              setMetricOffset={setMetricOffset}
+            />
+            <div className="analytics-charts-grid analytics-charts-fullwidth">
               <div className="analytics-chart-card">
-                <BodyMeasurementProgressionChart />
+                <WorkoutProgressionChart
+                  dateRangeParams={workoutParams}
+                  workoutId={workoutId}
+                  progressionType={progressionType}
+                  comparisonMetric={comparisonMetric}
+                  metricOffset={metricOffset}
+                  title={workoutId ? selectedWorkoutName || 'Workout' : 'All Workouts'}
+                />
               </div>
               <div className="analytics-chart-card">
-                <WorkoutProgressionChart />
+                <SetsPerDayChart dateRangeParams={workoutParams} />
               </div>
               <div className="analytics-chart-card">
-                <WorkoutRestTimeChart />
-              </div>
-              <div className="analytics-chart-card">
-                <WorkoutAttributesChart />
-              </div>
-              <div className="analytics-chart-card">
-                <StepsCardioDistanceChart />
-              </div>
-              <div className="analytics-chart-card">
-                <ActivationProgressChart />
+                <ActivationProgressChart dateRangeParams={workoutParams} />
               </div>
             </div>
           </div>
@@ -75,42 +104,36 @@ const Analytics = () => {
 
         {activeSection === 'foods' && (
           <div className="analytics-section">
-            <h2>Food Analytics</h2>
-            <div className="analytics-charts-grid">
-              <div className="analytics-chart-card">
-                <FoodMetadataProgressChart />
-              </div>
-              <div className="analytics-chart-card">
-                <FoodTimingChart />
-              </div>
-              <div className="analytics-chart-card">
-                <MacroSplitChart />
-              </div>
-              <div className="analytics-chart-card">
-                <FoodFrequencyChart />
-              </div>
-              <div className="analytics-chart-card">
-                <FoodCostChart />
-              </div>
-              <div className="analytics-chart-card">
-                <FoodRadarChart />
-              </div>
-              <div className="analytics-chart-card">
-                <WorkoutTrackingHeatmap />
+            <div className="analytics-food-header">
+              <div className="analytics-food-date-card">
+                <DateRangeSelector
+                  section="foods"
+                  value={foodRange}
+                  onChange={setFoodRange}
+                  dateFrom={foodCustomFrom}
+                  dateTo={foodCustomTo}
+                  onCustomDatesChange={(from, to) => {
+                    setFoodCustomFrom(from);
+                    setFoodCustomTo(to);
+                  }}
+                />
               </div>
             </div>
-          </div>
-        )}
-
-        {activeSection === 'health' && (
-          <div className="analytics-section">
-            <h2>Health Analytics</h2>
-            <div className="analytics-charts-grid">
+            <div className="analytics-charts-grid analytics-charts-fullwidth">
               <div className="analytics-chart-card">
-                <WeightProgressionChart />
+                <FoodMetadataProgressChart dateRangeParams={foodParams} />
               </div>
               <div className="analytics-chart-card">
-                <HealthMetricsRadialChart />
+                <FoodTimingChart dateRangeParams={foodParams} />
+              </div>
+              <div className="analytics-chart-card">
+                <MacroSplitChart dateRangeParams={foodParams} />
+              </div>
+              <div className="analytics-chart-card">
+                <FoodFrequencyChart dateRangeParams={foodParams} />
+              </div>
+              <div className="analytics-chart-card">
+                <FoodCostChart dateRangeParams={foodParams} />
               </div>
             </div>
           </div>
@@ -123,37 +146,12 @@ const Analytics = () => {
           max-width: 1400px;
           margin: 0 auto;
         }
-
-        .analytics-header {
-          margin-bottom: var(--space-6);
-        }
-
-        .analytics-title {
-          display: flex;
-          align-items: center;
-          gap: var(--space-3);
-          color: var(--text-primary);
-        }
-
-        .analytics-header-icon {
-          width: 32px;
-          height: 32px;
-          color: var(--accent-primary);
-        }
-
-        .analytics-title h1 {
-          font-size: var(--text-2xl);
-          font-weight: var(--font-weight-bold);
-          margin: 0;
-        }
-
         .analytics-tabs {
           display: flex;
           gap: var(--space-2);
           margin-bottom: var(--space-6);
           border-bottom: 2px solid var(--border-primary);
         }
-
         .analytics-tab {
           padding: var(--space-3) var(--space-6);
           background: none;
@@ -165,45 +163,37 @@ const Analytics = () => {
           cursor: pointer;
           transition: all 0.2s ease;
         }
-
         .analytics-tab:hover {
           color: var(--text-primary);
           background: var(--bg-hover);
         }
-
         .analytics-tab.active {
           color: var(--accent-primary);
           border-bottom-color: var(--accent-primary);
         }
-
-        .analytics-content {
-          min-height: 400px;
-        }
-
-        .analytics-section h2 {
-          font-size: var(--text-xl);
-          font-weight: var(--font-weight-bold);
-          color: var(--text-primary);
-          margin-bottom: var(--space-6);
-        }
-
-        .analytics-charts-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(600px, 1fr));
-          gap: var(--space-6);
-        }
-
+        .analytics-content { min-height: 400px; }
+        .analytics-charts-grid { display: grid; gap: var(--space-6); }
+        .analytics-charts-fullwidth { grid-template-columns: 1fr; }
         .analytics-chart-card {
           background: var(--bg-secondary);
           border-radius: var(--radius-lg);
           padding: var(--space-6);
           box-shadow: var(--shadow-lg);
+          width: 100%;
         }
-
-        @media (max-width: 768px) {
-          .analytics-charts-grid {
-            grid-template-columns: 1fr;
-          }
+        .analytics-food-header {
+          display: flex;
+          justify-content: flex-end;
+          margin-bottom: var(--space-6);
+        }
+        .analytics-food-date-card {
+          background: var(--bg-secondary);
+          border-radius: var(--radius-lg);
+          padding: var(--space-4) var(--space-6);
+          box-shadow: var(--shadow-lg);
+        }
+        .analytics-food-date-card .analytics-date-range-selector {
+          margin-bottom: 0;
         }
       `}</style>
     </div>
@@ -211,4 +201,3 @@ const Analytics = () => {
 };
 
 export default Analytics;
-

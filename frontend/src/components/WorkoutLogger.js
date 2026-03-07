@@ -420,7 +420,7 @@ const WorkoutLogger = ({ onOpenWorkoutSelection, onWorkoutLogged, selectedDate, 
   }
 
   return (
-    <div className="form-container">
+    <div className="form-container workout-logger">
 
       {/* Workout Selection Modal */}
       {showWorkoutSelectionModal && (
@@ -1015,7 +1015,7 @@ const WorkoutLogger = ({ onOpenWorkoutSelection, onWorkoutLogged, selectedDate, 
 
 // CSS Styles
 const styles = `
-  .main-layout {
+  .workout-logger .main-layout {
     display: flex;
     gap: var(--space-6);
     min-height: 100vh;
@@ -1039,7 +1039,7 @@ const styles = `
     gap: var(--space-3);
   }
 
-  .main-content {
+  .workout-logger .main-content {
     flex: 1;
     display: flex;
     flex-direction: column;
@@ -1479,7 +1479,7 @@ const styles = `
     background: var(--accent-dark);
   }
 
-  .form-select-multiselect {
+  .workout-logger .form-select-multiselect {
     padding: var(--space-3) var(--space-4);
     border: 2px solid var(--border-primary);
     border-radius: var(--radius-lg);
@@ -1494,12 +1494,12 @@ const styles = `
     transition: all 0.3s ease;
   }
 
-  .form-select-multiselect:focus {
+  .workout-logger .form-select-multiselect:focus {
     border-color: var(--accent-primary);
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
   }
 
-  .form-select-multiselect option {
+  .workout-logger .form-select-multiselect option {
     padding: var(--space-2) var(--space-3);
     margin: var(--space-1) 0;
     border-radius: var(--radius-sm);
@@ -1509,14 +1509,14 @@ const styles = `
     font-size: var(--text-sm);
   }
 
-  .form-select-multiselect option:checked {
+  .workout-logger .form-select-multiselect option:checked {
     background: rgba(59, 130, 246, 0.2);
     color: var(--accent-primary);
     border: 2px solid white;
     box-shadow: 0 0 0 2px var(--accent-primary);
   }
 
-  .form-select {
+  .workout-logger .form-select {
     font-family: var(--font-primary);
     font-size: var(--text-sm);
     font-weight: var(--font-weight-medium);
@@ -1530,17 +1530,17 @@ const styles = `
     min-width: 150px;
   }
 
-  .form-select:focus {
+  .workout-logger .form-select:focus {
     border-color: var(--accent-primary);
     box-shadow: var(--shadow-focus);
     outline: none;
   }
 
-  .workout-selection-modal .form-select {
+  .workout-logger .workout-selection-modal .form-select {
     height: 47px;
   }
 
-  .btn-secondary {
+  .workout-logger .btn-secondary {
     font-family: var(--font-primary);
     font-size: var(--text-sm);
     font-weight: var(--font-weight-medium);
@@ -1559,12 +1559,12 @@ const styles = `
     height: 47px;
   }
 
-  .btn-secondary svg {
+  .workout-logger .btn-secondary svg {
     width: 24px;
     height: 24px;
   }
 
-  .btn-secondary:hover {
+  .workout-logger .btn-secondary:hover {
     background-color: var(--bg-hover);
     border-color: var(--accent-primary);
     box-shadow: var(--shadow-md);
@@ -1864,7 +1864,7 @@ const styles = `
     margin-left: var(--space-4);
   }
 
-  .form-label {
+  .workout-logger .form-label {
     display: block;
     font-size: var(--text-xs);
     font-weight: var(--font-weight-medium);
@@ -1906,7 +1906,7 @@ const styles = `
     transform: scale(0.95);
   }
 
-  .form-input {
+  .workout-logger .form-input {
     width: 120px;
     padding: var(--space-3) var(--space-4);
     border: 2px solid var(--border-primary);
@@ -1919,7 +1919,7 @@ const styles = `
     text-align: center;
   }
 
-  .form-input:focus {
+  .workout-logger .form-input:focus {
     outline: none;
     border-color: var(--accent-primary);
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);

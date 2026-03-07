@@ -24,6 +24,69 @@ from apps.foods.models import Food
 from apps.users.models import UserGoal
 
 
+def parse_analytics_date_range(request, default_preset='2weeks'):
+    """
+    Parse date range from request. Supports preset or custom.
+    Presets: 1week, 2weeks, 1month, 6months, 1year, custom.
+    For custom, date_from and date_to must be provided (or use first_date/today from caller).
+    Returns (date_from, date_to) as date objects.
+    """
+    today = timezone.now().date()
+    preset = request.GET.get('range', default_preset).lower()
+    date_from_param = request.GET.get('date_from')
+    date_to_param = request.GET.get('date_to')
+
+    if preset == 'custom':
+        if date_from_param and date_to_param:
+            date_from = datetime.strptime(date_from_param, '%Y-%m-%d').date()
+            date_to = datetime.strptime(date_to_param, '%Y-%m-%d').date()
+        else:
+            date_to = today
+            date_from = today - timedelta(days=14)  # fallback
+        return (date_from, date_to)
+
+    if preset == '1week':
+        date_from = today - timedelta(days=7)
+    elif preset == '2weeks':
+        date_from = today - timedelta(days=14)
+    elif preset == '1month':
+        date_from = today - timedelta(days=30)
+    elif preset == '6months':
+        date_from = today - timedelta(days=30 * 6)
+    elif preset == '1year':
+        date_from = today - timedelta(days=365)
+    else:
+        date_from = today - timedelta(days=14)
+    return (date_from, today)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def analytics_date_bounds(request):
+    """
+    Return first valid date and today for a section (workouts | foods).
+    Used to default custom date range: first_date to today.
+    """
+    section = request.GET.get('section', 'workouts')
+    today = timezone.now().date()
+
+    if section == 'workouts':
+        first = WorkoutLog.objects.filter(user=request.user).order_by('date_time').values_list('date_time', flat=True).first()
+    elif section == 'foods':
+        first = FoodLog.objects.filter(user=request.user).order_by('date_time').values_list('date_time', flat=True).first()
+    else:
+        return Response({'success': False, 'error': {'message': 'section must be workouts or foods'}}, status=status.HTTP_400_BAD_REQUEST)
+
+    first_date = first.date() if first else today
+    return Response({
+        'success': True,
+        'data': {
+            'first_date': first_date.isoformat(),
+            'today': today.isoformat()
+        }
+    })
+
+
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def body_measurement_progression(request):
@@ -84,172 +147,227 @@ def body_measurement_progression(request):
     })
 
 
+def _get_workout_progression_metric_value(user, metric_key, metric_date):
+    """Return a single metric value for a given date for comparison with workout progression."""
+    parts = metric_key.split('__')
+    if len(parts) != 2:
+        return None
+    source, field = parts[0], parts[1]
+
+    if source == 'cardio':
+        agg = CardioLog.objects.filter(user=user, date_time__date=metric_date).aggregate(
+            calories=Sum('calories_burned'),
+            duration=Sum('duration')
+        )
+        if field == 'calories_burned':
+            return int(agg['calories'] or 0)
+        if field == 'duration':
+            return float(agg['duration'] or 0)
+        return None
+
+    if source == 'food':
+        food_agg_fields = {
+            'total_calories': F('food__calories') * F('servings'),
+            'total_carbohydrates': F('food__carbohydrates') * F('servings'),
+            'total_sugar': F('food__sugar') * F('servings'),
+            'total_fat': F('food__fat') * F('servings'),
+            'total_protein': F('food__protein') * F('servings'),
+            'total_sodium': F('food__sodium') * F('servings'),
+        }
+        if field not in food_agg_fields:
+            return None
+        agg = FoodLog.objects.filter(user=user, date_time__date=metric_date).aggregate(
+            total=Sum(food_agg_fields[field], output_field=DecimalField(max_digits=12, decimal_places=2))
+        )
+        return round(float(agg['total'] or 0), 2)
+
+    if source == 'health':
+        health = HealthMetricsLog.objects.filter(user=user, date_time=metric_date).first()
+        if not health:
+            return None
+        return getattr(health, field, None)
+
+    if source == 'sleep':
+        sleep = SleepLog.objects.filter(user=user, date_time=metric_date).first()
+        if not sleep:
+            return None
+        if field == 'total_sleep_time':
+            if sleep.time_got_out_of_bed and sleep.time_went_to_bed:
+                from datetime import datetime as dt
+                out = dt.combine(metric_date, sleep.time_got_out_of_bed)
+                bed = dt.combine(metric_date, sleep.time_went_to_bed)
+                if out < bed:
+                    out = dt.combine(metric_date + timedelta(days=1), sleep.time_got_out_of_bed)
+                return (out - bed).total_seconds() / 60.0  # minutes
+            return None
+        return getattr(sleep, field, None)
+
+    if source == 'steps':
+        agg = StepsLog.objects.filter(user=user, date_time__date=metric_date).aggregate(total=Sum('steps'))
+        return int(agg['total'] or 0) if field == 'total_steps' else None
+
+    if source == 'weight':
+        w = WeightLog.objects.filter(user=user, date_time__date=metric_date).order_by('-date_time').first()
+        return float(w.weight) if w and field == 'weight' else None
+
+    if source == 'water':
+        agg = WaterLog.objects.filter(user=user, date_time__date=metric_date).aggregate(total=Sum('amount'))
+        return float(agg['total'] or 0) if field == 'total_water' else None
+
+    if source == 'workout_log':
+        logs = WorkoutLog.objects.filter(user=user, date_time__date=metric_date)
+        if field == 'avg_rest_time':
+            agg = logs.filter(rest_time__isnull=False).aggregate(avg=Avg('rest_time'))
+            return round(float(agg['avg'] or 0), 2)
+        if field == 'total_sets':
+            return logs.count()
+        return None
+
+    return None
+
+
+def _compute_progression_for_row(row, progression_type):
+    """Compute single progression value from a row (weights, reps, sets)."""
+    weights = row['weights']
+    if not weights:
+        return None
+    avg_weight = sum(weights) / len(weights)
+    total_reps = sum(row['reps']) if row['reps'] else 0
+    total_sets = row['sets']
+    max_weight = max(weights)
+    if progression_type == 'avg_weight_reps':
+        return round(avg_weight * (1 + 0.333 * total_reps), 2)
+    if progression_type == 'avg_weight_sets':
+        return round(avg_weight * total_sets, 2)
+    if progression_type == 'avg_weight':
+        return round(avg_weight, 2)
+    return round(max_weight, 2)
+
+
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def workout_progression(request):
     """
-    Workout Progression Chart
-    - Progression = Weight × (1 + 0.0333 × Reps)
-    - Average progression for same workout on same day
-    - Selectable workout (or all workouts)
-    - Selectable timeframe
-    - Optional additional metrics as points
+    Workout Progression Chart.
+    - workout_id optional: when empty or "all", returns combined progression (sum of each workout's
+      progression per day). When set, only that workout; only dates where it was logged.
+    - progression_type: avg_weight_reps (Epley 1RM) | avg_weight_sets | avg_weight | max_weight.
+    - Optional metrics (single or comma-separated) with optional metric_offset=1.
     """
-    workout_id = request.GET.get('workout_id')  # None means all workouts
-    date_from = request.GET.get('date_from')
-    date_to = request.GET.get('date_to')
-    include_metrics = request.GET.get('include_metrics', 'false').lower() == 'true'
-    
-    # Set date range defaults
-    if not date_to:
-        date_to = timezone.now()
-    else:
-        date_to = datetime.strptime(date_to, '%Y-%m-%d')
-    
-    if not date_from:
-        date_from = date_to - timedelta(days=90)
-    else:
-        date_from = datetime.strptime(date_from, '%Y-%m-%d')
-    
-    # Query workout logs
+    workout_id = request.GET.get('workout_id', '').strip()
+    date_from, date_to = parse_analytics_date_range(request)
+    progression_type = request.GET.get('progression_type', 'avg_weight_reps')
+    metric_offset = int(request.GET.get('metric_offset', 0))
+    metrics_param = request.GET.get('metrics', '')
+    metric_keys = [m.strip() for m in metrics_param.split(',') if m.strip()]
+
+    valid_progression = ('avg_weight_reps', 'avg_weight_sets', 'avg_weight', 'max_weight')
+    if progression_type not in valid_progression:
+        return Response({
+            'success': False,
+            'error': {'message': f'progression_type must be one of: {valid_progression}'}
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    all_workouts = not workout_id
+    if not all_workouts:
+        try:
+            workout = Workout.objects.get(workouts_id=int(workout_id), user=request.user)
+        except (ValueError, Workout.DoesNotExist):
+            return Response({
+                'success': False,
+                'error': {'message': 'Workout not found'}
+            }, status=status.HTTP_404_NOT_FOUND)
+
     logs_query = WorkoutLog.objects.filter(
         user=request.user,
-        date_time__gte=date_from,
-        date_time__lte=date_to,
-        weight__isnull=False,
-        reps__isnull=False
-    )
-    
-    if workout_id:
+        date_time__date__gte=date_from,
+        date_time__date__lte=date_to,
+        weight__isnull=False
+    ).order_by('date_time')
+    if not all_workouts:
         logs_query = logs_query.filter(workout_id=workout_id)
-    
-    logs = logs_query.order_by('date_time', 'workout_id', 'created_at')
-    
-    # Group by date and workout, calculate average progression
-    grouped_data = {}
-    for log in logs:
-        date_key = log.date_time.date().isoformat()
-        workout_key = str(log.workout_id)
-        
-        if date_key not in grouped_data:
-            grouped_data[date_key] = {}
-        
-        if workout_key not in grouped_data[date_key]:
-            grouped_data[date_key][workout_key] = {
-                'progressions': [],
-                'workout_name': log.workout.workout_name
-            }
-        
-        # Calculate progression: Weight × (1 + 0.0333 × Reps)
-        progression = float(log.weight) * (1 + 0.0333 * log.reps)
-        grouped_data[date_key][workout_key]['progressions'].append(progression)
-    
-    # Calculate averages and build response
+
+    # Group by date and (for all) by workout
+    by_date = {}
+    for log in logs_query:
+        d = log.date_time.date()
+        key = d.isoformat()
+        wkey = str(log.workout_id) if all_workouts else '_'
+        if key not in by_date:
+            by_date[key] = {}
+        if wkey not in by_date[key]:
+            by_date[key][wkey] = {'weights': [], 'reps': [], 'sets': 0, 'rest_times': []}
+        row = by_date[key][wkey]
+        row['weights'].append(float(log.weight))
+        if log.reps is not None:
+            row['reps'].append(log.reps)
+        row['sets'] += 1
+        if log.rest_time is not None:
+            row['rest_times'].append(log.rest_time)
+
     data = []
-    for date_key, workouts in sorted(grouped_data.items()):
-        if workout_id:
-            # Single workout: sum all progressions for that day
-            total_progression = 0
-            for workout_key, workout_data in workouts.items():
-                total_progression += sum(workout_data['progressions'])
-            daily_progression = total_progression
+    for date_key in sorted(by_date.keys()):
+        day_data = by_date[date_key]
+        if all_workouts:
+            progression = sum(
+                _compute_progression_for_row(row, progression_type)
+                for row in day_data.values()
+                if _compute_progression_for_row(row, progression_type) is not None
+            )
+            progression = round(progression, 2)
         else:
-            # All workouts: average of all workout averages per day
-            total_progression = 0
-            count = 0
-            for workout_key, workout_data in workouts.items():
-                avg_progression = sum(workout_data['progressions']) / len(workout_data['progressions'])
-                total_progression += avg_progression
-                count += 1
-            daily_progression = (total_progression / count) if count > 0 else 0
-        
-        point_data = {
-            'date': date_key,
-            'progression': round(daily_progression, 2)
-        }
-        
-        # Add optional metrics
-        if include_metrics:
-            date_obj = datetime.strptime(date_key, '%Y-%m-%d').date()
-            
-            # Sleep the night before
-            sleep_before = SleepLog.objects.filter(
-                user=request.user,
-                date_time=date_obj - timedelta(days=1)
-            ).first()
-            if sleep_before and sleep_before.time_got_out_of_bed and sleep_before.time_went_to_bed:
-                point_data['sleep_hours'] = None  # Would need time calculation
-            
-            # Calories eaten before first workout
-            first_workout_time = WorkoutLog.objects.filter(
-                user=request.user,
-                date_time__date=date_obj
-            ).order_by('date_time').first()
-            
-            if first_workout_time:
-                food_before = FoodLog.objects.filter(
-                    user=request.user,
-                    date_time__lt=first_workout_time.date_time
-                ).aggregate(
-                    total_calories=Sum(F('food__calories') * F('servings'))
-                )
-                point_data['calories_before_workout'] = float(food_before['total_calories'] or 0)
-            
-            # Weight on that day
-            weight_log = WeightLog.objects.filter(
-                user=request.user,
-                date_time__date=date_obj
-            ).order_by('-date_time').first()
-            if weight_log:
-                point_data['weight'] = float(weight_log.weight)
-            
-            # Water drunk before last workout
-            last_workout = WorkoutLog.objects.filter(
-                user=request.user,
-                date_time__date=date_obj
-            ).order_by('-date_time').first()
-            
-            if last_workout:
-                water_before = WaterLog.objects.filter(
-                    user=request.user,
-                    date_time__lt=last_workout.date_time
-                ).aggregate(total=Sum('amount'))
-                point_data['water_before_workout'] = float(water_before['total'] or 0)
-            
-            # Cardio duration
-            cardio = CardioLog.objects.filter(
-                user=request.user,
-                date_time__date=date_obj
-            ).aggregate(total_duration=Sum('duration'))
-            point_data['cardio_duration'] = float(cardio['total_duration'] or 0)
-            
-            # Health metrics
-            health = HealthMetricsLog.objects.filter(
-                user=request.user,
-                date_time=date_obj
-            ).first()
-            if health:
-                if health.mood is not None:
-                    point_data['mood'] = health.mood
-                if health.morning_energy is not None:
-                    point_data['morning_energy'] = health.morning_energy
-                if health.stress_level is not None:
-                    point_data['stress'] = health.stress_level
-                if health.soreness is not None:
-                    point_data['soreness'] = health.soreness
-                if health.illness_level is not None:
-                    point_data['illness'] = health.illness_level
-                if health.resting_heart_rate is not None:
-                    point_data['resting_heart_rate'] = health.resting_heart_rate
-        
+            row = next(iter(day_data.values()))
+            progression = _compute_progression_for_row(row, progression_type)
+            if progression is None:
+                continue
+
+        point_data = {'date': date_key, 'progression': progression}
+        date_obj = datetime.strptime(date_key, '%Y-%m-%d').date()
+        for mk in metric_keys:
+            metric_date = date_obj - timedelta(days=metric_offset) if metric_offset else date_obj
+            val = _get_workout_progression_metric_value(request.user, mk, metric_date)
+            if val is not None:
+                point_data[mk] = val
         data.append(point_data)
-    
+
+    payload = {
+        'workout_id': int(workout_id) if workout_id and not all_workouts else None,
+        'workout_name': None if all_workouts else workout.workout_name,
+        'date_from': date_from.isoformat(),
+        'date_to': date_to.isoformat(),
+        'progression_type': progression_type,
+        'points': data
+    }
+    return Response({'success': True, 'data': payload})
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def workout_sets_per_day(request):
+    """
+    Layered bar chart: total sets logged per day and attribute sets (sets with attributes) per day.
+    """
+    date_from, date_to = parse_analytics_date_range(request)
+    logs = WorkoutLog.objects.filter(
+        user=request.user,
+        date_time__date__gte=date_from,
+        date_time__date__lte=date_to
+    )
+    by_date = {}
+    for log in logs:
+        d = log.date_time.date().isoformat()
+        if d not in by_date:
+            by_date[d] = {'total_sets': 0, 'attribute_sets': 0}
+        by_date[d]['total_sets'] += 1
+        if log.attributes and len(log.attributes) > 0:
+            by_date[d]['attribute_sets'] += 1
+    data = [{'date': k, 'total_sets': v['total_sets'], 'attribute_sets': v['attribute_sets']}
+            for k, v in sorted(by_date.items())]
     return Response({
         'success': True,
         'data': {
-            'workout_id': workout_id,
-            'date_from': date_from.date().isoformat(),
-            'date_to': date_to.date().isoformat(),
+            'date_from': date_from.isoformat(),
+            'date_to': date_to.isoformat(),
             'points': data
         }
     })
@@ -487,19 +605,7 @@ def activation_progress(request):
     """
     Progress of done activation ratings compared to expected during split day
     """
-    date_from = request.GET.get('date_from')
-    date_to = request.GET.get('date_to')
-    
-    # Set date range defaults
-    if not date_to:
-        date_to = timezone.now().date()
-    else:
-        date_to = datetime.strptime(date_to, '%Y-%m-%d').date()
-    
-    if not date_from:
-        date_from = date_to - timedelta(days=90)
-    else:
-        date_from = datetime.strptime(date_from, '%Y-%m-%d').date()
+    date_from, date_to = parse_analytics_date_range(request)
     
     # Get active split
     active_split = Split.objects.filter(
@@ -610,16 +716,7 @@ def food_metadata_progress(request):
             'error': {'message': f'Invalid metadata_type. Must be one of: {valid_metadata}'}
         }, status=status.HTTP_400_BAD_REQUEST)
     
-    # Set date range defaults
-    if not date_to:
-        date_to = timezone.now().date()
-    else:
-        date_to = datetime.strptime(date_to, '%Y-%m-%d').date()
-    
-    if not date_from:
-        date_from = date_to - timedelta(days=30)
-    else:
-        date_from = datetime.strptime(date_from, '%Y-%m-%d').date()
+    date_from, date_to = parse_analytics_date_range(request)
     
     # Get food logs grouped by date
     food_logs = FoodLog.objects.filter(
@@ -719,39 +816,34 @@ def food_timing(request):
             'error': {'message': f'Invalid metadata_type. Must be one of: {valid_metadata}'}
         }, status=status.HTTP_400_BAD_REQUEST)
     
-    # Set date range defaults
-    if not date_to:
-        date_to = timezone.now().date()
-    else:
-        date_to = datetime.strptime(date_to, '%Y-%m-%d').date()
-    
-    if not date_from:
-        date_from = date_to - timedelta(days=30)
-    else:
-        date_from = datetime.strptime(date_from, '%Y-%m-%d').date()
-    
-    # Get food logs with hour extraction
+    date_from, date_to = parse_analytics_date_range(request)
+    num_days = max((date_to - date_from).days + 1, 1)
+
+    # Per (date, hour) sum of metadata, then average at each hour over the date range
     food_logs = FoodLog.objects.filter(
         user=request.user,
         date_time__gte=date_from,
         date_time__lte=date_to
     ).select_related('food').annotate(
+        date=TruncDate('date_time'),
         hour=ExtractHour('date_time')
-    ).values('hour').annotate(
+    ).values('date', 'hour').annotate(
         total=Sum(F(f'food__{metadata_type}') * F('servings'), output_field=DecimalField(max_digits=10, decimal_places=2))
-    ).order_by('hour')
-    
-    # Build heatmap data (24 hours)
+    ).order_by('hour', 'date')
+
+    hour_totals = {}
+    for item in food_logs:
+        h = item['hour']
+        if h not in hour_totals:
+            hour_totals[h] = 0
+        hour_totals[h] += float(item['total'] or 0)
+
     data = []
     for hour in range(24):
-        log_entry = next((item for item in food_logs if item['hour'] == hour), None)
-        value = float(log_entry['total']) if log_entry and log_entry['total'] else 0.0
-        
-        data.append({
-            'hour': hour,
-            'value': round(value, 2)
-        })
-    
+        total_at_hour = hour_totals.get(hour, 0)
+        avg_at_hour = round(total_at_hour / num_days, 2)
+        data.append({'hour': hour, 'value': avg_at_hour})
+
     return Response({
         'success': True,
         'data': {
@@ -770,19 +862,7 @@ def macro_split(request):
     Macro split chart
     Shows split of protein, carbohydrates, and fats over calories
     """
-    date_from = request.GET.get('date_from')
-    date_to = request.GET.get('date_to')
-    
-    # Set date range defaults
-    if not date_to:
-        date_to = timezone.now().date()
-    else:
-        date_to = datetime.strptime(date_to, '%Y-%m-%d').date()
-    
-    if not date_from:
-        date_from = date_to - timedelta(days=30)
-    else:
-        date_from = datetime.strptime(date_from, '%Y-%m-%d').date()
+    date_from, date_to = parse_analytics_date_range(request)
     
     # Get food logs grouped by date
     food_logs = FoodLog.objects.filter(
@@ -844,80 +924,85 @@ def macro_split(request):
 @permission_classes([IsAuthenticated])
 def food_frequency(request):
     """
-    Food frequency chart
-    - Selectable amount of entries (top N)
-    - Ascending or descending order
-    - Shows most frequent brands and food groups
+    Food frequency chart.
+    - entry_type: 'food_group' | 'brand' | 'both'. When 'both', returns food_groups and brands
+      each with name, count, percentage (over date range). No limit for 'both'.
+    - Otherwise top N with optional order (used by legacy bar view).
     """
-    entry_type = request.GET.get('entry_type', 'food_group')  # 'food_group' or 'brand'
+    entry_type = request.GET.get('entry_type', 'food_group')
     limit = int(request.GET.get('limit', 10))
-    order = request.GET.get('order', 'desc')  # 'asc' or 'desc'
-    
-    # Get food logs
+    order = request.GET.get('order', 'desc')
+    date_from, date_to = parse_analytics_date_range(request)
+
     food_logs = FoodLog.objects.filter(
-        user=request.user
+        user=request.user,
+        date_time__gte=date_from,
+        date_time__lte=date_to
     ).select_related('food')
-    
-    if entry_type == 'food_group':
-        # Count by food_group
-        if order == 'desc':
-            frequency_data = food_logs.values('food__food_group').annotate(
-                count=Count('food__food_group'),
-                total_servings=Sum('servings')
-            ).order_by('-count')[:limit]
-        else:
-            frequency_data = food_logs.values('food__food_group').annotate(
-                count=Count('food__food_group'),
-                total_servings=Sum('servings')
-            ).order_by('count')[:limit]
-        
-        data = [{
+
+    if entry_type == 'both':
+        fg = food_logs.values('food__food_group').annotate(
+            count=Count('food__food_group')
+        ).order_by('-count')
+        total_fg = sum(item['count'] for item in fg)
+        food_groups = [{
             'name': item['food__food_group'],
             'count': item['count'],
-            'total_servings': float(item['total_servings'])
-        } for item in frequency_data]
-    
-    elif entry_type == 'brand':
-        # Count by brand (excluding null/empty brands)
+            'percentage': round(100 * item['count'] / total_fg, 2) if total_fg else 0
+        } for item in fg]
+
+        brand_qs = food_logs.exclude(food__brand__isnull=True).exclude(food__brand='')
+        br = brand_qs.values('food__brand').annotate(count=Count('food__brand')).order_by('-count')
+        total_br = sum(item['count'] for item in br)
+        brands = [{
+            'name': item['food__brand'],
+            'count': item['count'],
+            'percentage': round(100 * item['count'] / total_br, 2) if total_br else 0
+        } for item in br]
+
+        return Response({
+            'success': True,
+            'data': {
+                'date_from': date_from.isoformat(),
+                'date_to': date_to.isoformat(),
+                'food_groups': food_groups,
+                'brands': brands
+            }
+        })
+
+    if entry_type == 'food_group':
         if order == 'desc':
-            frequency_data = food_logs.exclude(
-                food__brand__isnull=True
-            ).exclude(
-                food__brand=''
-            ).values('food__brand').annotate(
+            frequency_data = food_logs.values('food__food_group').annotate(
+                count=Count('food__food_group'),
+                total_servings=Sum('servings')
+            ).order_by('-count')[:limit]
+        else:
+            frequency_data = food_logs.values('food__food_group').annotate(
+                count=Count('food__food_group'),
+                total_servings=Sum('servings')
+            ).order_by('count')[:limit]
+        data = [{'name': item['food__food_group'], 'count': item['count'], 'total_servings': float(item['total_servings'])} for item in frequency_data]
+    elif entry_type == 'brand':
+        if order == 'desc':
+            frequency_data = food_logs.exclude(food__brand__isnull=True).exclude(food__brand='').values('food__brand').annotate(
                 count=Count('food__brand'),
                 total_servings=Sum('servings')
             ).order_by('-count')[:limit]
         else:
-            frequency_data = food_logs.exclude(
-                food__brand__isnull=True
-            ).exclude(
-                food__brand=''
-            ).values('food__brand').annotate(
+            frequency_data = food_logs.exclude(food__brand__isnull=True).exclude(food__brand='').values('food__brand').annotate(
                 count=Count('food__brand'),
                 total_servings=Sum('servings')
             ).order_by('count')[:limit]
-        
-        data = [{
-            'name': item['food__brand'],
-            'count': item['count'],
-            'total_servings': float(item['total_servings'])
-        } for item in frequency_data]
-    
+        data = [{'name': item['food__brand'], 'count': item['count'], 'total_servings': float(item['total_servings'])} for item in frequency_data]
     else:
         return Response({
             'success': False,
-            'error': {'message': "entry_type must be 'food_group' or 'brand'"}
+            'error': {'message': "entry_type must be 'food_group', 'brand', or 'both'"}
         }, status=status.HTTP_400_BAD_REQUEST)
-    
+
     return Response({
         'success': True,
-        'data': {
-            'entry_type': entry_type,
-            'limit': limit,
-            'order': order,
-            'items': data
-        }
+        'data': {'entry_type': entry_type, 'limit': limit, 'order': order, 'items': data}
     })
 
 
@@ -929,29 +1014,11 @@ def food_cost(request):
     - Average cost per day/week/month/year
     - Most expensive brands vs calorie density
     - Cost vs macro/micro metadata
+    - Date range from shared analytics range
     """
     period = request.GET.get('period', 'day')  # 'day', 'week', 'month', 'year'
-    date_from = request.GET.get('date_from')
-    date_to = request.GET.get('date_to')
     analysis_type = request.GET.get('analysis_type', 'average')  # 'average', 'brand_density', 'cost_vs_metadata'
-    
-    # Set date range defaults
-    if not date_to:
-        date_to = timezone.now().date()
-    else:
-        date_to = datetime.strptime(date_to, '%Y-%m-%d').date()
-    
-    if not date_from:
-        if period == 'year':
-            date_from = date_to - timedelta(days=365)
-        elif period == 'month':
-            date_from = date_to - timedelta(days=30)
-        elif period == 'week':
-            date_from = date_to - timedelta(days=7)
-        else:
-            date_from = date_to - timedelta(days=30)
-    else:
-        date_from = datetime.strptime(date_from, '%Y-%m-%d').date()
+    date_from, date_to = parse_analytics_date_range(request)
     
     if analysis_type == 'average':
         # Calculate average cost per period

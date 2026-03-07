@@ -3,30 +3,25 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsi
 import AnalyticsChartBase from './AnalyticsChartBase';
 import api from '../../services/api';
 
-const FoodCostChart = () => {
+const FoodCostChart = ({ dateRangeParams = {} }) => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [analysisType, setAnalysisType] = useState('average');
   const [period, setPeriod] = useState('day');
-  const [dateFrom, setDateFrom] = useState('');
-  const [dateTo, setDateTo] = useState('');
   const [metadataType, setMetadataType] = useState('calories');
 
   useEffect(() => {
     const loadData = async () => {
-      if (!dateFrom || !dateTo) return;
       setLoading(true);
       try {
         const params = {
+          ...dateRangeParams,
           analysis_type: analysisType,
-          period: period,
-          date_from: dateFrom,
-          date_to: dateTo
+          period: period
         };
         if (analysisType === 'cost_vs_metadata') {
           params.metadata_type = metadataType;
         }
-        
         const response = await api.getFoodCost(params);
         if (response.data.success) {
           if (analysisType === 'average') {
@@ -43,17 +38,8 @@ const FoodCostChart = () => {
         setLoading(false);
       }
     };
-
-    if (!dateTo) {
-      const today = new Date();
-      setDateTo(today.toISOString().split('T')[0]);
-      const oneMonthAgo = new Date();
-      oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
-      setDateFrom(oneMonthAgo.toISOString().split('T')[0]);
-    }
-
     loadData();
-  }, [analysisType, period, dateFrom, dateTo, metadataType]);
+  }, [analysisType, period, metadataType, dateRangeParams]);
 
   const controls = (
     <>
@@ -76,8 +62,6 @@ const FoodCostChart = () => {
           <option value="protein">Protein</option>
         </select>
       )}
-      <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="chart-date-input" />
-      <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="chart-date-input" />
     </>
   );
 

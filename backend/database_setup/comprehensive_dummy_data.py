@@ -2,12 +2,12 @@
 Comprehensive Dummy Data Generation
 
 This module generates realistic test data for one user (dummyUser) spanning
-from 4/15/2025 to 10/31/2025. This data is useful for development, testing,
+from 4/15/2025 to 3/8/2026. This data is useful for development, testing,
 and demonstration purposes.
 
 Generated Data Specifications:
 - 1 user (username: dummyUser, password: dummypass123)
-- Date range: 4/15/2025 - 10/31/2025
+- Date range: 4/15/2025 - 3/8/2026
 - All required tables filled with realistic, believable data for a healthy adult male
 - Data includes realistic fluctuations and patterns
 """
@@ -43,7 +43,7 @@ from apps.analytics.models import ApiUsageLog, ErrorLog
 
 # Date range
 START_DATE = date(2025, 4, 15)
-END_DATE = date(2025, 11, 30)
+END_DATE = date(2026, 3, 8)
 
 # Fixed dates from specifications
 WEIGHT_GOAL_CHANGE_DATE = date(2025, 7, 26)
@@ -1069,7 +1069,7 @@ def generate_workout_logs(user, workouts, splits):
 def populate_comprehensive_dummy_data():
     """
     Master function to populate all comprehensive dummy data.
-    Creates 1 user with data from 4/15/2025 to 10/31/2025.
+    Creates 1 user with data from 4/15/2025 to 3/8/2026.
     """
     print("\n" + "="*60)
     print("POPULATING COMPREHENSIVE DUMMY DATA")

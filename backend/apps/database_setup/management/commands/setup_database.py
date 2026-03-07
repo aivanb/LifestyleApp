@@ -42,7 +42,7 @@ class Command(BaseCommand):
         parser.add_argument(
             '--comprehensive-dummy',
             action='store_true',
-            help='Populate comprehensive dummy data (1 user: dummyUser, 4/15/2025-10/31/2025)',
+            help='Populate comprehensive dummy data (1 user: dummyUser, 4/15/2025-3/8/2026)',
         )
         parser.add_argument(
             '--full',

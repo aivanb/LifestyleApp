@@ -22,7 +22,14 @@ class CustomTokenObtainPairView(TokenObtainPairView):
 @permission_classes([AllowAny])
 def register(request):
     """User registration endpoint"""
-    serializer = UserRegistrationSerializer(data=request.data)
+    # The frontend may submit optional fields as empty strings.
+    # Normalize those to "missing" so DRF doesn't reject them as invalid types.
+    data = request.data.copy() if hasattr(request.data, 'copy') else dict(request.data)
+    for key in ('height', 'birthday', 'gender'):
+        if key in data and (data.get(key) == '' or data.get(key) is None):
+            data.pop(key, None)
+
+    serializer = UserRegistrationSerializer(data=data)
     
     if serializer.is_valid():
         user = serializer.save()
@@ -46,7 +53,10 @@ def register(request):
         }, status=status.HTTP_201_CREATED)
     
     return Response({
-        'error': serializer.errors
+        'error': {
+            'message': 'Registration failed',
+            'details': serializer.errors
+        }
     }, status=status.HTTP_400_BAD_REQUEST)
 
 
