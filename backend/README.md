@@ -60,7 +60,7 @@ Django backend for the Tracking App with comprehensive API endpoints for user ma
    ```bash
    python manage.py setup_database --required
    ```
-   This creates only required reference data (access_levels, activity_levels, muscles, units).
+   This creates only required reference data (access_levels, activity_levels, muscles, units, invite_key). Default dev invite keys (e.g. `dev-invite-key-001`) are created for local use; each key can only be used once for registration.
 
 7. **Start server**:
    ```bash
@@ -75,7 +75,8 @@ When using `--full` or `--dummy` flag, two test users are created:
 ## API Endpoints
 
 ### Authentication
-- `POST /api/auth/register/` - Register new user
+- `POST /api/auth/validate-invite-key/` - Validate an invite key (body: `{ "key": "..." }`)
+- `POST /api/auth/register/` - Register new user (requires valid, unused `invite_key` in body)
 - `POST /api/auth/login/` - Login user
 - `POST /api/auth/logout/` - Logout user
 - `GET /api/auth/profile/` - Get user profile

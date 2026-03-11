@@ -4,6 +4,7 @@ from . import views
 
 urlpatterns = [
     path('login/', views.CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('validate-invite-key/', views.validate_invite_key, name='validate_invite_key'),
     path('register/', views.register, name='register'),
     path('profile/', views.profile, name='profile'),
     path('profile/update/', views.update_profile, name='update_profile'),

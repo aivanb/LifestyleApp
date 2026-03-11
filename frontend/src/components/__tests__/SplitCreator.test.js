@@ -118,9 +118,11 @@ describe('SplitCreator Component', () => {
       expect(screen.getByText('Test Split')).toBeInTheDocument();
     });
 
-    // Click edit button - this should not throw an error
-    const editButton = screen.getByText('Edit');
-    expect(() => fireEvent.click(editButton)).not.toThrow();
+    // Clicking the split card navigates to edit - should not throw
+    const splitName = screen.getByText('Test Split');
+    const splitCardButton = splitName.closest('button');
+    expect(splitCardButton).toBeInTheDocument();
+    expect(() => fireEvent.click(splitCardButton)).not.toThrow();
   });
 
   test('handles muscle selection without errors', async () => {

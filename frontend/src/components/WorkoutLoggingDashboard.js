@@ -1511,7 +1511,7 @@ const WorkoutLoggingDashboard = () => {
         }
 
         .btn-primary-header {
-          background: var(--accent-purple);
+          background: var(--accent-primary);
         }
 
         .btn-secondary-header:hover,
@@ -2258,19 +2258,25 @@ const WorkoutLoggingDashboard = () => {
 
         .workout-name-row {
           display: flex;
+          flex-wrap: nowrap;
           flex-direction: row;
           align-items: center;
-          justify-content: space-between;
-          gap: var(--space-4);
+          gap: var(--space-10);
           flex: 1;
+          min-width: 0;
         }
 
         .workout-name {
           font-weight: var(--font-weight-bold);
           color: var(--text-primary);
-          font-size: clamp(1.4rem, 1.9vw, 2rem);
+          font-size: clamp(1.1rem, 1.6vw, 1.5rem);
           line-height: 1.1;
           margin: 0;
+          margin-bottom: var(--space-3);
+          min-width: 0;
+          flex: 1 1 auto;
+          overflow: hidden;
+          text-overflow: ellipsis;
           white-space: nowrap;
         }
 
@@ -2279,10 +2285,11 @@ const WorkoutLoggingDashboard = () => {
           color: var(--text-secondary);
           display: inline-flex;
           align-items: center;
-          gap: var(--space-2);
+          gap: var(--space-4);
           font-weight: var(--font-weight-medium);
-          margin-left: auto;
-          text-align: right;
+          margin-top: var(--space-6);
+          width: 100%;
+          order: 10;
         }
 
         .workout-time {
@@ -2619,7 +2626,8 @@ const WorkoutLoggingDashboard = () => {
     color: var(--text-secondary);
     display: inline-flex;
     align-items: center;
-    gap: var(--space-2);
+    gap: var(--space-4);
+    margin-top: var(--space-4);
   }
 
   .main-content-sections {

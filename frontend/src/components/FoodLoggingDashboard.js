@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { BeakerIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { XMarkIcon } from '@heroicons/react/24/outline';
 import api from '../services/api';
 import { ExpandedProgressView, ProgressGrid } from './ProgressBar';
 import FoodLogger from './FoodLogger';
@@ -43,6 +43,8 @@ const FoodLoggingDashboard = () => {
   const [waterFormData, setWaterFormData] = useState({ amount: '', unit: 'oz', date_time: '' });
   const [submittingWater, setSubmittingWater] = useState(false);
   const [showExpandedProgress, setShowExpandedProgress] = useState(false); // Default to condensed view
+  const [areHeaderActionsActive, setAreHeaderActionsActive] = useState(true);
+  const headerActionsTimeoutRef = useRef(null);
   const [loading, setLoading] = useState(true);
   const [, setError] = useState('');
   const [logStreak, setLogStreak] = useState(0);
@@ -50,6 +52,30 @@ const FoodLoggingDashboard = () => {
   const [sortOrder] = useState('descending'); // 'ascending' or 'descending'
   const [editingTime, setEditingTime] = useState(null);
   const [metadataModalLog, setMetadataModalLog] = useState(null);
+
+  const clearHeaderActionsFadeTimeout = useCallback(() => {
+    if (headerActionsTimeoutRef.current) {
+      clearTimeout(headerActionsTimeoutRef.current);
+      headerActionsTimeoutRef.current = null;
+    }
+  }, []);
+
+  const startHeaderActionsFade = useCallback(() => {
+    clearHeaderActionsFadeTimeout();
+    headerActionsTimeoutRef.current = setTimeout(() => {
+      setAreHeaderActionsActive(false);
+    }, 3000);
+  }, [clearHeaderActionsFadeTimeout]);
+
+  const handleHeaderActionsInteraction = useCallback(() => {
+    setAreHeaderActionsActive(true);
+    startHeaderActionsFade();
+  }, [startHeaderActionsFade]);
+
+  useEffect(() => {
+    startHeaderActionsFade();
+    return () => clearHeaderActionsFadeTimeout();
+  }, [startHeaderActionsFade, clearHeaderActionsFadeTimeout]);
 
   const loadUserGoals = useCallback(async () => {
     try {
@@ -436,46 +462,52 @@ const FoodLoggingDashboard = () => {
               <div className="header-title">
                 <div className="streak-counter">
                   <span className="streak-number">{logStreak}</span>
-                  <span className="streak-label">Day Streak</span>
+                  <span className="streak-unit"> DAYS</span>
                 </div>
               </div>
             </div>
             
             {/* Right side - Action Buttons */}
-            <div className="header-actions">
+            <div
+              className="header-actions"
+              style={{ opacity: areHeaderActionsActive ? 1 : 0.1 }}
+              onMouseEnter={handleHeaderActionsInteraction}
+            >
               <button
                 className="btn-primary-header"
+                onMouseEnter={handleHeaderActionsInteraction}
+                onFocus={handleHeaderActionsInteraction}
                 onClick={() => setShowFoodCreator(true)}
                 title="Create Food"
               >
-                <span className="icon icon-lg">🍽️</span>
-                <span>Create Food</span>
+                Create Food
               </button>
               
               <button
                 className="btn-primary-header"
+                onMouseEnter={handleHeaderActionsInteraction}
+                onFocus={handleHeaderActionsInteraction}
                 onClick={() => setShowMealCreator(true)}
                 title="Create Meal"
               >
-                <span className="icon icon-lg">🍴</span>
-                <span>Create Meal</span>
+                Create Meal
               </button>
               
               <button
                 className="btn-primary-header"
+                onMouseEnter={handleHeaderActionsInteraction}
+                onFocus={handleHeaderActionsInteraction}
                 onClick={() => setShowFoodChatbot(true)}
                 title="Voice Logger"
               >
-                <svg className="icon icon-lg" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8a1 1 0 10-2 0A5 5 0 015 8a1 1 0 00-2 0 7.001 7.001 0 006 6.93V17H6a1 1 0 100 2h8a1 1 0 100-2h-3v-2.07z" clipRule="evenodd" />
-                </svg>
-                <span>Voice Logger</span>
+                Voice Logger
               </button>
 
               <button
                 className="btn-primary-header"
+                onMouseEnter={handleHeaderActionsInteraction}
+                onFocus={handleHeaderActionsInteraction}
                 onClick={() => {
-                  // Initialize date_time with current date/time
                   const now = new Date();
                   const localDateTime = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
                   setWaterFormData({ amount: '', unit: 'oz', date_time: localDateTime });
@@ -483,8 +515,7 @@ const FoodLoggingDashboard = () => {
                 }}
                 title="Log Water"
               >
-                <BeakerIcon className="icon icon-lg" style={{ width: '20px', height: '20px' }} />
-                <span>Log Water</span>
+                Log Water
               </button>
             </div>
           </div>
@@ -747,7 +778,7 @@ const FoodLoggingDashboard = () => {
                 }}
                 title="Log Water"
               >
-                <BeakerIcon style={{ width: '24px', height: '24px' }} />
+                Log Water
               </button>
             </div>
 
@@ -1323,8 +1354,8 @@ const FoodLoggingDashboard = () => {
         }
 
         .dashboard-header {
-          background: var(--bg-secondary);
-          border-bottom: 1px solid var(--border-primary);
+          background: transparent;
+          border: none;
           padding: 0 0 var(--space-6) 0;
           width: 100%;
           margin: 0 0 var(--space-6) 0;
@@ -1354,7 +1385,9 @@ const FoodLoggingDashboard = () => {
         .header-actions {
           flex: 0 0 auto;
           display: flex;
+          align-items: center;
           gap: var(--space-3);
+          transition: opacity 0.4s var(--ease-out-cubic);
         }
 
         .header-title {
@@ -1382,7 +1415,13 @@ const FoodLoggingDashboard = () => {
         .streak-number {
           font-size: var(--text-2xl);
           font-weight: var(--font-weight-bold);
-          color: var(--accent-primary);
+          color: #ff9f1c;
+        }
+
+        .streak-unit {
+          font-size: var(--text-lg);
+          color: #2d6acb;
+          margin-left: var(--space-1);
         }
 
         .streak-label {
@@ -1398,36 +1437,46 @@ const FoodLoggingDashboard = () => {
         }
 
         .btn-primary-header {
-          padding: var(--space-3) var(--space-6);
-          border: 1px solid var(--accent-primary);
+          padding: 0 var(--space-6);
+          border: none;
           border-radius: var(--radius-md);
-          background: var(--accent-primary);
-          color: white;
+          font-size: var(--text-base);
+          font-weight: var(--font-weight-bold);
+          text-transform: uppercase;
+          letter-spacing: 0.12em;
+          color: #ffffff;
           cursor: pointer;
-          transition: all 0.2s var(--ease-out-cubic);
-          display: flex;
+          display: inline-flex;
           align-items: center;
           justify-content: center;
           gap: var(--space-2);
-          font-size: var(--text-base);
-          font-weight: var(--font-weight-medium);
-          text-transform: uppercase;
-          letter-spacing: 0.05em;
-          box-shadow: var(--shadow-sm);
+          min-width: 220px;
+          height: 56px;
+          box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+          transition: transform 0.25s var(--ease-out-cubic), box-shadow 0.25s var(--ease-out-cubic);
+          backdrop-filter: blur(6px);
           font-family: var(--font-primary);
-        }
-
-        .btn-primary-header:hover {
+          z-index: calc(var(--z-fixed) + 5);
           background: var(--accent-primary);
-          border-color: var(--accent-primary);
-          filter: brightness(1.15);
-          transform: translateY(-1px);
-          box-shadow: var(--shadow-md);
         }
 
+        .btn-primary-header:hover,
         .btn-primary-header:focus {
-          outline: 2px solid var(--accent-primary);
-          outline-offset: 2px;
+          transform: translateY(-3px);
+          box-shadow: 0 24px 45px rgba(0, 0, 0, 0.4);
+          outline: none;
+        }
+
+        .btn-close {
+          background: transparent;
+          border: none;
+          padding: var(--space-2);
+          color: var(--text-tertiary);
+          cursor: pointer;
+        }
+
+        .btn-close:hover {
+          color: var(--text-primary);
         }
 
         .controls-section {
@@ -1438,29 +1487,31 @@ const FoodLoggingDashboard = () => {
         }
 
         .date-input {
-          padding: var(--space-2) var(--space-3);
-          border: 1px solid var(--border-primary);
+          padding: var(--space-3) var(--space-4);
+          min-height: 56px;
+          border: 1px solid transparent;
           border-radius: var(--radius-md);
-          background: var(--bg-secondary);
-          font-size: var(--text-sm);
+          background: rgba(255, 255, 255, 0.08);
+          font-size: var(--text-base);
           color: var(--text-primary);
-          transition: all 0.2s var(--ease-out-cubic);
+          transition: opacity 0.25s var(--ease-out-cubic), background 0.25s var(--ease-out-cubic);
           font-family: var(--font-primary);
-          min-width: 182px; /* 30% larger than 140px */
-          height: 47px; /* 30% larger than 36px */
+          min-width: 182px;
           font-weight: 500;
           cursor: pointer;
-          text-align: center; /* Center the date text */
+          text-align: center;
           display: flex;
           align-items: center;
           justify-content: center;
+          opacity: 0.5;
         }
 
+        .date-input:hover,
         .date-input:focus {
+          opacity: 1;
+          background: rgba(255, 255, 255, 0.12);
           outline: none;
-          border-color: var(--accent-primary);
-          box-shadow: 0 0 0 3px var(--accent-primary-alpha);
-          background: var(--bg-secondary);
+          border-color: var(--border-primary);
         }
 
         .date-input::-webkit-calendar-picker-indicator {
@@ -1832,12 +1883,19 @@ const FoodLoggingDashboard = () => {
         .food-log-section.card {
           border: none;
           box-shadow: none;
+          outline: none;
         }
 
-        /* Separator line between progress and food log */
+        .food-log-section.card:focus,
+        .food-log-section.card:focus-within {
+          outline: none;
+          box-shadow: none;
+        }
+
+        /* Separator between progress and food log - no border */
         .goal-progress-section + .food-log-section,
         .goal-progress-section ~ .food-log-section {
-          border-top: 1px solid var(--border-primary);
+          border-top: none;
           padding-top: var(--space-4);
           margin-top: var(--space-4);
         }
@@ -1922,19 +1980,33 @@ const FoodLoggingDashboard = () => {
         }
 
         .food-details {
-          flex: 1;
+          flex: 1 1 60%;
+          min-width: 0;
+          display: flex;
+          flex-direction: row;
+          align-items: center;
+          gap: var(--space-3);
+          justify-content: center;
         }
 
         .food-name {
           font-weight: var(--font-weight-medium);
           color: var(--text-primary);
-          margin-bottom: var(--space-1);
+          margin-bottom: 0;
           font-size: var(--text-base);
+          flex: 1 1 auto;
+          min-width: 240px;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
         }
 
         .food-time {
           font-size: var(--text-sm);
           color: var(--text-tertiary);
+          display: flex;
+          align-items: center;
+          flex-shrink: 0;
         }
 
         .food-macros {
@@ -1943,7 +2015,8 @@ const FoodLoggingDashboard = () => {
           align-items: center;
           justify-content: center;
           flex-wrap: wrap;
-          flex: 1;
+          flex: 1 1 50%;
+          min-width: 0;
           padding: 0;
           margin: 0 auto;
         }
@@ -2083,7 +2156,7 @@ const FoodLoggingDashboard = () => {
 
         .time-input {
           background: var(--bg-secondary);
-          border: 1px solid var(--accent-primary);
+          border: 1px solid var(--border-primary);
           border-radius: var(--radius-sm);
           color: var(--text-primary);
           font-size: var(--text-sm);
@@ -2094,10 +2167,24 @@ const FoodLoggingDashboard = () => {
 
         .time-input:focus {
           outline: none;
-          border-color: var(--accent-primary);
-          box-shadow: 0 0 0 2px var(--accent-primary-alpha);
+          box-shadow: none;
         }
 
+        .time-input:focus-visible {
+          outline: none;
+          box-shadow: none;
+        }
+
+        /* Time picker popup - match app theme where supported */
+        .food-logging-dashboard input[type="time"] {
+          color-scheme: dark;
+        }
+
+        .food-logging-dashboard input[type="time"]::-webkit-calendar-picker-indicator {
+          filter: invert(1);
+          opacity: 0.8;
+          cursor: pointer;
+        }
 
         @media (max-width: 768px) {
           .dashboard-layout-pc {

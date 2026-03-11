@@ -369,13 +369,8 @@ def get_all_tracker_streaks(request):
         streak = 0
         for i in range(365):  # Max 1 year back
             check_date = today - timedelta(days=i)
+            # Use __date lookup for DateTimeFields to avoid naive datetime warning
             filter_kwargs = {f'{date_field}__date': check_date}
-            if date_field == 'date_time' and hasattr(model_class.objects.first(), 'date_time'):
-                # For models with date_time field that's a DateField
-                filter_kwargs = {date_field: check_date}
-            elif date_field == 'created_at':
-                filter_kwargs = {f'{date_field}__date': check_date}
-            
             if model_class.objects.filter(user=user, **filter_kwargs).exists():
                 streak += 1
             else:

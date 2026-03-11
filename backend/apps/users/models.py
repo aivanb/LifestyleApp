@@ -44,6 +44,21 @@ class ActivityLevel(models.Model):
         return self.name
 
 
+class InviteKey(models.Model):
+    """
+    Invite keys for gated registration. Each key can be used by at most one user.
+    """
+    invite_key_id = models.AutoField(primary_key=True)
+    key = models.CharField(max_length=64, unique=True, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'invite_key'
+
+    def __str__(self):
+        return self.key[:8] + '...'
+
+
 class User(AbstractUser):
     """Custom user model extending Django's AbstractUser"""
     user_id = models.AutoField(primary_key=True)
@@ -59,6 +74,15 @@ class User(AbstractUser):
     ], null=True, blank=True)
     unit_preference = models.ForeignKey(Unit, on_delete=models.SET_NULL, null=True, blank=True, db_column='unit_preference')
     activity_level = models.ForeignKey(ActivityLevel, on_delete=models.SET_NULL, null=True, blank=True, db_column='activity_level_id')
+    invite_key = models.OneToOneField(
+        InviteKey,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        db_column='invite_key_id',
+        related_name='user',
+        unique=True,
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

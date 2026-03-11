@@ -1615,6 +1615,12 @@ const styles = `
     flex-direction: column;
     gap: var(--space-5);
     position: relative;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .workout-selection-card > * {
+    min-width: 0;
   }
 
   .workout-selection-card:hover {
@@ -1694,13 +1700,14 @@ const styles = `
     font-size: var(--text-lg);
     font-weight: var(--font-weight-bold);
     color: var(--text-primary);
-    margin-bottom: var(--space-4);
+    margin-bottom: var(--space-8);
   }
 
   .workout-muscles {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--space-3);
+    gap: var(--space-4);
+    margin-top: var(--space-4);
   }
 
   .muscle-tag {

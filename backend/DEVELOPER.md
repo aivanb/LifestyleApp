@@ -32,13 +32,15 @@ backend/
 
 #### authentication (`apps/authentication/`)
 - JWT token generation and validation
-- User registration and login
+- User registration (requires valid, unused invite key) and login
+- `POST /api/auth/validate-invite-key/`: validate invite key before registration
 - Password management
 - Profile retrieval
 - Token refresh
 
 #### users (`apps/users/`)
 - Custom User model (extends AbstractUser)
+- **InviteKey model**: invite keys for gated registration; each key can be used by at most one user (`User.invite_key` OneToOne)
 - User profiles with height, birthday, gender, unit preferences
 - UserGoal model for macro/weight targets
 - BodyMetricsService: BMI, BMR, TDEE calculations

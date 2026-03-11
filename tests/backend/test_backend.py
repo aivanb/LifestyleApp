@@ -12,7 +12,7 @@ from django.contrib.auth import get_user_model
 from rest_framework.test import APITestCase
 from rest_framework import status
 from rest_framework_simplejwt.tokens import RefreshToken
-from apps.users.models import AccessLevel, Unit, ActivityLevel
+from apps.users.models import AccessLevel, Unit, ActivityLevel, InviteKey
 from apps.authentication.serializers import UserRegistrationSerializer
 
 User = get_user_model()
@@ -63,15 +63,17 @@ class AuthenticationAPITest(APITestCase):
         self.client = Client()
     
     def test_user_registration(self):
-        """Test user registration endpoint"""
+        """Test user registration endpoint with invite key"""
+        invite_key = InviteKey.objects.create(key='backend-test-invite-key')
         url = '/api/auth/register/'
         data = {
             'username': 'newuser',
             'email': 'newuser@example.com',
             'password': 'newpass123',
-            'password_confirm': 'newpass123'
+            'password_confirm': 'newpass123',
+            'invite_key': invite_key.key,
         }
-        
+
         response = self.client.post(url, data, format='json')
         
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)

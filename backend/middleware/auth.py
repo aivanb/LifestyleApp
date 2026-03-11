@@ -15,6 +15,7 @@ class AuthMiddleware(MiddlewareMixin):
             '/admin/',
             '/api/auth/login/',
             '/api/auth/register/',
+            '/api/auth/validate-invite-key/',
             '/api/auth/token/refresh/',
         ]
         

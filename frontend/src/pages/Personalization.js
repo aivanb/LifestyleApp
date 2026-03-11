@@ -277,32 +277,45 @@ const Personalization = () => {
           display: flex;
           justify-content: flex-end;
           gap: var(--space-8);
-          margin-bottom: var(--space-10);
+          margin-bottom: var(--space-6);
           padding-right: var(--space-10);
         }
 
-        .personalization-action-btn {
-          padding: var(--space-8) var(--space-20);
-          font-size: var(--text-4xl);
-          font-weight: var(--font-weight-semibold);
-          transform: scale(1.2);
+        .personalization-action-btn,
+        .personalization-splits-btn {
+          padding: 0 var(--space-6);
+          min-height: 56px;
+          border-radius: var(--radius-md);
           transition: transform 0.25s var(--ease-out-cubic), box-shadow 0.25s var(--ease-out-cubic), background 0.25s var(--ease-out-cubic);
+        }
+
+        .btn.personalization-action-btn,
+        .btn.personalization-splits-btn {
+          font-size: var(--text-base);
+          font-weight: var(--font-weight-bold);
+          text-transform: uppercase;
+          letter-spacing: 0.12em;
+        }
+
+        .personalization-action-btn {
+          background: var(--accent-primary);
+          border-color: var(--accent-primary);
+          color: #ffffff;
         }
 
         .personalization-splits-btn {
-          padding: var(--space-8) var(--space-20);
-          font-size: var(--text-4xl);
-          font-weight: var(--font-weight-semibold);
-          transform: scale(1.2);
-          background: var(--accent-purple);
-          border-color: var(--accent-purple);
-          transition: transform 0.25s var(--ease-out-cubic), box-shadow 0.25s var(--ease-out-cubic), background 0.25s var(--ease-out-cubic);
+          background: var(--accent-primary);
+          border-color: var(--accent-primary);
+          color: #ffffff;
         }
 
         .personalization-action-btn:hover,
-        .personalization-splits-btn:hover {
-          transform: translateY(-3px) scale(1.2);
-          box-shadow: 0 24px 55px rgba(0, 0, 0, 0.42);
+        .personalization-action-btn:focus,
+        .personalization-splits-btn:hover,
+        .personalization-splits-btn:focus {
+          transform: translateY(-3px);
+          box-shadow: 0 24px 45px rgba(0, 0, 0, 0.4);
+          outline: none;
         }
 
         .loading-container {
@@ -348,8 +361,7 @@ const Personalization = () => {
         }
 
         .goals-section:hover {
-          transform: translateY(-3px);
-          box-shadow: 0 30px 60px rgba(0, 0, 0, 0.45);
+          /* No hover animation on goal sections */
         }
 
         .goals-section--body-comp {
@@ -380,8 +392,7 @@ const Personalization = () => {
         }
 
         .goal-item:hover {
-          transform: translateY(-2px);
-          background: rgba(255, 255, 255, 0.04);
+          /* No hover animation on individual goal items */
         }
 
         .goal-label {
@@ -433,13 +444,7 @@ const Personalization = () => {
           align-items: center;
           text-align: center;
           border-radius: var(--radius-md);
-          transition: transform 0.2s var(--ease-out-cubic), background 0.2s var(--ease-out-cubic);
           padding: var(--space-3);
-        }
-
-        .macro-item:hover {
-          transform: translateY(-2px);
-          background: rgba(255, 255, 255, 0.04);
         }
 
         .macro-label {

@@ -24,6 +24,17 @@ const WorkoutAdder = ({ onWorkoutAdded }) => {
   const [isEmojiDropdownOpen, setIsEmojiDropdownOpen] = useState(false);
   const [activeMuscleDescription, setActiveMuscleDescription] = useState(null);
   const [showMuscleInstructionsTooltip, setShowMuscleInstructionsTooltip] = useState(false);
+
+  const getSliderBackground = (value) => {
+    const clamped = Math.max(0, Math.min(100, Number(value) || 0));
+    const pct = clamped;
+    const neutral = 'rgba(255, 255, 255, 0.12)';
+    const startHue = 10;
+    const endHue = 220;
+    const hue = startHue + ((endHue - startHue) * (clamped / 100));
+    const color = `hsl(${hue}, 100%, 55%)`;
+    return `linear-gradient(90deg, ${color} 0%, ${color} ${pct}%, ${neutral} ${pct}%, ${neutral} 100%)`;
+  };
   const [availableIcons] = useState([
     // Energy & Power
     '⚡', '🔥', '💥', '💢', '💫', '✨', '🌟', '⭐', '🌠', '☄️',
@@ -100,29 +111,6 @@ const WorkoutAdder = ({ onWorkoutAdded }) => {
     
     // Removed problematic emoji ranges: 🫛-🫠, 🫨-🫰, 🫸-end, and 🪽-🪿
   ]);
-
-  // Gradient slider color function
-  const getSliderColor = (value) => {
-    const percentage = (value - 0) / 100;
-    
-    if (percentage <= 0.25) {
-      // 0-25: Red to Orange
-      const ratio = percentage / 0.25;
-      return `rgb(${255}, ${Math.round(165 * ratio)}, 0)`;
-    } else if (percentage <= 0.5) {
-      // 25-50: Orange to Yellow
-      const ratio = (percentage - 0.25) / 0.25;
-      return `rgb(${Math.round(255 - 55 * ratio)}, ${Math.round(165 + 90 * ratio)}, 0)`;
-    } else if (percentage <= 0.75) {
-      // 50-75: Yellow to Green
-      const ratio = (percentage - 0.5) / 0.25;
-      return `rgb(${Math.round(200 - 200 * ratio)}, ${Math.round(255 - 55 * ratio)}, 0)`;
-    } else {
-      // 75-100: Green to Blue
-      const ratio = (percentage - 0.75) / 0.25;
-      return `rgb(${Math.round(0 + 0 * ratio)}, ${Math.round(200 - 200 * ratio)}, ${Math.round(0 + 255 * ratio)})`;
-    }
-  };
 
   useEffect(() => {
     loadMuscles();
@@ -507,18 +495,17 @@ const WorkoutAdder = ({ onWorkoutAdded }) => {
                       </div>
                 
                 <div className="workout-adder-muscle-controls">
-                  <input
-                    type="range"
-                    min="0"
-                    max="100"
-                    value={muscle.activation_rating}
-                        onChange={(e) => updateMuscle(index, 'activation_rating', parseInt(e.target.value))}
-                    className="workout-adder-muscle-slider"
-                    style={{
-                      backgroundColor: getSliderColor(muscle.activation_rating),
-                      borderRadius: '10px'
-                    }}
-                  />
+                  <div className="workout-adder-muscle-slider-wrapper">
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      value={muscle.activation_rating}
+                      onChange={(e) => updateMuscle(index, 'activation_rating', parseInt(e.target.value))}
+                      className="workout-adder-muscle-slider"
+                      style={{ background: getSliderBackground(muscle.activation_rating) }}
+                    />
+                  </div>
                     <div className="muscle-rating-stepper">
                       <button
                         type="button"
@@ -1051,55 +1038,80 @@ const WorkoutAdder = ({ onWorkoutAdded }) => {
           width: 100%;
         }
 
+        .workout-adder-muscle-slider-wrapper {
+          padding: 20px 0;
+          display: flex;
+          align-items: center;
+          flex: 1;
+        }
+
         .workout-adder-muscle-slider {
           flex: 1;
-          height: 24px;
+          height: 20px;
           -webkit-appearance: none;
           appearance: none;
-          border-radius: 12px;
+          border-radius: 999px;
           outline: none;
+          background: rgba(255, 255, 255, 0.12);
         }
 
         .workout-adder-muscle-slider::-webkit-slider-thumb {
           -webkit-appearance: none;
           appearance: none;
-          height: 24px;
-          width: 24px;
-          border-radius: 50%;
-          background: #ffffff;
+          height: 44px;
+          width: 18px;
+          border-radius: 4px;
+          background: #d1d5db;
           cursor: pointer;
-          border: 3px solid #333;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+          border: 1px solid var(--border-primary);
+          box-shadow: var(--shadow-sm);
+          margin-top: -12px;
         }
 
         .workout-adder-muscle-slider::-moz-range-thumb {
-          height: 24px;
-          width: 24px;
-          border-radius: 50%;
-          background: #ffffff;
+          height: 44px;
+          width: 18px;
+          border-radius: 4px;
+          background: #d1d5db;
           cursor: pointer;
-          border: 3px solid #333;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+          border: 1px solid var(--border-primary);
+          box-shadow: var(--shadow-sm);
         }
 
-        .workout-adder-muscle-slider::-webkit-slider-track {
-          height: 24px;
-          border-radius: 12px;
+        .workout-adder-muscle-slider::-webkit-slider-runnable-track {
+          height: 20px;
+          border-radius: 999px;
           background: transparent;
-          border: none;
         }
 
         .workout-adder-muscle-slider::-moz-range-track {
-          height: 24px;
-          border-radius: 12px;
+          height: 20px;
+          border-radius: 999px;
           background: transparent;
-          border: none;
         }
 
         .workout-adder-muscle-rating-input {
           width: 64px;
           text-align: center;
           padding: var(--space-2);
+          user-select: none;
+        }
+
+        .workout-adder-muscle-rating-input:hover,
+        .workout-adder-muscle-rating-input:focus {
+          outline: none;
+          box-shadow: none;
+          border-color: var(--border-primary);
+        }
+
+        .workout-adder-muscle-rating-input::-webkit-inner-spin-button,
+        .workout-adder-muscle-rating-input::-webkit-outer-spin-button {
+          -webkit-appearance: none;
+          margin: 0;
+        }
+
+        .workout-adder-muscle-rating-input {
+          -moz-appearance: textfield;
         }
 
         .workout-adder-remove-muscle-button {

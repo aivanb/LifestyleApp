@@ -80,11 +80,11 @@ test.describe('UI Updates E2E Tests with Database Integration', () => {
     // Check if action buttons are visible and properly styled
     const createFoodBtn = page.locator('button:has-text("Create Food")');
     const createMealBtn = page.locator('button:has-text("Create Meal")');
-    const aiLoggerBtn = page.locator('button:has-text("AI Logger")');
+    const voiceLoggerBtn = page.locator('button:has-text("Voice Logger")');
 
     await expect(createFoodBtn).toBeVisible();
     await expect(createMealBtn).toBeVisible();
-    await expect(aiLoggerBtn).toBeVisible();
+    await expect(voiceLoggerBtn).toBeVisible();
   });
 
   test('Create Food Menu - Metadata Layout', async ({ page }) => {
@@ -150,7 +150,7 @@ test.describe('UI Updates E2E Tests with Database Integration', () => {
 
   test('AI Food Logger - Recent Foods Display', async ({ page }) => {
     // Open AI Food Logger modal
-    await page.click('button:has-text("AI Logger")');
+    await page.click('button:has-text("Voice Logger")');
     await page.waitForSelector('.food-chatbot');
 
     // Check if recent foods section exists
@@ -166,7 +166,7 @@ test.describe('UI Updates E2E Tests with Database Integration', () => {
 
   test('AI Food Logger - Stats Tooltips', async ({ page }) => {
     // Open AI Food Logger modal
-    await page.click('button:has-text("AI Logger")');
+    await page.click('button:has-text("Voice Logger")');
     await page.waitForSelector('.food-chatbot');
 
     // Check if stats show tooltip text
@@ -179,7 +179,7 @@ test.describe('UI Updates E2E Tests with Database Integration', () => {
 
   test('AI Food Logger - Voice Input Integration', async ({ page }) => {
     // Open AI Food Logger modal
-    await page.click('button:has-text("AI Logger")');
+    await page.click('button:has-text("Voice Logger")');
     await page.waitForSelector('.food-chatbot');
 
     // Check if voice input button exists

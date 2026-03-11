@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import Overview from './Overview';
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -44,8 +43,8 @@ const Login = () => {
   };
 
   return (
-    <div className="auth-layout" style={{ width: '100%', maxWidth: '1100px', margin: '50px auto', display: 'grid', gap: 'var(--space-6)' }}>
-      <div className="card" style={{ width: '100%', maxWidth: '460px', margin: 0 }}>
+    <div className="auth-layout" style={{ width: '100%', maxWidth: '460px', margin: '50px auto' }}>
+      <div className="card" style={{ width: '100%', margin: 0 }}>
         <h2>Login</h2>
         
         {error && (
@@ -101,23 +100,6 @@ const Login = () => {
           Don't have an account? <Link to="/register">Register here</Link>
         </p>
       </div>
-
-      <div style={{ width: '100%' }}>
-        <Overview />
-      </div>
-
-      <style>{`
-        @media (min-width: 980px) {
-          .auth-layout {
-            grid-template-columns: 460px 1fr;
-            align-items: start;
-          }
-          .auth-layout > div:last-child {
-            grid-column: 2;
-            grid-row: 1;
-          }
-        }
-      `}</style>
     </div>
   );
 };

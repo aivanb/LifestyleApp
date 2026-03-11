@@ -822,10 +822,13 @@ const FoodChatbot = ({ onFoodsLogged }) => {
         }
 
         .preview-food-card {
-          background: var(--bg-tertiary);
-          border-radius: var(--radius-md);
+          background: var(--bg-secondary);
+          border: 1px solid var(--border-primary);
+          border-radius: var(--radius-lg);
           padding: var(--space-4);
           margin-bottom: var(--space-4);
+          overflow: hidden;
+          box-sizing: border-box;
         }
 
         .preview-food-header {
@@ -833,41 +836,54 @@ const FoodChatbot = ({ onFoodsLogged }) => {
           justify-content: space-between;
           align-items: center;
           margin-bottom: var(--space-4);
+          gap: var(--space-3);
+          flex-wrap: wrap;
         }
 
         .preview-food-header h4 {
           margin: 0;
           font-size: var(--text-lg);
+          font-weight: var(--font-weight-semibold);
+          color: var(--text-primary);
+          flex: 1;
+          min-width: 0;
         }
 
         .servings-input {
           display: flex;
           align-items: center;
           gap: var(--space-2);
+          flex-shrink: 0;
         }
 
         .servings-input label {
           font-size: var(--text-sm);
           font-weight: var(--font-weight-medium);
+          color: var(--text-secondary);
         }
 
         .form-input-small {
-          width: 100px;
-          padding: var(--space-2);
+          max-width: 100px;
+          width: 100%;
+          padding: var(--space-2) var(--space-3);
           font-size: var(--text-sm);
           border: 1px solid var(--border-primary);
-          border-radius: var(--radius-sm);
-          background: var(--bg-primary);
+          border-radius: var(--radius-md);
+          background: var(--bg-tertiary);
           color: var(--text-primary);
+          font-family: var(--font-primary);
+          box-sizing: border-box;
         }
 
         .preview-food-metadata {
           margin-top: var(--space-4);
+          overflow: auto;
+          max-height: 320px;
         }
 
         .metadata-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+          grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
           gap: var(--space-3);
         }
 
@@ -875,6 +891,13 @@ const FoodChatbot = ({ onFoodsLogged }) => {
           display: flex;
           flex-direction: column;
           gap: var(--space-1);
+          min-width: 0;
+        }
+
+        .metadata-field input,
+        .metadata-field select {
+          max-width: 100%;
+          box-sizing: border-box;
         }
 
         .metadata-label {

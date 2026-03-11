@@ -26,7 +26,7 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'backend.settings')
 import django
 django.setup()
 
-from apps.users.models import AccessLevel, Unit, ActivityLevel
+from apps.users.models import AccessLevel, Unit, ActivityLevel, InviteKey
 from apps.workouts.models import Muscle
 
 
@@ -187,6 +187,27 @@ def populate_muscles():
     print(f"[OK] Created {len(muscles)} muscles")
 
 
+def populate_invite_keys():
+    """
+    Create default invite keys for development and testing.
+    Each key can only be used once for registration.
+    """
+    print("Populating invite keys...")
+    import secrets
+    # Create a few default keys for local/dev (deterministic for scripts)
+    default_keys = [
+        'dev-invite-key-001',
+        'dev-invite-key-002',
+        'dev-invite-key-003',
+    ]
+    for key_value in default_keys:
+        InviteKey.objects.get_or_create(key=key_value)
+    # Add one random key for variety
+    random_key = f"invite-{secrets.token_urlsafe(24)}"
+    InviteKey.objects.get_or_create(key=random_key)
+    print(f"[OK] Created {len(default_keys) + 1} invite key(s)")
+
+
 def populate_required_data():
     """
     Master function to populate all required data tables.
@@ -201,6 +222,7 @@ def populate_required_data():
         populate_activity_levels()
         populate_units()
         populate_muscles()
+        populate_invite_keys()
         
         print("\n" + "="*60)
         print("[SUCCESS] ALL REQUIRED DATA POPULATED SUCCESSFULLY")

@@ -167,7 +167,7 @@ const DataViewer = () => {
 
   return (
     <div className="data-viewer animate-fade-in" style={{ padding: 0 }}>
-      <div className="flex items-center gap-4 mb-6">
+      <div className="flex items-center gap-6 mb-6 data-viewer-page-header">
         <svg className="icon icon-xl" viewBox="0 0 20 20" fill="var(--accent-primary)">
           <path d="M3 12v3c0 1.657 3.134 3 7 3s7-1.343 7-3v-3c0 1.657-3.134 3-7 3s-7-1.343-7-3z" />
           <path d="M3 7v3c0 1.657 3.134 3 7 3s7-1.343 7-3V7c0 1.657-3.134 3-7 3S3 8.657 3 7z" />
@@ -177,7 +177,7 @@ const DataViewer = () => {
       </div>
       
       <div className="card" style={{ background: 'var(--accent-primary-alpha)', borderColor: 'var(--accent-primary)' }}>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-4 data-viewer-card-header">
           <svg className="icon" viewBox="0 0 20 20" fill="var(--accent-primary)">
             <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-6-3a2 2 0 11-4 0 2 2 0 014 0zm-2 4a5 5 0 00-4.546 2.916A5.986 5.986 0 0010 16a5.986 5.986 0 004.546-2.084A5 5 0 0010 11z" clipRule="evenodd" />
           </svg>
@@ -210,11 +210,11 @@ const DataViewer = () => {
         </div>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(250px, 350px) 1fr', gap: 'var(--space-6)', minHeight: 'calc(100vh - 200px)' }}>
+      <div className="data-viewer-layout">
         {/* Tables List Sidebar */}
-        <div>
-          <div className="card">
-            <div className="flex items-center gap-3 mb-4">
+        <div className="data-viewer-tables-col">
+          <div className="card data-viewer-tables-card">
+            <div className="flex items-center gap-4 mb-4 data-viewer-card-header">
               <svg className="icon" viewBox="0 0 20 20" fill="currentColor">
                 <path d="M7 3a1 1 0 000 2h6a1 1 0 100-2H7zM4 7a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1zM2 11a2 2 0 012-2h12a2 2 0 012 2v4a2 2 0 01-2 2H4a2 2 0 01-2-2v-4z" />
               </svg>
@@ -253,7 +253,7 @@ const DataViewer = () => {
         </div>
 
         {/* Main Content */}
-        <div>
+        <div className="data-viewer-main-col">
           {!selectedTable ? (
             <div className="card text-center">
               <svg className="icon icon-xl" viewBox="0 0 20 20" fill="var(--text-tertiary)" style={{ margin: '0 auto var(--space-4)' }}>
@@ -267,7 +267,7 @@ const DataViewer = () => {
             <>
               {/* Table Info */}
               <div className="card animate-slide-in-right">
-                <div className="flex items-center gap-3 mb-4">
+                <div className="flex items-center gap-4 mb-4 data-viewer-card-header">
                   <svg className="icon" viewBox="0 0 20 20" fill="var(--accent-primary)">
                     <path fillRule="evenodd" d="M5 3a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2V5a2 2 0 00-2-2H5zm0 2h10v7h-2l-1 2H8l-1-2H5V5z" clipRule="evenodd" />
                   </svg>
@@ -311,16 +311,19 @@ const DataViewer = () => {
                 </div>
               </div>
 
-              {/* Filters */}
-              <DataFilters
+              {/* Filters - fixed width, does not scale with table */}
+              <div className="data-viewer-filters-wrap">
+                <DataFilters
                 schema={schema}
                 onFilterChange={handleFilterChange}
                 onSearchChange={handleSearchChange}
                 onApply={handleApplyFilters}
                 onClear={handleClearFilters}
               />
+              </div>
 
-              {/* Data Table */}
+              {/* Data Table - scrollable when many fields */}
+              <div className="data-viewer-table-wrap">
               <DataTable
                 data={data}
                 schema={schema}
@@ -331,6 +334,7 @@ const DataViewer = () => {
                 sortOrder={sortOrder}
                 loading={loadingData}
               />
+              </div>
             </>
           )}
         </div>
@@ -339,6 +343,45 @@ const DataViewer = () => {
       <style jsx>{`
         .data-viewer {
           padding: var(--space-6) 0;
+        }
+
+        .data-viewer-page-header,
+        .data-viewer-card-header {
+          gap: var(--space-4);
+        }
+
+        .data-viewer-layout {
+          display: grid;
+          grid-template-columns: 320px 1fr;
+          gap: var(--space-6);
+          min-height: calc(100vh - 200px);
+        }
+
+        .data-viewer-tables-col {
+          width: 320px;
+          min-width: 320px;
+        }
+
+        .data-viewer-tables-card {
+          width: 100%;
+          min-width: 0;
+        }
+
+        .data-viewer-main-col {
+          min-width: 0;
+          overflow: hidden;
+        }
+
+        .data-viewer-filters-wrap {
+          width: 100%;
+          max-width: 100%;
+          flex-shrink: 0;
+        }
+
+        .data-viewer-table-wrap {
+          width: 100%;
+          overflow-x: auto;
+          overflow-y: visible;
         }
 
         .tables-list {
@@ -417,16 +460,21 @@ const DataViewer = () => {
         }
 
         @media (max-width: 1024px) {
-          .data-viewer > div:first-of-type {
-            grid-template-columns: 1fr !important;
-            gap: var(--space-4) !important;
+          .data-viewer-layout {
+            grid-template-columns: 1fr;
+            gap: var(--space-4);
+          }
+
+          .data-viewer-tables-col {
+            width: 100%;
+            min-width: 0;
           }
           
-          .data-viewer > div:first-of-type > div:first-child {
+          .data-viewer-layout > div:first-child {
             order: 2;
           }
           
-          .data-viewer > div:first-of-type > div:last-child {
+          .data-viewer-layout > div:last-child {
             order: 1;
           }
         }

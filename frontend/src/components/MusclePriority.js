@@ -26,6 +26,17 @@ const MusclePriority = ({ onPrioritiesUpdated, showHeader = true, enableTooltips
     loadMusclePriorities();
   }, []);
 
+  const getSliderBackground = (value) => {
+    const clamped = Math.max(1, Math.min(100, Number(value) || 1));
+    const pct = clamped;
+    const neutral = 'rgba(255, 255, 255, 0.12)';
+    const startHue = 10;
+    const endHue = 220;
+    const hue = startHue + ((endHue - startHue) * (clamped - 1) / 99);
+    const color = `hsl(${hue}, 100%, 55%)`;
+    return `linear-gradient(90deg, ${color} 0%, ${color} ${pct}%, ${neutral} ${pct}%, ${neutral} 100%)`;
+  };
+
   const loadMusclePriorities = async () => {
     try {
       const response = await api.getMusclePriorities();
@@ -123,29 +134,6 @@ const MusclePriority = ({ onPrioritiesUpdated, showHeader = true, enableTooltips
     
     const totalPriority = groupMuscles.reduce((sum, muscleLog) => sum + muscleLog.priority, 0);
     return Math.round(totalPriority / groupMuscles.length);
-  };
-
-  const getSliderColor = (value) => {
-    // Convert value (1-100) to percentage (0-1)
-    const percentage = (value - 1) / 99;
-    
-    if (percentage <= 0.25) {
-      // 0-25: Red to Orange
-      const ratio = percentage / 0.25;
-      return `rgb(${255}, ${Math.round(165 * ratio)}, 0)`;
-    } else if (percentage <= 0.5) {
-      // 25-50: Orange to Yellow
-      const ratio = (percentage - 0.25) / 0.25;
-      return `rgb(${Math.round(255 - 55 * ratio)}, ${Math.round(165 + 90 * ratio)}, 0)`;
-    } else if (percentage <= 0.75) {
-      // 50-75: Yellow to Green
-      const ratio = (percentage - 0.5) / 0.25;
-      return `rgb(${Math.round(200 - 200 * ratio)}, ${Math.round(255 - 55 * ratio)}, 0)`;
-    } else {
-      // 75-100: Green to Blue
-      const ratio = (percentage - 0.75) / 0.25;
-      return `rgb(${Math.round(0 + 0 * ratio)}, ${Math.round(200 - 200 * ratio)}, ${Math.round(0 + 255 * ratio)})`;
-    }
   };
 
   const handleMuscleClick = (muscleName) => {
@@ -333,14 +321,20 @@ const MusclePriority = ({ onPrioritiesUpdated, showHeader = true, enableTooltips
           background: var(--bg-secondary);
         }
 
+        .priority-slider-wrapper {
+          padding: 20px 0;
+          display: inline-flex;
+          align-items: center;
+        }
+
         .priority-slider {
           width: 384px;
-          height: 24px;
+          height: 20px;
           -webkit-appearance: none;
           appearance: none;
-          background: rgba(var(--border-primary-rgb), 0.2);
-          border: 2px solid rgba(var(--accent-primary-rgb), 0.3);
-          border-radius: 12px;
+          background: rgba(255, 255, 255, 0.12);
+          border: none;
+          border-radius: 999px;
           outline: none;
           cursor: pointer;
           transition: all 0.2s var(--ease-out-cubic);
@@ -349,39 +343,38 @@ const MusclePriority = ({ onPrioritiesUpdated, showHeader = true, enableTooltips
         .priority-slider::-webkit-slider-thumb {
           -webkit-appearance: none;
           appearance: none;
-          height: 24px;
-          width: 24px;
-          border-radius: 50%;
-          background: var(--accent-primary);
+          height: 44px;
+          width: 18px;
+          border-radius: 4px;
+          background: #d1d5db;
           cursor: pointer;
-          border: 2px solid white;
+          border: 1px solid var(--border-primary);
           box-shadow: var(--shadow-sm);
           transition: all 0.2s var(--ease-out-cubic);
+          margin-top: -12px;
         }
         
         .priority-slider::-moz-range-thumb {
-          height: 24px;
-          width: 24px;
-          border-radius: 50%;
-          background: var(--accent-primary);
+          height: 44px;
+          width: 18px;
+          border-radius: 4px;
+          background: #d1d5db;
           cursor: pointer;
-          border: 2px solid white;
+          border: 1px solid var(--border-primary);
           box-shadow: var(--shadow-sm);
           transition: all 0.2s var(--ease-out-cubic);
         }
         
-        .priority-slider::-webkit-slider-track {
-          height: 24px;
-          border-radius: 12px;
+        .priority-slider::-webkit-slider-runnable-track {
+          height: 20px;
+          border-radius: 999px;
           background: transparent;
-          border: none;
         }
         
         .priority-slider::-moz-range-track {
-          height: 24px;
-          border-radius: 12px;
+          height: 20px;
+          border-radius: 999px;
           background: transparent;
-          border: none;
         }
 
         .muscle-group-expandable {
@@ -625,18 +618,17 @@ const MusclePriority = ({ onPrioritiesUpdated, showHeader = true, enableTooltips
                             +
                           </button>
                         </div>
-                        <input
-                          type="range"
-                          min="1"
-                          max="100"
-                          value={majorGroupPriority}
-                          onChange={(e) => updatePriority(null, parseInt(e.target.value), true, majorGroupName)}
-                          className="priority-slider"
-                          style={{
-                            backgroundColor: getSliderColor(majorGroupPriority),
-                            borderRadius: '10px'
-                          }}
-                        />
+                        <div className="priority-slider-wrapper">
+                          <input
+                            type="range"
+                            min="1"
+                            max="100"
+                            value={majorGroupPriority}
+                            onChange={(e) => updatePriority(null, parseInt(e.target.value), true, majorGroupName)}
+                            className="priority-slider"
+                            style={{ background: getSliderBackground(majorGroupPriority) }}
+                          />
+                        </div>
                       </div>
           </div>
         </div>
@@ -723,18 +715,17 @@ const MusclePriority = ({ onPrioritiesUpdated, showHeader = true, enableTooltips
                             +
                           </button>
                         </div>
-                        <input
-                          type="range"
-                          min="1"
-                          max="100"
-                          value={muscleLog.priority}
-                          onChange={(e) => updatePriority(muscleLog.muscle_log_id, parseInt(e.target.value))}
-                          className="priority-slider"
-                          style={{
-                            backgroundColor: getSliderColor(muscleLog.priority),
-                            borderRadius: '10px'
-                          }}
-                        />
+                        <div className="priority-slider-wrapper">
+                          <input
+                            type="range"
+                            min="1"
+                            max="100"
+                            value={muscleLog.priority}
+                            onChange={(e) => updatePriority(muscleLog.muscle_log_id, parseInt(e.target.value))}
+                            className="priority-slider"
+                            style={{ background: getSliderBackground(muscleLog.priority) }}
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>

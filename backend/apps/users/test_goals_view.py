@@ -47,10 +47,10 @@ class GoalsViewTest(APITestCase):
         resp = self.client.put(url, payload, format='json')
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
 
-        goals_qs = UserGoal.objects.filter(user=self.user).order_by('-created_at')
+        goals_qs = UserGoal.objects.filter(user=self.user).order_by('-user_goal_id')
         self.assertEqual(goals_qs.count(), 2)
 
-        new_goal = goals_qs.first()
+        new_goal = goals_qs.first()  # newest row (created by PUT)
         old_goal.refresh_from_db()
 
         # Old row remains unchanged

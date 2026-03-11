@@ -459,6 +459,28 @@ const SplitCreator = ({
     return bDate - aDate;
   });
 
+  /** Splits ascending by start_date for day-diff calculation. */
+  const splitsByStartAsc = [...splits]
+    .filter(s => s?.start_date)
+    .sort((a, b) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime());
+
+  const getDayCounterForSplit = (split) => {
+    if (!split?.start_date) return null;
+    const start = new Date(split.start_date);
+    start.setHours(0, 0, 0, 0);
+    const idx = splitsByStartAsc.findIndex(s => s.splits_id === split.splits_id);
+    let end;
+    if (idx >= 0 && idx < splitsByStartAsc.length - 1) {
+      end = new Date(splitsByStartAsc[idx + 1].start_date);
+    } else {
+      end = new Date();
+    }
+    end.setHours(0, 0, 0, 0);
+    const diffMs = end.getTime() - start.getTime();
+    const days = Math.max(0, Math.floor(diffMs / (24 * 60 * 60 * 1000)));
+    return days;
+  };
+
   const latestActiveSplitId = sortedSplits.find(s => !!s.start_date)?.splits_id ?? null;
 
   return (
@@ -810,31 +832,39 @@ const SplitCreator = ({
                     return (
                       <div key={muscleId} className="split-creator-status-item">
                         {isSplitsPage ? (
-                          <div className="split-creator-status-item__top">
-                            <span className="split-creator-status-sets">
-                              {data.totalSets}
-                            </span>
-                            <span className="split-creator-status-name-wrap">
-                              <span
-                                className="split-creator-status-name"
-                                style={{ color: getStatusColorForRange(muscleId) }}
-                              >
-                                {data.muscleName}
+                          <>
+                            <div className="split-creator-status-item__top">
+                              <span className="split-creator-status-sets">
+                                <span className="split-creator-status-activation-value">
+                                  {Math.round(data.totalActivation)}
+                                </span>
+                                <span className="split-creator-status-separator"> : </span>
+                                <span className="split-creator-status-sets-value">
+                                  {data.totalSets}
+                                </span>
                               </span>
-                              <button
-                                type="button"
-                                className="split-creator-info-btn split-creator-info-btn--inline"
-                                onClick={() => handleMuscleInfoClick(data.muscleName)}
-                                aria-label={`Muscle info: ${data.muscleName}`}
-                                title="View muscle info"
-                              >
-                                <InformationCircleIcon className="split-creator-info-icon" aria-hidden="true" />
-                              </button>
-                            </span>
-                            <span className="split-creator-status-range">
-                              {Math.round(data.optimalRange.lower)}-{Math.round(data.optimalRange.upper)}
-                            </span>
-                          </div>
+                              <span className="split-creator-status-name-wrap">
+                                <span
+                                  className="split-creator-status-name"
+                                  style={{ color: getStatusColorForRange(muscleId) }}
+                                >
+                                  {data.muscleName}
+                                  <button
+                                    type="button"
+                                    className="split-creator-info-btn split-creator-info-btn--inline"
+                                    onClick={() => handleMuscleInfoClick(data.muscleName)}
+                                    aria-label={`Muscle info: ${data.muscleName}`}
+                                    title="View muscle info"
+                                  >
+                                    <InformationCircleIcon className="split-creator-info-icon" aria-hidden="true" />
+                                  </button>
+                                </span>
+                              </span>
+                              <span className="split-creator-status-range">
+                                {Math.round(data.optimalRange.lower)}-{Math.round(data.optimalRange.upper)}
+                              </span>
+                            </div>
+                          </>
                         ) : (
                           <>
                             <div className="split-creator-status-item__top">
@@ -850,7 +880,13 @@ const SplitCreator = ({
                                 {data.muscleName}
                               </span>
                               <span className="split-creator-status-sets">
-                                {`${data.totalSets}s`}
+                                <span className="split-creator-status-activation-value">
+                                  {Math.round(data.totalActivation)}
+                                </span>
+                                <span className="split-creator-status-separator"> : </span>
+                                <span className="split-creator-status-sets-value">
+                                  {data.totalSets}s
+                                </span>
                               </span>
                             </div>
                             <div className="split-creator-status-range">
@@ -922,31 +958,29 @@ const SplitCreator = ({
           ) : (
             <div className="split-creator-split-list">
               {sortedSplits.map((split) => (
-                <div
+                <button
                   key={split.splits_id}
+                  type="button"
                   className={`split-creator-split-card ${split.splits_id === latestActiveSplitId ? 'split-creator-split-card--latest' : ''} ${openCalendarKey === `split-start-${split.splits_id}` ? 'split-creator-split-card--calendar-open' : ''}`}
+                  onClick={() => navigate(`/personalization/splits/${split.splits_id}/edit`, { state: { split } })}
                 >
                   <div className="split-creator-split-card__header">
                     <div className="split-creator-split-card__meta">
                       <h4 className="split-creator-split-name">{split.split_name}</h4>
                       <p className="split-creator-split-subtitle">
-                        {split.split_days?.length || 0} days •
-                        {split.start_date ? ` Active since ${split.start_date}` : ' Not active'}
+                        {split.split_days?.length || 0} days
+                        {split.start_date
+                          ? (() => {
+                              const days = getDayCounterForSplit(split);
+                              return days != null ? ` • ${days} days` : '';
+                            })()
+                          : ' • Not active'}
                       </p>
-                    </div>
-                    <div className="split-creator-split-actions">
-                      <button
-                        type="button"
-                        onClick={() => navigate(`/personalization/splits/${split.splits_id}/edit`, { state: { split } })}
-                        className="btn btn-secondary split-creator-btn-sm"
-                      >
-                        Edit
-                      </button>
                     </div>
                   </div>
 
-                  {/* Start Date Assignment */}
-                  <div className="split-creator-split-card__footer">
+                  {/* Start Date Assignment - stopPropagation so clicking here doesn't navigate */}
+                  <div className="split-creator-split-card__footer" onClick={(e) => e.stopPropagation()}>
                     <label className="split-creator-inline-label" htmlFor={`split-start-${split.splits_id}`}>
                       Set Start Date
                     </label>
@@ -1037,7 +1071,7 @@ const SplitCreator = ({
                       />
                     )}
                   </div>
-                </div>
+                </button>
               ))}
             </div>
           )}
@@ -1404,6 +1438,10 @@ const SplitCreator = ({
         }
 
         .split-creator-split-card {
+          display: block;
+          width: 100%;
+          text-align: left;
+          cursor: pointer;
           background: var(--bg-tertiary);
           border: 1px solid var(--border-primary);
           border-radius: var(--radius-lg);
@@ -1432,7 +1470,7 @@ const SplitCreator = ({
 
         .split-creator-split-name {
           margin: 0;
-          font-size: var(--text-lg);
+          font-size: var(--text-2xl);
           font-weight: var(--font-weight-semibold);
           color: var(--text-primary);
         }
@@ -1583,6 +1621,14 @@ const SplitCreator = ({
 
         .split-creator-target-select {
           min-height: 42px;
+          background: var(--bg-secondary);
+          color: var(--text-primary);
+          border: none !important;
+        }
+        .split-creator-target-select:focus,
+        .split-creator-target-select:hover {
+          outline: none;
+          box-shadow: none;
         }
 
         .split-creator-activation-input {
@@ -1740,7 +1786,7 @@ const SplitCreator = ({
         }
 
         .split-creator-status-item {
-          padding: var(--space-3);
+          padding: var(--space-2);
           border: 1px solid var(--border-secondary);
           border-radius: var(--radius-md);
           background: var(--bg-tertiary);
@@ -1756,12 +1802,31 @@ const SplitCreator = ({
         .split-creator-status-name {
           font-size: var(--text-sm);
           font-weight: var(--font-weight-medium);
+          text-align: center;
+          flex: 1;
+          padding-left: var(--space-2);
+          display: inline-flex;
+          align-items: center;
         }
 
         .split-creator-status-sets,
         .split-creator-status-range {
           color: var(--text-tertiary);
+          font-size: 0.7rem;
+        }
+
+        .split-creator-status-activation-value {
+          font-weight: 400 !important;
+        }
+
+        .split-creator-status-sets-value {
+          font-weight: 700;
+        }
+
+        .split-creator-status-activation {
+          margin-top: var(--space-1);
           font-size: var(--text-xs);
+          color: var(--text-tertiary);
         }
 
         /* ===== Splits Page Variant ===== */
@@ -1771,10 +1836,10 @@ const SplitCreator = ({
 
         /* Match workout-tracker date input styling */
         .split-creator[data-variant="splitsPage"] input[type="date"] {
-          padding: var(--space-4) var(--space-5);
+          padding: var(--space-3) var(--space-4);
           border: 1px solid var(--surface-overlay);
           border-radius: var(--radius-md);
-          background: transparent;
+          background: var(--bg-secondary);
           font-size: var(--text-base);
           color: var(--text-primary);
           transition: border-color 0.3s ease, background 0.3s ease, color 0.3s ease;
@@ -1785,7 +1850,8 @@ const SplitCreator = ({
           text-align: center;
           letter-spacing: 0.08em;
           box-shadow: none;
-          height: 56px;
+          min-height: 46px;
+          height: auto;
         }
 
         .split-creator[data-variant="splitsPage"] input[type="date"]:focus {
@@ -1837,10 +1903,10 @@ const SplitCreator = ({
         }
 
         .sc-date-input {
-          padding: var(--space-4) var(--space-5);
+          padding: var(--space-3) var(--space-4);
           border: 1px solid var(--surface-overlay);
           border-radius: var(--radius-md);
-          background: transparent;
+          background: var(--bg-secondary);
           font-size: var(--text-base);
           color: var(--text-primary);
           transition: border-color 0.3s ease, background 0.3s ease, color 0.3s ease;
@@ -1851,7 +1917,8 @@ const SplitCreator = ({
           text-align: center;
           letter-spacing: 0.08em;
           box-shadow: none;
-          height: 56px;
+          min-height: 46px;
+          height: auto;
         }
 
         .sc-date-input:focus {
@@ -2077,7 +2144,7 @@ const SplitCreator = ({
         }
 
         .split-creator[data-variant="splitsPage"] .split-creator-status-sets {
-          font-size: var(--text-2xl);
+          font-size: var(--text-lg);
           font-weight: var(--font-weight-bold);
           color: var(--text-primary);
           text-align: left;
@@ -2087,6 +2154,8 @@ const SplitCreator = ({
           font-size: var(--text-xl);
           font-weight: var(--font-weight-semibold);
           text-align: center;
+          min-width: 140px;
+          white-space: nowrap;
         }
 
         .split-creator[data-variant="splitsPage"] .split-creator-status-range {

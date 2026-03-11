@@ -90,7 +90,8 @@ const METRIC_CONFIG = {
     label: 'BMI',
     unit: '',
     description: 'Body Mass Index',
-    equation: '\\(\\mathrm{BMI}=\\frac{\\text{bodyWeightKg}}{\\text{heightMeters}^{2}}\\)',
+    equationPlain: 'BMI = bodyWeightKg ÷ heightMeters²',
+    equationLegend: 'bodyWeightKg = body weight (kg), heightMeters = height (m)',
     decimals: 1,
     ranges: makeRanges([0, 16, 17, 18, 18.5, 19.5, 20.5, 21.5, 22.5, 23.5, 24.5, 25, 27, 29, 31, 33, 35, Infinity]),
   },
@@ -98,7 +99,8 @@ const METRIC_CONFIG = {
     label: 'Waist-to-Height',
     unit: '',
     description: 'Waist / Height ratio',
-    equation: '\\(\\mathrm{WHtR}=\\frac{\\text{waistCircumference}}{\\text{height}}\\)',
+    equationPlain: 'WHtR = waistCircumference ÷ height',
+    equationLegend: 'waistCircumference = waist (cm), height = height (cm)',
     decimals: 2,
     ranges: makeRanges([0, 0.35, 0.38, 0.41, 0.44, 0.47, 0.5, 0.53, 0.56, 0.59, 0.62, 0.65, 0.68, 0.71, 0.74, 0.77, 0.8, Infinity]),
   },
@@ -106,7 +108,8 @@ const METRIC_CONFIG = {
     label: 'Waist-to-Shoulder',
     unit: '',
     description: 'Waist / Shoulder ratio',
-    equation: '\\(\\mathrm{WSR}=\\frac{\\text{waistCircumference}}{\\text{shoulderCircumference}}\\)',
+    equationPlain: 'WSR = waistCircumference ÷ shoulderCircumference',
+    equationLegend: 'waistCircumference = waist (cm), shoulderCircumference = shoulder (cm)',
     decimals: 2,
     ranges: makeRanges([0, 0.65, 0.68, 0.71, 0.74, 0.77, 0.8, 0.83, 0.86, 0.89, 0.92, 0.95, 0.98, 1.01, 1.04, 1.07, 1.1, Infinity]),
   },
@@ -114,7 +117,8 @@ const METRIC_CONFIG = {
     label: 'Legs-to-Height',
     unit: '',
     description: 'Leg length / Height ratio',
-    equation: '\\(\\mathrm{LHR}=\\frac{\\text{legLength}}{\\text{height}}\\)',
+    equationPlain: 'LHR = legLength ÷ height',
+    equationLegend: 'legLength = leg length (cm), height = height (cm)',
     decimals: 2,
     ranges: makeRanges([0, 0.38, 0.4, 0.42, 0.44, 0.46, 0.48, 0.5, 0.52, 0.54, 0.56, 0.58, 0.6, 0.62, 0.64, 0.66, 0.68, Infinity]),
   },
@@ -122,7 +126,8 @@ const METRIC_CONFIG = {
     label: 'BMR',
     unit: 'kcal/day',
     description: 'Basal Metabolic Rate',
-    equation: '\\(\\mathrm{BMR}=10\\cdot\\text{bodyWeightKg}+6.25\\cdot\\text{heightCm}-5\\cdot\\text{ageYears}+\\text{sexConstant}\\)',
+    equationPlain: 'BMR = 10×weight + 6.25×height − 5×age + sexConstant',
+    equationLegend: 'weight (kg), height (cm), age (years), sexConstant = −161 (F) or +5 (M)',
     decimals: 0,
     ranges: makeRanges([0, 1100, 1200, 1300, 1400, 1500, 1600, 1700, 1800, 1900, 2000, 2100, 2200, 2300, 2400, 2500, 2600, Infinity]),
   },
@@ -130,7 +135,8 @@ const METRIC_CONFIG = {
     label: 'TDEE',
     unit: 'kcal/day',
     description: 'Total Daily Energy Expenditure',
-    equation: '\\(\\mathrm{TDEE}=\\text{BMR}\\cdot\\text{activityFactor}\\)',
+    equationPlain: 'TDEE = BMR × activityFactor',
+    equationLegend: 'BMR = basal metabolic rate, activityFactor = 1.2–1.9 by activity level',
     decimals: 0,
     ranges: makeRanges([0, 1400, 1600, 1800, 2000, 2200, 2400, 2600, 2800, 3000, 3200, 3400, 3600, 3800, 4000, 4200, 4400, Infinity]),
   },
@@ -138,7 +144,8 @@ const METRIC_CONFIG = {
     label: 'Fat Mass',
     unit: '%',
     description: 'Body fat percentage',
-    equation: '\\(\\mathrm{fatMassPercent}=\\frac{\\text{fatMassKg}}{\\text{bodyWeightKg}}\\cdot 100\\)',
+    equationPlain: 'Fat % = (fatMassKg ÷ bodyWeightKg) × 100',
+    equationLegend: 'fatMassKg = fat mass (kg), bodyWeightKg = body weight (kg)',
     decimals: 1,
     ranges: makeRanges([0, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 30, 33, 36, 40, Infinity]),
   },
@@ -146,7 +153,8 @@ const METRIC_CONFIG = {
     label: 'Lean Mass',
     unit: '%',
     description: 'Lean mass percentage',
-    equation: '\\(\\mathrm{leanMassPercent}=\\frac{\\text{leanMassKg}}{\\text{bodyWeightKg}}\\cdot 100\\)',
+    equationPlain: 'Lean % = (leanMassKg ÷ bodyWeightKg) × 100',
+    equationLegend: 'leanMassKg = lean mass (kg), bodyWeightKg = body weight (kg)',
     decimals: 1,
     ranges: makeRanges([0, 55, 60, 65, 70, 72, 74, 76, 78, 80, 82, 84, 86, 88, 90, 92, 94, Infinity]),
   },
@@ -154,7 +162,8 @@ const METRIC_CONFIG = {
     label: 'FFBMI',
     unit: '',
     description: 'Fat-Free Body Mass Index',
-    equation: '\\(\\mathrm{FFBMI}=\\frac{\\text{leanMassKg}}{\\text{heightMeters}^{2}}\\)',
+    equationPlain: 'FFBMI = leanMassKg ÷ heightMeters²',
+    equationLegend: 'leanMassKg = lean mass (kg), heightMeters = height (m)',
     decimals: 1,
     ranges: makeRanges([0, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, Infinity]),
   },
@@ -227,13 +236,13 @@ const formatNumber = (value, decimals) => {
 };
 
 const formatRange = (value, decimals) => {
-  if (value === Infinity) return '∞';
+  if (value === Infinity) return null; // Caller will display as "> {prev}"
   return formatNumber(value, decimals);
 };
 
 const Profile = () => {
   // const { logout } = useAuth();
-  // Theme toggle is intentionally exposed only on /profile per product requirements.
+  const { theme, setTheme } = useTheme();
   const [profileData, setProfileData] = useState(null);
   const [metrics, setMetrics] = useState({});
   const [loading, setLoading] = useState(true);
@@ -290,31 +299,8 @@ const Profile = () => {
       {view === 'info' ? (
         <div className="info-top-row">
           <div className="info-top-left" />
-
           <div className="info-top-center" />
-
-          <div className="info-top-right">
-            <button
-              type="button"
-              data-testid="rank-badge"
-              className="rank-badge rank-badge-lg"
-              onClick={() => {
-                setView('rankings');
-                setEditing(false);
-              }}
-              style={{
-                background: `linear-gradient(135deg, ${hexToRgba(overallRankColor, 0.18)}, rgba(0,0,0,0) 55%), #181b22`,
-                borderColor: overallRankColor,
-              }}
-              aria-label="Rankings"
-              title="Rankings"
-            >
-              <span className="rank-emoji" aria-hidden="true">
-                {getRankEmoji(overallRank)}
-              </span>
-              <span className="rank-text">{overallRank.toUpperCase()}</span>
-            </button>
-          </div>
+          <div className="info-top-right" />
         </div>
       ) : (
         <div className="rankings-top-row">
@@ -343,14 +329,27 @@ const Profile = () => {
       )}
 
       {view === 'info' ? (
-        <>
+        <div className="profile-info-layout">
           <PersonalInfoSection
             profileData={profileData}
             editing={editing}
             setEditing={setEditing}
             updateProfile={updateProfile}
+            overallRank={overallRank}
+            overallRankColor={overallRankColor}
+            onRankingsClick={() => { setView('rankings'); setEditing(false); }}
           />
-        </>
+          <div className="profile-page-footer">
+            <label className="theme-toggle theme-toggle--no-label" aria-label="Toggle theme">
+              <input
+                type="checkbox"
+                checked={theme === 'dark'}
+                onChange={(e) => setTheme(e.target.checked ? 'dark' : 'light')}
+              />
+              <span className="theme-toggle-track" aria-hidden="true" />
+            </label>
+          </div>
+        </div>
       ) : (
         <RankingsSection
           metrics={metrics}
@@ -366,6 +365,12 @@ const Profile = () => {
           margin: 0 auto;
           padding: 0 var(--space-6) var(--space-6);
           min-height: calc(100vh - calc(var(--space-4) * 2) - calc(var(--space-6) * 2));
+        }
+
+        .profile-info-layout {
+          position: relative;
+          max-width: 1200px;
+          margin: 0 auto;
         }
 
         .profile-loading {
@@ -485,6 +490,64 @@ const Profile = () => {
           border-color: var(--border-secondary);
         }
 
+        .theme-toggle--no-label {
+          display: inline-flex;
+          align-items: center;
+        }
+
+        .theme-toggle--no-label .theme-toggle-track {
+          width: 56px;
+          height: 30px;
+          border-radius: 999px;
+          background: var(--bg-tertiary);
+          border: 1px solid var(--border-primary);
+          position: relative;
+          transition: background 0.2s var(--ease-out-cubic), border-color 0.2s var(--ease-out-cubic);
+        }
+
+        .theme-toggle--no-label .theme-toggle-track::after {
+          content: '';
+          position: absolute;
+          top: 50%;
+          left: 4px;
+          transform: translateY(-50%);
+          width: 22px;
+          height: 22px;
+          border-radius: 999px;
+          background: var(--text-primary);
+          transition: transform 0.2s var(--ease-out-cubic), background 0.2s var(--ease-out-cubic);
+        }
+
+        .theme-toggle--no-label input:checked + .theme-toggle-track::after {
+          transform: translate(26px, -50%);
+          background: #ffffff;
+        }
+
+        .theme-toggle--no-label input:checked + .theme-toggle-track {
+          background: rgba(255, 255, 255, 0.08);
+          border-color: var(--border-secondary);
+        }
+
+        .theme-toggle--no-label input {
+          position: absolute;
+          opacity: 0;
+          pointer-events: none;
+        }
+
+        .rank-badge--inside-info {
+          margin-bottom: var(--space-10);
+          display: block;
+          width: 100%;
+        }
+
+        .profile-page-footer {
+          margin-top: var(--space-4);
+          padding: 0;
+          display: flex;
+          justify-content: flex-end;
+          align-items: center;
+        }
+
         @media (max-width: 768px) {
           .profile-page {
             padding: 0 var(--space-4) var(--space-4);
@@ -511,8 +574,7 @@ const Profile = () => {
 };
 
 // Personal Information Section Component
-const PersonalInfoSection = ({ profileData, editing, setEditing, updateProfile }) => {
-  const { theme, setTheme } = useTheme();
+const PersonalInfoSection = ({ profileData, editing, setEditing, updateProfile, overallRank, overallRankColor, onRankingsClick }) => {
   const [formData, setFormData] = useState({
     first_name: profileData?.first_name || '',
     last_name: profileData?.last_name || '',
@@ -552,8 +614,9 @@ const PersonalInfoSection = ({ profileData, editing, setEditing, updateProfile }
   return (
     <div className="personal-info-section">
       {editing ? (
-        <form onSubmit={handleSubmit} className="personal-info-form">
-          <div className="form-grid">
+        <div className="personal-info-edit-card card">
+          <form onSubmit={handleSubmit} className="personal-info-form">
+            <div className="form-grid">
             <div className="form-group">
               <label className="form-label">First name</label>
               <input
@@ -673,27 +736,42 @@ const PersonalInfoSection = ({ profileData, editing, setEditing, updateProfile }
             </div>
           </div>
 
-          <div className="form-actions">
-            <button type="submit" className="text-action text-action-primary">
-              Save Changes
-            </button>
-            <button
-              type="button"
-              className="text-action"
-              onClick={() => setEditing(false)}
-            >
-              Cancel
-            </button>
-          </div>
-        </form>
+            <div className="form-actions">
+              <button type="submit" className="text-action text-action-primary">
+                Save Changes
+              </button>
+              <button
+                type="button"
+                className="text-action"
+                onClick={() => setEditing(false)}
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        </div>
       ) : (
         <div className="user-info-display">
           <div className="info-section">
-            <div className="display-name">
-              {profileData?.first_name || profileData?.last_name
-                ? `${profileData?.first_name || ''} ${profileData?.last_name || ''}`.trim()
-                : (profileData?.username || 'User')}
-            </div>
+            {overallRank != null && (
+              <button
+                type="button"
+                data-testid="rank-badge"
+                className="rank-badge rank-badge-lg rank-badge--inside-info"
+                onClick={onRankingsClick}
+                style={{
+                  background: `linear-gradient(135deg, ${hexToRgba(overallRankColor, 0.18)}, rgba(0,0,0,0) 55%), #181b22`,
+                  borderColor: overallRankColor,
+                }}
+                aria-label="Rankings"
+                title="Rankings"
+              >
+                <span className="rank-emoji" aria-hidden="true">
+                  {getRankEmoji(overallRank)}
+                </span>
+                <span className="rank-text">{overallRank.toUpperCase()}</span>
+              </button>
+            )}
             <div className="info-grid">
               <div className="info-item">
                 <span className="info-label">First name</span>
@@ -739,19 +817,6 @@ const PersonalInfoSection = ({ profileData, editing, setEditing, updateProfile }
               </div>
             </div>
             <div className="info-footer">
-              <div className="theme-toggle-row">
-                <span className="theme-toggle-label">Theme</span>
-                <label className="theme-toggle" aria-label="Toggle theme">
-                  <input
-                    type="checkbox"
-                    checked={theme === 'dark'}
-                    onChange={(e) => setTheme(e.target.checked ? 'dark' : 'light')}
-                  />
-                  <span className="theme-toggle-track" aria-hidden="true" />
-                  <span className="theme-toggle-text">{theme === 'dark' ? 'Dark' : 'Light'}</span>
-                </label>
-              </div>
-
               <button
                 type="button"
                 className="text-action"
@@ -768,6 +833,11 @@ const PersonalInfoSection = ({ profileData, editing, setEditing, updateProfile }
         .personal-info-section {
           max-width: 1200px;
           margin: 0 auto;
+        }
+
+        .personal-info-edit-card {
+          padding: var(--space-6);
+          margin-bottom: var(--space-6);
         }
 
         .form-grid {
@@ -826,88 +896,12 @@ const PersonalInfoSection = ({ profileData, editing, setEditing, updateProfile }
           box-shadow: var(--shadow-md);
         }
 
-        .display-name {
-          text-align: center;
-          font-size: var(--text-3xl);
-          font-weight: var(--font-weight-bold);
-          color: var(--text-primary);
-          margin-bottom: var(--space-6);
-          letter-spacing: 0.06em;
-        }
-
         .info-footer {
           display: flex;
-          justify-content: space-between;
+          justify-content: flex-end;
           align-items: center;
           margin-top: var(--space-8);
           gap: var(--space-6);
-        }
-
-        .theme-toggle-row {
-          display: flex;
-          align-items: center;
-          gap: var(--space-3);
-        }
-
-        .theme-toggle-label {
-          font-size: var(--text-sm);
-          color: var(--text-secondary);
-          font-weight: var(--font-weight-semibold);
-          text-transform: uppercase;
-          letter-spacing: 0.12em;
-        }
-
-        .theme-toggle {
-          display: inline-flex;
-          align-items: center;
-          gap: var(--space-3);
-          cursor: pointer;
-          user-select: none;
-        }
-
-        .theme-toggle input {
-          position: absolute;
-          opacity: 0;
-          pointer-events: none;
-        }
-
-        .theme-toggle-track {
-          width: 56px;
-          height: 30px;
-          border-radius: 999px;
-          background: var(--bg-tertiary);
-          border: 1px solid var(--border-primary);
-          position: relative;
-          transition: background 0.2s var(--ease-out-cubic), border-color 0.2s var(--ease-out-cubic);
-        }
-
-        .theme-toggle-track::after {
-          content: '';
-          position: absolute;
-          top: 50%;
-          left: 4px;
-          transform: translateY(-50%);
-          width: 22px;
-          height: 22px;
-          border-radius: 999px;
-          background: var(--text-primary);
-          transition: transform 0.2s var(--ease-out-cubic), background 0.2s var(--ease-out-cubic);
-        }
-
-        .theme-toggle input:checked + .theme-toggle-track::after {
-          transform: translate(26px, -50%);
-          background: #ffffff;
-        }
-
-        .theme-toggle input:checked + .theme-toggle-track {
-          background: rgba(255, 255, 255, 0.08);
-          border-color: var(--border-secondary);
-        }
-
-        .theme-toggle-text {
-          font-size: var(--text-sm);
-          color: var(--text-secondary);
-          font-weight: var(--font-weight-semibold);
         }
 
         .info-grid {
@@ -989,13 +983,29 @@ const RankingsSection = ({ metrics, selectedMetricType, setSelectedMetricType })
       type,
       label: config.label,
       description: config.description,
-      equation: config.equation,
+      equationPlain: config.equationPlain,
+      equationLegend: config.equationLegend,
       unit: config.unit,
       decimals: config.decimals,
       value,
       rank,
     };
   });
+
+  const renderEquation = (plain) => {
+    if (!plain) return null;
+    const parts = plain.split(/(\s+)/);
+    const out = [];
+    const varRegex = /^[a-zA-Z][a-zA-Z0-9]*$/;
+    parts.forEach((part, i) => {
+      if (varRegex.test(part) && part.length > 2) {
+        out.push(<span key={i} className="metric-eq-var">{part}</span>);
+      } else {
+        out.push(<span key={i} className="metric-eq-text">{part}</span>);
+      }
+    });
+    return <span className="metric-equation-inner">{out}</span>;
+  };
 
   const selectedConfig = METRIC_CONFIG[selectedMetricType] || METRIC_CONFIG.bmi;
   const selectedValue = metrics?.[selectedMetricType];
@@ -1020,20 +1030,26 @@ const RankingsSection = ({ metrics, selectedMetricType, setSelectedMetricType })
           </div>
 
           <div className="ranking-list">
-            {selectedRank.ranges.map((range) => (
-              <div key={range.rank} className="ranking-row" data-testid="ranking-range">
-                <span
-                  className="ranking-row-rank"
-                  style={{ color: getFitnessRankColor(range.rank) }}
-                >
-                  {getRankEmoji(range.rank)} {range.rank.toUpperCase()}
-                </span>
-                <span className="ranking-row-values">
-                  {formatRange(range.min, selectedConfig.decimals)}–{formatRange(range.max, selectedConfig.decimals)}
-                  {selectedConfig.unit}
-                </span>
-              </div>
-            ))}
+            {selectedRank.ranges.map((range) => {
+              const minStr = formatRange(range.min, selectedConfig.decimals);
+              const maxStr = formatRange(range.max, selectedConfig.decimals);
+              const rangeDisplay = maxStr === null
+                ? `> ${formatNumber(range.min, selectedConfig.decimals)}${selectedConfig.unit ? ` ${selectedConfig.unit}` : ''}`
+                : `${minStr}–${maxStr}${selectedConfig.unit ? selectedConfig.unit : ''}`;
+              return (
+                <div key={range.rank} className="ranking-row" data-testid="ranking-range">
+                  <span
+                    className="ranking-row-rank"
+                    style={{ color: getFitnessRankColor(range.rank) }}
+                  >
+                    {getRankEmoji(range.rank)} {range.rank.toUpperCase()}
+                  </span>
+                  <span className="ranking-row-values">
+                    {rangeDisplay}
+                  </span>
+                </div>
+              );
+            })}
           </div>
         </div>
 
@@ -1071,7 +1087,10 @@ const RankingsSection = ({ metrics, selectedMetricType, setSelectedMetricType })
                     {metric.unit ? <span className="metric-unit"> {metric.unit}</span> : null}
                   </div>
                   <div className="metric-description">{metric.description}</div>
-                  <div className="metric-equation">{metric.equation}</div>
+                  <div className="metric-equation">{renderEquation(metric.equationPlain)}</div>
+                  {metric.equationLegend && (
+                    <div className="metric-equation-legend">{metric.equationLegend}</div>
+                  )}
                 </button>
               );
             })}
@@ -1183,6 +1202,7 @@ const RankingsSection = ({ metrics, selectedMetricType, setSelectedMetricType })
           grid-template-columns: repeat(3, 1fr);
           gap: var(--space-4);
           animation: gridIn 0.25s var(--ease-out-cubic);
+          align-items: stretch;
         }
 
         @keyframes gridIn {
@@ -1199,7 +1219,12 @@ const RankingsSection = ({ metrics, selectedMetricType, setSelectedMetricType })
           cursor: pointer;
           transition: transform 0.25s var(--ease-out-cubic), box-shadow 0.25s var(--ease-out-cubic), border-color 0.25s var(--ease-out-cubic);
           box-shadow: var(--shadow-md);
-          min-height: 210px;
+          height: 280px;
+          min-height: 280px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: flex-start;
         }
 
         .metric-card:hover {
@@ -1261,8 +1286,28 @@ const RankingsSection = ({ metrics, selectedMetricType, setSelectedMetricType })
         .metric-equation {
           margin-top: var(--space-2);
           font-size: var(--text-xs);
+          line-height: 1.5;
+        }
+
+        .metric-equation-inner {
+          display: inline;
+        }
+
+        .metric-eq-text {
           color: var(--text-secondary);
-          opacity: 0.85;
+        }
+
+        .metric-eq-var {
+          color: var(--accent-primary);
+          font-weight: var(--font-weight-semibold);
+        }
+
+        .metric-equation-legend {
+          margin-top: var(--space-2);
+          font-size: 10px;
+          color: var(--text-tertiary);
+          line-height: 1.35;
+          max-width: 100%;
         }
 
         @media (max-width: 900px) {

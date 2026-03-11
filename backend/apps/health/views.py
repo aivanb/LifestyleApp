@@ -28,14 +28,14 @@ class SleepLogListCreateView(generics.ListCreateAPIView):
         if start_date_param:
             try:
                 start_date = date.fromisoformat(start_date_param)
-                queryset = queryset.filter(date_time__gte=start_date)
+                queryset = queryset.filter(date_time__date__gte=start_date)
             except ValueError:
                 pass
         
         if end_date_param:
             try:
                 end_date = date.fromisoformat(end_date_param)
-                queryset = queryset.filter(date_time__lte=end_date)
+                queryset = queryset.filter(date_time__date__lte=end_date)
             except ValueError:
                 pass
         
@@ -44,7 +44,7 @@ class SleepLogListCreateView(generics.ListCreateAPIView):
         if date_param and not start_date_param and not end_date_param:
             try:
                 log_date = date.fromisoformat(date_param)
-                queryset = queryset.filter(date_time=log_date)
+                queryset = queryset.filter(date_time__date=log_date)
             except ValueError:
                 pass
         
@@ -73,7 +73,7 @@ def get_sleep_streak(request):
     # Check backwards from today
     for i in range(365):  # Max 1 year back
         check_date = today - timedelta(days=i)
-        if SleepLog.objects.filter(user=user, date_time=check_date).exists():
+        if SleepLog.objects.filter(user=user, date_time__date=check_date).exists():
             streak += 1
         else:
             break
@@ -98,14 +98,14 @@ class HealthMetricsLogListCreateView(generics.ListCreateAPIView):
         if start_date_param:
             try:
                 start_date = date.fromisoformat(start_date_param)
-                queryset = queryset.filter(date_time__gte=start_date)
+                queryset = queryset.filter(date_time__date__gte=start_date)
             except ValueError:
                 pass
         
         if end_date_param:
             try:
                 end_date = date.fromisoformat(end_date_param)
-                queryset = queryset.filter(date_time__lte=end_date)
+                queryset = queryset.filter(date_time__date__lte=end_date)
             except ValueError:
                 pass
         
@@ -114,7 +114,7 @@ class HealthMetricsLogListCreateView(generics.ListCreateAPIView):
         if date_param and not start_date_param and not end_date_param:
             try:
                 log_date = date.fromisoformat(date_param)
-                queryset = queryset.filter(date_time=log_date)
+                queryset = queryset.filter(date_time__date=log_date)
             except ValueError:
                 pass
         

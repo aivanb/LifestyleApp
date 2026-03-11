@@ -117,6 +117,7 @@ describe('Authentication Components', () => {
       );
 
       expect(screen.getByLabelText(/username/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/invite key/i)).toBeInTheDocument();
       expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
       expect(screen.getByLabelText(/password/i)).toBeInTheDocument();
       expect(screen.getByLabelText(/confirm password/i)).toBeInTheDocument();
@@ -141,6 +142,24 @@ describe('Authentication Components', () => {
 
       await waitFor(() => {
         expect(screen.getByText('Passwords do not match')).toBeInTheDocument();
+      });
+    });
+
+    test('validates invite key is required on submit', async () => {
+      render(
+        <TestWrapper>
+          <Register />
+        </TestWrapper>
+      );
+
+      fireEvent.change(screen.getByLabelText(/username/i), { target: { value: 'testuser' } });
+      fireEvent.change(screen.getByLabelText(/email/i), { target: { value: 'test@example.com' } });
+      fireEvent.change(screen.getByLabelText(/password/i), { target: { value: 'ValidPass123!' } });
+      fireEvent.change(screen.getByLabelText(/confirm password/i), { target: { value: 'ValidPass123!' } });
+      fireEvent.click(screen.getByRole('button', { name: /register/i }));
+
+      await waitFor(() => {
+        expect(screen.getByText(/invite key is required/i)).toBeInTheDocument();
       });
     });
   });
@@ -453,7 +472,7 @@ describe('API Service', () => {
 
     api.post.mockResolvedValue(mockResponse);
 
-    const userData = { username: 'newuser', email: 'new@example.com', password: 'newpass' };
+    const userData = { username: 'newuser', email: 'new@example.com', password: 'newpass', invite_key: 'dev-invite-key-001' };
     const result = await api.register(userData);
 
     expect(api.post).toHaveBeenCalledWith('/auth/register/', userData);

@@ -267,7 +267,10 @@ const AdditionalTrackersMenu = () => {
         for (let i = 0; i <= 180; i++) {
           const date = new Date(today);
           date.setDate(today.getDate() - i);
-          const dateStr = date.toISOString().split('T')[0];
+          const y = date.getFullYear();
+          const m = String(date.getMonth() + 1).padStart(2, '0');
+          const d = String(date.getDate()).padStart(2, '0');
+          const dateStr = `${y}-${m}-${d}`;
           heatmap[dateStr] = 0;
         }
 
@@ -282,11 +285,24 @@ const AdditionalTrackersMenu = () => {
         ].forEach(({ data, key }) => {
           data.forEach(entry => {
             const rawDate = entry.date_time || entry.created_at;
-            const date = typeof rawDate === 'string' ? rawDate.split('T')[0] : todayStr;
-            if (!allDataByDate[date]) {
-              allDataByDate[date] = new Set();
+            let dateStr = todayStr;
+            if (rawDate) {
+              if (typeof rawDate === 'string') {
+                const d = new Date(rawDate);
+                if (!isNaN(d.getTime())) {
+                  const y = d.getFullYear();
+                  const m = String(d.getMonth() + 1).padStart(2, '0');
+                  const day = String(d.getDate()).padStart(2, '0');
+                  dateStr = `${y}-${m}-${day}`;
+                } else {
+                  dateStr = rawDate.split('T')[0];
+                }
+              }
             }
-            allDataByDate[date].add(key);
+            if (!allDataByDate[dateStr]) {
+              allDataByDate[dateStr] = new Set();
+            }
+            allDataByDate[dateStr].add(key);
           });
         });
 
@@ -849,7 +865,10 @@ const AdditionalTrackersMenu = () => {
     for (let i = 0; i <= 180; i++) {
       const date = new Date(today);
       date.setDate(today.getDate() - i);
-      days.push(date.toISOString().split('T')[0]);
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, '0');
+      const d = String(date.getDate()).padStart(2, '0');
+      days.push(`${y}-${m}-${d}`);
     }
     return days.reverse();
   };

@@ -29,7 +29,7 @@ django.setup()
 
 from django.contrib.auth.hashers import make_password
 from django.db import connection
-from apps.users.models import User, AccessLevel, Unit, ActivityLevel, UserGoal
+from apps.users.models import User, AccessLevel, Unit, ActivityLevel, UserGoal, InviteKey
 from apps.foods.models import Food, Meal, MealFood
 from apps.workouts.models import (
     Workout, Muscle, WorkoutLog, MuscleLog, WorkoutMuscle, 
@@ -60,10 +60,11 @@ DUMMY_USER_PASSWORD = 'dummypass123'
 def create_user():
     """Create the dummy user."""
     print("Creating dummy user...")
-    
+
     user_access = AccessLevel.objects.get(role_name='user')
     imperial_unit = Unit.objects.get(unit_name='lb')
-    
+    invite_key, _ = InviteKey.objects.get_or_create(key='dev-invite-key-001')
+
     user, created = User.objects.get_or_create(
         username=DUMMY_USER_USERNAME,
         defaults={
@@ -73,6 +74,7 @@ def create_user():
             'first_name': 'Dummy',
             'last_name': 'User',
             'access_level': user_access,
+            'invite_key': invite_key,
             'height': Decimal('72.00'),  # 6 feet in inches
             'birthday': date(1990, 5, 15),
             'gender': 'male',

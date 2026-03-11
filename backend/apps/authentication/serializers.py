@@ -3,7 +3,7 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password
 from django.db import transaction
-from apps.users.models import User, AccessLevel, Unit, ActivityLevel, UserGoal
+from apps.users.models import User, AccessLevel, Unit, ActivityLevel, UserGoal, InviteKey
 from apps.workouts.models import Muscle, MuscleLog
 
 
@@ -45,25 +45,41 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
 
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
-    """Serializer for user registration"""
+    """Serializer for user registration. Requires a valid, unused invite key."""
     password = serializers.CharField(write_only=True, validators=[validate_password])
     password_confirm = serializers.CharField(write_only=True)
-    
+    invite_key = serializers.CharField(write_only=True, required=True)
+
     class Meta:
         model = User
-        fields = ('username', 'email', 'password', 'password_confirm', 'height', 'birthday', 'gender')
+        fields = ('username', 'email', 'password', 'password_confirm', 'invite_key', 'height', 'birthday', 'gender')
         extra_kwargs = {
             'password': {'write_only': True},
         }
 
+    def _validate_invite_key(self, key_value):
+        """Return the InviteKey instance if key is valid and unused; otherwise raise ValidationError."""
+        if not (key_value and key_value.strip()):
+            raise serializers.ValidationError('Invite key is required.')
+        key_value = key_value.strip()
+        invite_key = InviteKey.objects.filter(key=key_value).first()
+        if not invite_key:
+            raise serializers.ValidationError('Invalid invite key.')
+        if User.objects.filter(invite_key=invite_key).exists():
+            raise serializers.ValidationError('This invite key has already been used.')
+        return invite_key
+
     def validate(self, attrs):
         if attrs['password'] != attrs['password_confirm']:
             raise serializers.ValidationError("Passwords don't match.")
+        attrs['_invite_key_instance'] = self._validate_invite_key(attrs['invite_key'])
         return attrs
 
     def create(self, validated_data):
         validated_data.pop('password_confirm')
-        
+        invite_key_instance = validated_data.pop('_invite_key_instance')
+        validated_data.pop('invite_key', None)
+
         with transaction.atomic():
             # Set default access level to 'user'
             user_level, _ = AccessLevel.objects.get_or_create(role_name='user')
@@ -73,6 +89,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
                 email=validated_data['email'],
                 password=validated_data['password'],
                 access_level=user_level,
+                invite_key=invite_key_instance,
                 height=validated_data.get('height'),
                 birthday=validated_data.get('birthday'),
                 gender=validated_data.get('gender'),

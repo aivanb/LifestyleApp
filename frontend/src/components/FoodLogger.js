@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import api from '../services/api';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import FoodMetadataModal from './FoodMetadataModal';
 
 // FoodEditForm Component
@@ -297,17 +297,28 @@ const FoodAnalyticsView = ({ foodId, foodName, analyticsData, loading, onClose, 
     }
   };
 
-  // Format frequency data for chart
-  const chartData = frequencyData?.map(item => ({
-    date: new Date(item.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-    count: item.count
-  })) || [];
+  // Format frequency data for chart: include all dates with count 0 when no data; zeros charted but no dot
+  const rawFreq = frequencyData || [];
+  const countByDate = rawFreq.reduce((acc, item) => {
+    if (item.date != null) acc[item.date] = Number(item.count) || 0;
+    return acc;
+  }, {});
+  const sortedDates = Object.keys(countByDate).sort();
+  const chartData = sortedDates.length
+    ? sortedDates.map((d) => ({
+        date: new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        count: countByDate[d]
+      }))
+    : rawFreq.map((item) => ({
+        date: new Date(item.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        count: Number(item.count) || 0
+      }));
 
-  // Format time of day data for radar chart (24 hours)
-  const radarData = [];
+  // Format time of day data for bar chart (24 hours)
+  const barData = [];
   for (let hour = 0; hour < 24; hour++) {
     const hourData = timeOfDayData?.find(d => d.hour === hour);
-    radarData.push({
+    barData.push({
       hour: hour === 0 ? '12am' : hour < 12 ? `${hour}am` : hour === 12 ? '12pm' : `${hour - 12}pm`,
       count: hourData?.count || 0
     });
@@ -362,7 +373,7 @@ const FoodAnalyticsView = ({ foodId, foodName, analyticsData, loading, onClose, 
                 <YAxis />
                 <Tooltip />
                 <Legend />
-                <Line type="monotone" dataKey="count" stroke="#3b82f6" name="Times Logged" />
+                <Line type="monotone" dataKey="count" stroke="#3b82f6" strokeWidth={3} name="Times Logged" dot={(props) => (props.payload?.count ?? 0) > 0 ? <circle cx={props.cx} cy={props.cy} r={4} fill={props.stroke} /> : null} connectNulls />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -374,13 +385,13 @@ const FoodAnalyticsView = ({ foodId, foodName, analyticsData, loading, onClose, 
           </div>
           <div className="chart-container">
             <ResponsiveContainer width="100%" height={300}>
-              <RadarChart data={radarData}>
-                <PolarGrid />
-                <PolarAngleAxis dataKey="hour" />
-                <PolarRadiusAxis />
-                <Radar name="Count" dataKey="count" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.6} />
+              <BarChart data={barData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="hour" />
+                <YAxis />
                 <Tooltip />
-              </RadarChart>
+                <Bar dataKey="count" fill="#3b82f6" name="Count" radius={[4, 4, 0, 0]} />
+              </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
@@ -779,7 +790,12 @@ const FoodLogger = ({ onFoodLogged, onClose, showAsPanel = false, selectedDate =
                     <div className="food-info">
                       <div className="food-name">{food.food_name}</div>
                       <div className="food-details">
-                        {food.brand && <span className="food-brand">{food.brand}</span>}
+                        {food.brand && (
+                          <>
+                            <span className="food-brand">{food.brand}</span>
+                            <span className="food-details-separator">|</span>
+                          </>
+                        )}
                         <span className="food-serving">{food.serving_size} {food.unit}</span>
                       </div>
                     </div>
@@ -1057,12 +1073,25 @@ const FoodLogger = ({ onFoodLogged, onClose, showAsPanel = false, selectedDate =
         .food-details {
           display: flex;
           gap: var(--space-2);
-          font-size: var(--text-xs);
+          font-size: var(--text-sm);
           color: var(--text-tertiary);
+          flex-wrap: wrap;
+          min-width: 0;
         }
 
         .food-brand {
           font-weight: var(--font-weight-medium);
+          max-width: 100%;
+          word-break: break-word;
+        }
+
+        .food-serving {
+          max-width: 100%;
+          word-break: break-word;
+        }
+
+        .food-details-separator {
+          opacity: 0.7;
         }
 
         .food-macros {
@@ -1147,6 +1176,11 @@ const FoodLogger = ({ onFoodLogged, onClose, showAsPanel = false, selectedDate =
           height: 32px;
           padding: 0;
           border-radius: var(--radius-sm);
+          border: none !important;
+        }
+        .btn-servings:focus {
+          outline: none;
+          box-shadow: none;
         }
 
         .servings-input {
@@ -1207,8 +1241,8 @@ const FoodLogger = ({ onFoodLogged, onClose, showAsPanel = false, selectedDate =
         }
 
         .btn-icon-small:focus {
-          outline: 2px solid var(--accent-primary);
-          outline-offset: 2px;
+          outline: none;
+          box-shadow: none;
         }
 
         .food-metadata-expanded {
@@ -1578,6 +1612,7 @@ const FoodLogger = ({ onFoodLogged, onClose, showAsPanel = false, selectedDate =
           box-sizing: border-box;
           flex-shrink: 0;
           line-height: 0;
+          align-self: center;
         }
 
         .sort-order-btn-inline:hover {
@@ -1589,8 +1624,8 @@ const FoodLogger = ({ onFoodLogged, onClose, showAsPanel = false, selectedDate =
         }
 
         .sort-order-btn-inline:focus {
-          outline: 2px solid var(--accent-primary);
-          outline-offset: 2px;
+          outline: none;
+          box-shadow: none;
         }
 
         .sorting-controls {
@@ -1623,12 +1658,18 @@ const FoodLogger = ({ onFoodLogged, onClose, showAsPanel = false, selectedDate =
           display: flex;
           align-items: center;
           height: 40px;
+          margin: 0;
         }
         
         .sorting-controls-inline {
           display: flex;
           align-items: center;
           gap: var(--space-2);
+          align-self: flex-start;
+        }
+        
+        .sorting-controls-inline .form-select {
+          height: 40px;
         }
 
         .form-select:focus {

@@ -16,6 +16,7 @@ test.describe('Registration flow', () => {
 
     await page.locator('input[name="username"]').fill(unique);
     await page.locator('input[name="email"]').fill(email);
+    await page.locator('input[name="invite_key"]').fill('dev-invite-key-002');
     await page.locator('input[name="password"]').fill('E2ePass123!');
     await page.locator('input[name="password_confirm"]').fill('E2ePass123!');
 

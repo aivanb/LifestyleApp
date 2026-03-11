@@ -18,16 +18,46 @@ class CustomTokenObtainPairView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer
 
 
+def _validate_invite_key(key_value):
+    """Check if an invite key is valid and unused. Returns (is_valid, message)."""
+    from apps.users.models import InviteKey, User
+    if not (key_value and str(key_value).strip()):
+        return False, 'Invite key is required.'
+    key_value = str(key_value).strip()
+    invite_key = InviteKey.objects.filter(key=key_value).first()
+    if not invite_key:
+        return False, 'Invalid invite key.'
+    if User.objects.filter(invite_key=invite_key).exists():
+        return False, 'This invite key has already been used.'
+    return True, None
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def validate_invite_key(request):
+    """Check whether an invite key is valid and unused (for UI feedback)."""
+    key_value = request.data.get('key') or request.data.get('invite_key') or ''
+    is_valid, message = _validate_invite_key(key_value)
+    return Response({
+        'data': {
+            'valid': is_valid,
+            'message': message if not is_valid else None,
+        }
+    })
+
+
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def register(request):
-    """User registration endpoint"""
+    """User registration endpoint. Requires a valid, unused invite key."""
     # The frontend may submit optional fields as empty strings.
     # Normalize those to "missing" so DRF doesn't reject them as invalid types.
     data = request.data.copy() if hasattr(request.data, 'copy') else dict(request.data)
     for key in ('height', 'birthday', 'gender'):
         if key in data and (data.get(key) == '' or data.get(key) is None):
             data.pop(key, None)
+    if 'invite_key' in data and data.get('invite_key') is not None:
+        data['invite_key'] = (data['invite_key'] or '').strip()
 
     serializer = UserRegistrationSerializer(data=data)
     

@@ -135,6 +135,10 @@ export const CircularProgressBar = ({
           margin-top: var(--space-1);
         }
 
+        .circular-progress .progress-label {
+          color: var(--text-secondary);
+        }
+
         .progress-circle {
           /* Removed blue glow filter */
         }
@@ -183,7 +187,7 @@ export const LinearProgressBar = ({
   return (
     <div className="linear-progress">
       <div className="progress-header">
-        <span className="progress-label" style={{ color }}>{label}</span>
+        <span className="progress-label">{label}</span>
         {showValues && (
           <span className="progress-percentage" style={{ color: getProgressColor() }}>
             {Math.round(percentage)}%
@@ -237,12 +241,15 @@ export const LinearProgressBar = ({
           margin-bottom: var(--space-2);
         }
 
-        .progress-label {
+        .linear-progress .progress-label {
           font-size: var(--text-sm);
           font-weight: var(--font-weight-medium);
-          color: var(--text-primary);
+          color: var(--text-secondary);
           text-transform: uppercase;
           letter-spacing: 0.05em;
+        }
+        .expanded-progress-grid .linear-progress .progress-label {
+          color: var(--text-secondary);
         }
 
         .progress-percentage {
@@ -305,8 +312,7 @@ export const ProgressGrid = ({ goals, consumed, className = '' }) => {
     { key: 'calories', goalKey: 'calories_goal', label: 'Calories', color: 'var(--accent-primary)' },
     { key: 'protein', goalKey: 'protein_goal', label: 'Protein', color: 'var(--accent-secondary)' },
     { key: 'fat', goalKey: 'fat_goal', label: 'Fat', color: 'var(--accent-warning)' },
-    { key: 'carbohydrates', goalKey: 'carbohydrates_goal', label: 'Carbs', color: 'var(--accent-info)' },
-    { key: 'sodium', goalKey: 'sodium_goal', label: 'Sodium', color: 'var(--accent-success)' }
+    { key: 'carbohydrates', goalKey: 'carbohydrates_goal', label: 'Carbs', color: 'var(--accent-info)' }
   ];
 
   return (
@@ -318,15 +324,15 @@ export const ProgressGrid = ({ goals, consumed, className = '' }) => {
           target={goals ? (goals[macro.goalKey] || 0) : 0}
           label={macro.label}
           color={macro.color}
-          size={120}
-          strokeWidth={12}
+          size={140}
+          strokeWidth={14}
         />
       ))}
       
       <style>{`
         .progress-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+          grid-template-columns: repeat(4, 1fr);
           gap: var(--space-6);
           justify-items: center;
           align-items: center;
@@ -428,6 +434,16 @@ export const ExpandedProgressView = ({ goals, consumed, onClose }) => {
           font-weight: var(--font-weight-medium);
           margin: 0;
           color: var(--text-primary);
+        }
+        .expanded-progress .btn-icon {
+          outline: none;
+          box-shadow: none;
+          border: none;
+          background: transparent;
+        }
+        .expanded-progress .btn-icon:focus {
+          outline: none;
+          box-shadow: none;
         }
 
         .expanded-progress-grid {

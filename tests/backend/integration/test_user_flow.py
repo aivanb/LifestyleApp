@@ -22,7 +22,7 @@ from rest_framework import status
 from decimal import Decimal
 from datetime import date
 
-from apps.users.models import AccessLevel, Unit, ActivityLevel, UserGoal
+from apps.users.models import AccessLevel, Unit, ActivityLevel, UserGoal, InviteKey
 from apps.logging.models import WeightLog
 
 User = get_user_model()
@@ -60,18 +60,21 @@ class UserFlowIntegrationTest(TransactionTestCase):
             description='Moderate exercise 3-5 days/week',
             multiplier=1.55
         )
-    
+
+        self.invite_key = InviteKey.objects.create(key='integration-test-invite-key')
+
     def test_complete_user_signup_and_setup_flow(self):
         """Test the complete user journey from signup to profile completion"""
-        
+
         # Step 1: User Registration
         registration_data = {
             'username': 'newuser',
             'email': 'newuser@example.com',
             'password': 'SecurePass123!',
-            'password_confirm': 'SecurePass123!'
+            'password_confirm': 'SecurePass123!',
+            'invite_key': self.invite_key.key,
         }
-        
+
         response = self.client.post('/api/auth/register/', registration_data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         

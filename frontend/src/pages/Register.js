@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import Overview from './Overview';
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -9,13 +8,16 @@ const Register = () => {
     email: '',
     password: '',
     password_confirm: '',
+    invite_key: '',
     height: '',
     birthday: '',
     gender: ''
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  
+  const [inviteKeyStatus, setInviteKeyStatus] = useState(null); // null | 'valid' | 'invalid' | 'used'
+  const [inviteKeyChecking, setInviteKeyChecking] = useState(false);
+
   const { register, isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
@@ -26,16 +28,50 @@ const Register = () => {
   }, [isAuthenticated, navigate]);
 
   const handleChange = (e) => {
+    const { name, value } = e.target;
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [name]: value
     });
+    if (name === 'invite_key') {
+      setInviteKeyStatus(null);
+    }
+  };
+
+  const handleInviteKeyBlur = async () => {
+    const key = (formData.invite_key || '').trim();
+    if (!key) {
+      setInviteKeyStatus(null);
+      return;
+    }
+    setInviteKeyChecking(true);
+    setInviteKeyStatus(null);
+    try {
+      const api = (await import('../services/api')).default;
+      const response = await api.validateInviteKey(key);
+      const { valid, message } = response.data?.data || {};
+      if (valid) {
+        setInviteKeyStatus('valid');
+      } else {
+        setInviteKeyStatus(message && message.includes('already been used') ? 'used' : 'invalid');
+      }
+    } catch {
+      setInviteKeyStatus('invalid');
+    } finally {
+      setInviteKeyChecking(false);
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
+
+    if (!(formData.invite_key || '').trim()) {
+      setError('Invite key is required to register.');
+      setLoading(false);
+      return;
+    }
 
     if (formData.password !== formData.password_confirm) {
       setError('Passwords do not match');
@@ -50,6 +86,7 @@ const Register = () => {
         delete payload[key];
       }
     });
+    payload.invite_key = (payload.invite_key || '').trim();
 
     const result = await register(payload);
     
@@ -63,8 +100,8 @@ const Register = () => {
   };
 
   return (
-    <div className="auth-layout" style={{ width: '100%', maxWidth: '1100px', margin: '50px auto', display: 'grid', gap: 'var(--space-6)' }}>
-      <div className="card" style={{ width: '100%', maxWidth: '520px', margin: 0 }}>
+    <div className="auth-layout" style={{ width: '100%', maxWidth: '520px', margin: '50px auto' }}>
+      <div className="card" style={{ width: '100%', margin: 0 }}>
         <h2>Register</h2>
         
         {error && (
@@ -74,6 +111,45 @@ const Register = () => {
         )}
 
         <form onSubmit={handleSubmit}>
+          <div className="form-group">
+            <label className="form-label" htmlFor="invite_key">
+              Invite key *
+            </label>
+            <input
+              type="text"
+              id="invite_key"
+              name="invite_key"
+              className="form-input"
+              style={{ width: '100%' }}
+              value={formData.invite_key}
+              onChange={handleChange}
+              onBlur={handleInviteKeyBlur}
+              required
+              placeholder="Enter your invite key"
+              autoComplete="off"
+            />
+            {inviteKeyChecking && (
+              <span className="form-hint" style={{ fontSize: '0.9rem', color: 'var(--text-muted, #666)' }}>
+                Checking...
+              </span>
+            )}
+            {inviteKeyStatus === 'valid' && !inviteKeyChecking && (
+              <span className="form-hint" style={{ fontSize: '0.9rem', color: 'var(--success, green)' }}>
+                Invite key is valid.
+              </span>
+            )}
+            {inviteKeyStatus === 'invalid' && !inviteKeyChecking && (
+              <span className="form-hint" style={{ fontSize: '0.9rem', color: 'var(--error, #c00)' }}>
+                Invalid invite key.
+              </span>
+            )}
+            {inviteKeyStatus === 'used' && !inviteKeyChecking && (
+              <span className="form-hint" style={{ fontSize: '0.9rem', color: 'var(--error, #c00)' }}>
+                This invite key has already been used.
+              </span>
+            )}
+          </div>
+
           <div className="form-group">
             <label className="form-label" htmlFor="username">
               Username *
@@ -202,23 +278,6 @@ const Register = () => {
           Already have an account? <Link to="/login">Login here</Link>
         </p>
       </div>
-
-      <div style={{ width: '100%' }}>
-        <Overview />
-      </div>
-
-      <style>{`
-        @media (min-width: 980px) {
-          .auth-layout {
-            grid-template-columns: 520px 1fr;
-            align-items: start;
-          }
-          .auth-layout > div:last-child {
-            grid-column: 2;
-            grid-row: 1;
-          }
-        }
-      `}</style>
     </div>
   );
 };

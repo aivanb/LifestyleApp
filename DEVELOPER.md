@@ -57,7 +57,8 @@ TrackingApp/
 
 #### Authentication (`/api/auth/`)
 - `POST /api/auth/login/` - User login, returns JWT tokens
-- `POST /api/auth/register/` - User registration
+- `POST /api/auth/validate-invite-key/` - Check if an invite key is valid and unused (body: `{ "key": "..." }`)
+- `POST /api/auth/register/` - User registration (requires valid `invite_key` in body; each key can only be used once)
 - `POST /api/auth/logout/` - Logout, blacklists refresh token
 - `GET /api/auth/profile/` - Get current user profile
 - `PUT /api/auth/profile/update/` - Update profile

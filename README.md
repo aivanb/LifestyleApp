@@ -79,7 +79,7 @@ The app will be available at:
 
 ### First Time Setup
 
-1. **Create an account**: Navigate to http://localhost:3000 and click "Register"
+1. **Create an account**: Navigate to http://localhost:3000 and click "Register". You will need a valid **invite key** (provided by an administrator or created during database setup; e.g. `dev-invite-key-001` when using `setup_database --required` or `--full`).
 2. **Set your profile**: Add your height, birthday, and activity level
 3. **Set your goals**: Define target weight, calories, and macros
 

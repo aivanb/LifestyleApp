@@ -94,6 +94,10 @@ class ApiService {
     return this.post('/auth/login/', credentials);
   }
 
+  validateInviteKey(key) {
+    return this.post('/auth/validate-invite-key/', { key: key || '' });
+  }
+
   register(userData) {
     return this.post('/auth/register/', userData);
   }

@@ -98,15 +98,22 @@ describe('FoodLoggingDashboard', () => {
     await waitFor(() => {
       expect(screen.getByText('Create Food')).toBeInTheDocument();
     });
-    
-    expect(screen.getByTestId('expanded-progress')).toBeInTheDocument();
+
+    // Default is condensed progress
+    expect(screen.getByTestId('progress-grid')).toBeInTheDocument();
+
+    // Clicking the progress section expands it
+    const progressGrid = screen.getByTestId('progress-grid');
+    progressGrid.parentElement.click();
+    expect(await screen.findByTestId('expanded-progress')).toBeInTheDocument();
   });
 
   test('shows food log section', async () => {
     render(<FoodLoggingDashboard />);
     
     await waitFor(() => {
-      expect(screen.getByText('No food logged today')).toBeInTheDocument();
+      // Empty state renders time separators
+      expect(screen.getByText('12am')).toBeInTheDocument();
     });
   });
 
@@ -118,7 +125,8 @@ describe('FoodLoggingDashboard', () => {
     });
     
     expect(screen.getByText('Create Meal')).toBeInTheDocument();
-    expect(screen.getByText('AI Logger')).toBeInTheDocument();
+    expect(screen.getByText('Voice Logger')).toBeInTheDocument();
+    expect(screen.getByText('Log Water')).toBeInTheDocument();
   });
 
   test('handles mobile layout when screen width is small', async () => {
@@ -135,7 +143,7 @@ describe('FoodLoggingDashboard', () => {
     await waitFor(() => {
       expect(screen.getByText('Create Food')).toBeInTheDocument();
     });
-    
-    expect(screen.getByTestId('expanded-progress')).toBeInTheDocument();
+
+    expect(screen.getByTestId('progress-grid')).toBeInTheDocument();
   });
 });

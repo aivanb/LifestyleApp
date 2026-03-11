@@ -3,7 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { Link, useLocation } from 'react-router-dom';
 
 const Navbar = () => {
-  const { user, isAuthenticated } = useAuth();
+  const { isAuthenticated } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isHamburgerActive, setIsHamburgerActive] = useState(true);
   const hamburgerFadeTimeoutRef = useRef(null);
@@ -91,18 +91,6 @@ const Navbar = () => {
         <div className="sidebar-content">
           {isAuthenticated ? (
             <>
-              <div className="sidebar-user-info">
-                <div className="user-avatar">
-                  <svg className="icon" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-                  </svg>
-                </div>
-                <div className="user-details">
-                  <p className="username">{user?.username}</p>
-                  <p className="user-email">{user?.email}</p>
-                </div>
-              </div>
-              
               <ul className="sidebar-nav">
                 <li>
                   <Link 
@@ -135,7 +123,7 @@ const Navbar = () => {
                     onClick={closeSidebar}
                   >
                     <svg className="icon" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11.707 4.707a1 1 0 00-1.414-1.414L10 9.586 8.707 8.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      <path d="M3 1a1 1 0 000 2h1.22l.305 1.222a.997.997 0 00.01.042H6a1 1 0 00.01-1.82L5.5 2.5H3a1 1 0 00-1 1v.5a1 1 0 001 1h1.382l1.724 8.618A2 2 0 008.234 14h3.532a2 2 0 001.128-3.882L12.5 3.5H17a1 1 0 100-2H3z" />
                     </svg>
                     Food Log
                   </Link>
@@ -147,7 +135,7 @@ const Navbar = () => {
                     onClick={closeSidebar}
                   >
                     <svg className="icon" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11.707 4.707a1 1 0 00-1.414-1.414L10 9.586 8.707 8.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      <path d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 2v8h8V6H6zm4-4v2h2V2h-2zm0 4v2h2V6h-2zm0 4v2h2v-2h-2z" />
                     </svg>
                     Workout Tracker
                   </Link>
@@ -159,21 +147,9 @@ const Navbar = () => {
                     onClick={closeSidebar}
                   >
                     <svg className="icon" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11.707 4.707a1 1 0 00-1.414-1.414L10 9.586 8.707 8.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm3 2a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H7a1 1 0 01-1-1V6zM3 14a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1v-2z" clipRule="evenodd" />
                     </svg>
                     Additional Trackers
-                  </Link>
-                </li>
-                <li>
-                  <Link 
-                    to="/data-viewer" 
-                    className={`sidebar-link ${isActive('/data-viewer') ? 'active' : ''}`}
-                    onClick={closeSidebar}
-                  >
-                    <svg className="icon" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11.707 4.707a1 1 0 00-1.414-1.414L10 9.586 8.707 8.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                    </svg>
-                    Data Viewer
                   </Link>
                 </li>
                 <li>
@@ -186,6 +162,18 @@ const Navbar = () => {
                       <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" />
                     </svg>
                     Analytics
+                  </Link>
+                </li>
+                <li>
+                  <Link 
+                    to="/data-viewer" 
+                    className={`sidebar-link ${isActive('/data-viewer') ? 'active' : ''}`}
+                    onClick={closeSidebar}
+                  >
+                    <svg className="icon" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01.293.707L18 9.414V18a2 2 0 01-2 2H4a2 2 0 01-2-2V4zm2 2v10h12V9.414l-2-2V6H5z" clipRule="evenodd" />
+                    </svg>
+                    Data Viewer
                   </Link>
                 </li>
               </ul>
@@ -351,45 +339,6 @@ const Navbar = () => {
 
         .sidebar-content {
           padding: var(--space-4);
-        }
-
-        .sidebar-user-info {
-          display: flex;
-          align-items: center;
-          gap: var(--space-3);
-          padding: var(--space-3);
-          background: var(--bg-tertiary);
-          border-radius: var(--radius-md);
-          margin-bottom: var(--space-4);
-        }
-
-        .user-avatar {
-          width: 40px;
-          height: 40px;
-          background: var(--accent-primary);
-          border-radius: var(--radius-full);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: white;
-        }
-
-        .user-avatar .icon {
-          width: 20px;
-          height: 20px;
-        }
-
-        .user-details .username {
-          font-weight: var(--font-weight-semibold);
-          color: var(--text-primary);
-          margin: 0;
-          font-size: var(--text-sm);
-        }
-
-        .user-details .user-email {
-          color: var(--text-secondary);
-          margin: 0;
-          font-size: var(--text-xs);
         }
 
         .sidebar-nav {
