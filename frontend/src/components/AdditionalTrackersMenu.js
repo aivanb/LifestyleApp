@@ -1853,7 +1853,7 @@ const AdditionalTrackersMenu = () => {
     <>
     <div className="additional-trackers-container">
       {/* Heatmap Section - Moved to top */}
-      <div style={{ 
+      <div className="trackers-heatmap-card" style={{ 
         background: 'var(--bg-secondary)', 
         border: '1px solid var(--border-primary)',
         borderRadius: 'var(--radius-lg)',
@@ -1942,6 +1942,7 @@ const AdditionalTrackersMenu = () => {
             return (
               <div
                 key={tracker.id}
+                className="tracker-tile"
                 style={{ 
                   backgroundColor: 'var(--bg-secondary)', 
                   border: '1px solid var(--border-primary)',
@@ -2093,6 +2094,23 @@ const AdditionalTrackersMenu = () => {
       {activeModal && renderModalContent()}
 
       <style>{`
+        @media (max-width: 768px) {
+          .trackers-heatmap-card {
+            padding: var(--space-4) !important;
+            margin-bottom: var(--space-6) !important;
+          }
+
+          .tracker-grid {
+            grid-template-columns: 1fr !important;
+            gap: var(--space-4) !important;
+            margin-bottom: var(--space-6) !important;
+          }
+
+          .tracker-tile {
+            padding: var(--space-4) !important;
+          }
+        }
+
         .modal-backdrop {
           position: fixed;
           top: 0;

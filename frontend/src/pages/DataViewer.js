@@ -478,6 +478,33 @@ const DataViewer = () => {
             order: 1;
           }
         }
+
+        @media (max-width: 768px) {
+          .data-viewer {
+            padding: var(--space-4) 0;
+          }
+
+          .data-viewer-layout {
+            gap: var(--space-3);
+          }
+
+          .data-viewer-tables-card,
+          .card {
+            padding: var(--space-4);
+          }
+
+          .tables-list {
+            max-height: 260px;
+          }
+
+          .data-viewer-filters-wrap {
+            margin-top: var(--space-3);
+          }
+
+          .data-viewer-table-wrap {
+            margin-top: var(--space-3);
+          }
+        }
       `}</style>
     </div>
   );

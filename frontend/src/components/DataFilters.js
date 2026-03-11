@@ -228,6 +228,49 @@ const DataFilters = ({ schema, onFilterChange, onSearchChange, onApply, onClear 
         .filter-remove:hover {
           color: #c82333;
         }
+
+        @media (max-width: 768px) {
+          .data-filters {
+            margin-bottom: var(--space-4);
+          }
+
+          .card {
+            padding: var(--space-4);
+          }
+
+          .filter-section {
+            margin-bottom: var(--space-3);
+          }
+
+          .flex.items-center.gap-3.mb-4 {
+            gap: var(--space-2);
+          }
+
+          .flex.gap-4.mt-6 {
+            flex-direction: column;
+            gap: var(--space-3);
+          }
+
+          .btn.btn-primary,
+          .btn.btn-secondary {
+            width: 100%;
+            min-height: 44px;
+            justify-content: center;
+          }
+
+          .form-group {
+            margin-bottom: var(--space-3);
+          }
+
+          .data-filters .form-input {
+            min-height: 44px;
+          }
+
+          .data-filters .btn.btn-secondary svg,
+          .data-filters .btn.btn-primary svg {
+            flex-shrink: 0;
+          }
+        }
       `}</style>
     </div>
   );

@@ -247,6 +247,48 @@ main {
   padding: var(--space-6) 0;
 }
 
+@media (max-width: 768px) {
+  body {
+    font-size: 0.9rem;
+    line-height: var(--leading-relaxed);
+  }
+
+  h1 {
+    font-size: var(--text-2xl);
+    margin-bottom: var(--space-4);
+  }
+
+  h2 {
+    font-size: var(--text-xl);
+    margin-bottom: var(--space-3);
+  }
+
+  h3 {
+    font-size: var(--text-lg);
+    margin-bottom: var(--space-3);
+  }
+
+  .card {
+    padding: var(--space-4);
+    margin-bottom: var(--space-4);
+    box-shadow: var(--shadow-md);
+  }
+
+  .btn {
+    padding: var(--space-2) var(--space-4);
+    font-size: var(--text-sm);
+    min-height: 44px;
+  }
+
+  .form-group {
+    margin-bottom: var(--space-4);
+  }
+
+  .container {
+    padding: 0 var(--space-3);
+  }
+}
+
 /* ==================== Cards ==================== */
 
 .card {

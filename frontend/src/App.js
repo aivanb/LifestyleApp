@@ -147,6 +147,15 @@ const AppStyles = `
     width: 100%;
     max-width: 100%;
   }
+
+  @media (max-width: 768px) {
+    .main-content {
+      margin: var(--space-2);
+      padding: var(--space-4);
+      justify-content: flex-start;
+      align-items: stretch;
+    }
+  }
 `;
 
 // Inject styles

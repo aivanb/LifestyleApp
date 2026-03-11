@@ -82,21 +82,52 @@ const Analytics = () => {
               setMetricOffset={setMetricOffset}
             />
             <div className="analytics-charts-grid analytics-charts-fullwidth">
-              <div className="analytics-chart-card">
-                <WorkoutProgressionChart
-                  dateRangeParams={workoutParams}
-                  workoutId={workoutId}
-                  progressionType={progressionType}
-                  comparisonMetric={comparisonMetric}
-                  metricOffset={metricOffset}
-                  title={workoutId ? selectedWorkoutName || 'Workout' : 'All Workouts'}
+              <div className="analytics-chart-card mobile-collapsible">
+                <input
+                  type="checkbox"
+                  id="workout-progress-collapse"
+                  className="mobile-collapsible-checkbox"
+                  defaultChecked
                 />
+                <label htmlFor="workout-progress-collapse" className="mobile-collapsible-header">
+                  Workout Progression
+                </label>
+                <div className="mobile-collapsible-body">
+                  <WorkoutProgressionChart
+                    dateRangeParams={workoutParams}
+                    workoutId={workoutId}
+                    progressionType={progressionType}
+                    comparisonMetric={comparisonMetric}
+                    metricOffset={metricOffset}
+                    title={workoutId ? selectedWorkoutName || 'Workout' : 'All Workouts'}
+                  />
+                </div>
               </div>
-              <div className="analytics-chart-card">
-                <SetsPerDayChart dateRangeParams={workoutParams} />
+              <div className="analytics-chart-card mobile-collapsible">
+                <input
+                  type="checkbox"
+                  id="sets-per-day-collapse"
+                  className="mobile-collapsible-checkbox"
+                />
+                <label htmlFor="sets-per-day-collapse" className="mobile-collapsible-header">
+                  Sets Per Day
+                </label>
+                <div className="mobile-collapsible-body">
+                  <SetsPerDayChart dateRangeParams={workoutParams} />
+                </div>
               </div>
-              <div className="analytics-chart-card">
-                <ActivationProgressChart dateRangeParams={workoutParams} />
+              <div className="analytics-chart-card mobile-collapsible">
+                <input
+                  type="checkbox"
+                  id="activation-progress-collapse"
+                  className="mobile-collapsible-checkbox"
+                />
+                <label htmlFor="activation-progress-collapse" className="mobile-collapsible-header">
+                  Activation Progress
+                </label>
+                <div className="mobile-collapsible-body">
+                  <ActivationProgressChart dateRangeParams={workoutParams} />
+                </div>
               </div>
             </div>
           </div>
@@ -120,20 +151,71 @@ const Analytics = () => {
               </div>
             </div>
             <div className="analytics-charts-grid analytics-charts-fullwidth">
-              <div className="analytics-chart-card">
-                <FoodMetadataProgressChart dateRangeParams={foodParams} />
+              <div className="analytics-chart-card mobile-collapsible">
+                <input
+                  type="checkbox"
+                  id="food-metadata-collapse"
+                  className="mobile-collapsible-checkbox"
+                  defaultChecked
+                />
+                <label htmlFor="food-metadata-collapse" className="mobile-collapsible-header">
+                  Nutrition Over Time
+                </label>
+                <div className="mobile-collapsible-body">
+                  <FoodMetadataProgressChart dateRangeParams={foodParams} />
+                </div>
               </div>
-              <div className="analytics-chart-card">
-                <FoodTimingChart dateRangeParams={foodParams} />
+              <div className="analytics-chart-card mobile-collapsible">
+                <input
+                  type="checkbox"
+                  id="food-timing-collapse"
+                  className="mobile-collapsible-checkbox"
+                />
+                <label htmlFor="food-timing-collapse" className="mobile-collapsible-header">
+                  Food Timing
+                </label>
+                <div className="mobile-collapsible-body">
+                  <FoodTimingChart dateRangeParams={foodParams} />
+                </div>
               </div>
-              <div className="analytics-chart-card">
-                <MacroSplitChart dateRangeParams={foodParams} />
+              <div className="analytics-chart-card mobile-collapsible">
+                <input
+                  type="checkbox"
+                  id="macro-split-collapse"
+                  className="mobile-collapsible-checkbox"
+                />
+                <label htmlFor="macro-split-collapse" className="mobile-collapsible-header">
+                  Macro Split
+                </label>
+                <div className="mobile-collapsible-body">
+                  <MacroSplitChart dateRangeParams={foodParams} />
+                </div>
               </div>
-              <div className="analytics-chart-card">
-                <FoodFrequencyChart dateRangeParams={foodParams} />
+              <div className="analytics-chart-card mobile-collapsible">
+                <input
+                  type="checkbox"
+                  id="food-frequency-collapse"
+                  className="mobile-collapsible-checkbox"
+                />
+                <label htmlFor="food-frequency-collapse" className="mobile-collapsible-header">
+                  Food Frequency
+                </label>
+                <div className="mobile-collapsible-body">
+                  <FoodFrequencyChart dateRangeParams={foodParams} />
+                </div>
               </div>
-              <div className="analytics-chart-card">
-                <FoodCostChart dateRangeParams={foodParams} />
+              <div className="analytics-chart-card mobile-collapsible">
+                <input
+                  type="checkbox"
+                  id="food-cost-collapse"
+                  className="mobile-collapsible-checkbox"
+                />
+                <label htmlFor="food-cost-collapse" className="mobile-collapsible-header">
+                  Food Cost
+                </label>
+                <div className="mobile-collapsible-body">
+                  <FoodCostChart dateRangeParams={foodParams} />
+                </div>
               </div>
             </div>
           </div>
@@ -194,6 +276,90 @@ const Analytics = () => {
         }
         .analytics-food-date-card .analytics-date-range-selector {
           margin-bottom: 0;
+        }
+
+        /* Mobile collapsible sections */
+        .mobile-collapsible {
+          position: relative;
+        }
+
+        .mobile-collapsible-checkbox {
+          position: absolute;
+          opacity: 0;
+          pointer-events: none;
+        }
+
+        .mobile-collapsible-header {
+          display: none;
+        }
+
+        .mobile-collapsible-body {
+          width: 100%;
+        }
+
+        @media (max-width: 768px) {
+          .analytics-page {
+            padding: var(--space-4);
+          }
+
+          .analytics-tabs {
+            overflow-x: auto;
+          }
+
+          .analytics-tab {
+            padding: var(--space-2) var(--space-4);
+            font-size: var(--text-sm);
+          }
+
+          .analytics-chart-card {
+            padding: var(--space-4);
+          }
+
+          .analytics-food-header {
+            justify-content: center;
+          }
+
+          .analytics-food-date-card {
+            width: 100%;
+            padding: var(--space-3) var(--space-4);
+          }
+
+          .mobile-collapsible-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            padding: var(--space-2) 0;
+            margin-bottom: var(--space-2);
+            font-size: var(--text-sm);
+            font-weight: var(--font-weight-medium);
+            color: var(--text-primary);
+            cursor: pointer;
+          }
+
+          .mobile-collapsible-header::after {
+            content: '▾';
+            font-size: var(--text-sm);
+            color: var(--text-tertiary);
+          }
+
+          .mobile-collapsible-body {
+            display: none;
+          }
+
+          .mobile-collapsible-checkbox:checked ~ .mobile-collapsible-body {
+            display: block;
+          }
+        }
+
+        @media (min-width: 769px) {
+          .mobile-collapsible-header {
+            display: none;
+          }
+
+          .mobile-collapsible-body {
+            display: block !important;
+          }
         }
       `}</style>
     </div>

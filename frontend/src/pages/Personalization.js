@@ -559,6 +559,35 @@ const Personalization = () => {
           .macro-primary-row {
             grid-template-columns: 1fr 1fr;
           }
+
+          .goals-section {
+            padding: var(--space-4);
+            margin-bottom: var(--space-4);
+          }
+
+          .goals-display,
+          .macro-grid {
+            gap: var(--space-3);
+          }
+
+          .goal-item,
+          .macro-item {
+            padding: var(--space-2);
+          }
+
+          .macro-item--primary .macro-value {
+            font-size: var(--text-3xl);
+          }
+
+          .personalization-actions {
+            gap: var(--space-3);
+            padding-right: 0;
+          }
+
+          .personalization-action-btn,
+          .personalization-splits-btn {
+            min-height: 44px;
+          }
         }
       `}</style>
     </div>

@@ -175,6 +175,33 @@ const DataTable = ({
           color: var(--text-secondary);
           font-size: var(--text-sm);
         }
+
+        @media (max-width: 768px) {
+          .data-table-container {
+            margin-top: var(--space-4);
+          }
+
+          .data-table th,
+          .data-table td {
+            padding: var(--space-2);
+            font-size: var(--text-sm);
+          }
+
+          .pagination {
+            flex-direction: column;
+            gap: var(--space-3);
+          }
+
+          .pagination button.btn {
+            width: 100%;
+            min-height: 44px;
+            justify-content: center;
+          }
+
+          .pagination-info {
+            text-align: center;
+          }
+        }
       `}</style>
     </div>
   );

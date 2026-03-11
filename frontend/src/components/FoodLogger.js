@@ -1713,6 +1713,63 @@ const FoodLogger = ({ onFoodLogged, onClose, showAsPanel = false, selectedDate =
         }
 
         @media (max-width: 768px) {
+          .food-logger.panel {
+            padding: var(--space-4);
+            padding-right: var(--space-4);
+          }
+
+          .search-section {
+            padding: var(--space-4);
+          }
+
+          .food-list {
+            padding: var(--space-3);
+          }
+
+          .food-card {
+            padding: var(--space-3);
+            margin-bottom: var(--space-3);
+          }
+
+          .food-header {
+            margin-bottom: var(--space-4);
+          }
+
+          .food-icon {
+            width: 36px;
+            height: 36px;
+            font-size: var(--text-lg);
+          }
+
+          .sorting-controls-inline {
+            width: 100%;
+            flex-wrap: wrap;
+          }
+
+          .sorting-controls-inline .form-group {
+            min-width: 0;
+            flex: 1 1 220px;
+          }
+
+          .sort-order-btn-inline {
+            width: 44px;
+            height: 44px;
+          }
+
+          .time-input {
+            min-height: 44px;
+          }
+
+          .btn-icon-small,
+          .btn-servings {
+            width: 44px;
+            height: 44px;
+          }
+
+          .servings-input {
+            height: 44px;
+          }
+
           .macro-grid {
             grid-template-columns: repeat(2, 1fr);
           }
@@ -1725,6 +1782,10 @@ const FoodLogger = ({ onFoodLogged, onClose, showAsPanel = false, selectedDate =
 
           .servings-control {
             justify-content: center;
+          }
+
+          .btn-log {
+            min-height: 44px;
           }
         }
       `}</style>

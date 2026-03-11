@@ -567,6 +567,22 @@ const Profile = () => {
           .rankings-top-right {
             justify-content: center;
           }
+
+          .user-info-display {
+            padding: var(--space-4);
+          }
+
+          .rank-badge--inside-info {
+            margin-bottom: var(--space-6);
+          }
+
+          .info-grid {
+            gap: var(--space-4);
+          }
+
+          .profile-page-footer {
+            justify-content: center;
+          }
         }
       `}</style>
     </div>
