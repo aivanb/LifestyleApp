@@ -22,6 +22,7 @@ const AdditionalTrackersMenu = () => {
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
   const [hiddenFields, setHiddenFields] = useState({});
   const [expandedTables, setExpandedTables] = useState({}); // Track which tables are expanded
+  const [isMobileView, setIsMobileView] = useState(typeof window !== 'undefined' && window.matchMedia('(max-width: 768px)').matches);
   const [dateRanges, setDateRanges] = useState({
     weight: '2weeks',
     body_measurement: '2weeks',
@@ -859,10 +860,17 @@ const AdditionalTrackersMenu = () => {
     return colors[count] || colors[0];
   };
 
-  const generateLast180Days = () => {
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 768px)');
+    const handler = () => setIsMobileView(mq.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+
+  const generateLastNDays = (maxDays = 180) => {
     const days = [];
     const today = new Date();
-    for (let i = 0; i <= 180; i++) {
+    for (let i = 0; i <= maxDays; i++) {
       const date = new Date(today);
       date.setDate(today.getDate() - i);
       const y = date.getFullYear();
@@ -874,7 +882,8 @@ const AdditionalTrackersMenu = () => {
   };
 
   const generateHeatmapData = () => {
-    const days = generateLast180Days();
+    const maxDays = isMobileView ? 30 : 180;
+    const days = generateLastNDays(maxDays);
     const weeks = Math.ceil(days.length / 5); // 5 rows instead of 7
     const heatmap = [];
     
@@ -1853,7 +1862,7 @@ const AdditionalTrackersMenu = () => {
     <>
     <div className="additional-trackers-container">
       {/* Heatmap Section - Moved to top */}
-      <div className="trackers-heatmap-card" style={{ 
+      <div style={{ 
         background: 'var(--bg-secondary)', 
         border: '1px solid var(--border-primary)',
         borderRadius: 'var(--radius-lg)',
@@ -1942,7 +1951,6 @@ const AdditionalTrackersMenu = () => {
             return (
               <div
                 key={tracker.id}
-                className="tracker-tile"
                 style={{ 
                   backgroundColor: 'var(--bg-secondary)', 
                   border: '1px solid var(--border-primary)',
@@ -2094,23 +2102,6 @@ const AdditionalTrackersMenu = () => {
       {activeModal && renderModalContent()}
 
       <style>{`
-        @media (max-width: 768px) {
-          .trackers-heatmap-card {
-            padding: var(--space-4) !important;
-            margin-bottom: var(--space-6) !important;
-          }
-
-          .tracker-grid {
-            grid-template-columns: 1fr !important;
-            gap: var(--space-4) !important;
-            margin-bottom: var(--space-6) !important;
-          }
-
-          .tracker-tile {
-            padding: var(--space-4) !important;
-          }
-        }
-
         .modal-backdrop {
           position: fixed;
           top: 0;
@@ -2267,6 +2258,58 @@ const AdditionalTrackersMenu = () => {
 
         .btn-secondary:hover {
           background: var(--bg-hover);
+        }
+
+        @media (max-width: 768px) {
+          .additional-trackers-container {
+            padding: var(--space-1) !important;
+          }
+
+          .additional-trackers-container > div:first-of-type {
+            padding: var(--space-2) var(--space-1) !important;
+            margin-bottom: var(--space-3) !important;
+          }
+
+          .tracker-grid {
+            grid-template-columns: 1fr !important;
+            gap: var(--space-3) !important;
+            margin-bottom: var(--space-4) !important;
+          }
+
+          .tracker-grid > div {
+            padding: var(--space-2) var(--space-1) !important;
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
+          }
+
+          .additional-trackers-container .recharts-wrapper {
+            margin: 0;
+            width: 100% !important;
+            min-height: 320px;
+          }
+
+          .additional-trackers-container .recharts-responsive-container {
+            min-height: 320px !important;
+            width: 100% !important;
+          }
+
+          .tracker-grid > div .recharts-responsive-container {
+            width: 100% !important;
+          }
+
+          .additional-trackers-container .recharts-surface {
+            width: 100% !important;
+          }
+
+          .additional-trackers-container .recharts-cartesian-axis-tick text,
+          .additional-trackers-container .recharts-legend-item-text {
+            font-size: 16px !important;
+          }
+
+          .additional-trackers-container .recharts-cartesian-grid {
+            stroke-width: 0.5;
+          }
         }
       `}</style>
     </>

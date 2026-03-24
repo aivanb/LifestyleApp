@@ -72,7 +72,9 @@ class ProfileViewTest(APITestCase):
         self.assertIn('goals', data)
         self.assertIn('metrics', data)
         self.assertIn('historical', data)
-        
+        self.assertIn('units', data)
+        self.assertGreaterEqual(len(data['units']), 1)
+
         # Check user data
         user_data = data['user']
         self.assertEqual(user_data['username'], 'testuser')
@@ -153,4 +155,53 @@ class ProfileViewTest(APITestCase):
         response = self.client.get(url)
         
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_put_profile_updates_identity_and_units(self):
+        """PUT persists first/last name, username, email, and unit preference."""
+        from apps.users.models import Unit
+
+        imperial, _ = Unit.objects.get_or_create(unit_name='lbs')
+        url = '/api/users/profile/'
+        self.user.first_name = 'Old'
+        self.user.last_name = 'Name'
+        self.user.save()
+
+        payload = {
+            'first_name': 'Ada',
+            'last_name': 'Lovelace',
+            'username': 'adal',
+            'email': 'ada_new@example.com',
+            'unit_preference': imperial.unit_id,
+            'height': 175.0,
+            'birthday': str(self.user.birthday),
+            'gender': 'female',
+            'activity_level': self.activity_level.activity_level_id,
+        }
+        response = self.client.put(url, payload, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.first_name, 'Ada')
+        self.assertEqual(self.user.last_name, 'Lovelace')
+        self.assertEqual(self.user.username, 'adal')
+        self.assertEqual(self.user.email, 'ada_new@example.com')
+        self.assertEqual(self.user.unit_preference_id, imperial.unit_id)
+
+        get_resp = self.client.get(url)
+        self.assertEqual(get_resp.status_code, status.HTTP_200_OK)
+        user_data = get_resp.data['data']['user']
+        self.assertEqual(user_data['first_name'], 'Ada')
+        self.assertEqual(user_data['last_name'], 'Lovelace')
+
+    def test_put_profile_rejects_duplicate_username(self):
+        """PUT returns 400 when username is taken by another user."""
+        User.objects.create_user(
+            username='otheruser',
+            email='other@example.com',
+            password='x',
+            access_level=self.access_level,
+        )
+        url = '/api/users/profile/'
+        response = self.client.put(url, {'username': 'otheruser'}, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 

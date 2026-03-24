@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import api from '../services/api';
 import voiceService from '../services/voiceService';
+import { mergeApiFoodWithPrevious, buildFoodLayerFromParse } from '../utils/foodParsePreview';
 
 /**
  * FoodChatbot Component
@@ -11,7 +12,7 @@ import voiceService from '../services/voiceService';
  * - Parse and log multiple foods with inline preview
  * - Create meals from parsed foods
  */
-const FoodChatbot = ({ onFoodsLogged }) => {
+const FoodChatbot = ({ onFoodsLogged, onClose }) => {
   const [inputText, setInputText] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -20,7 +21,6 @@ const FoodChatbot = ({ onFoodsLogged }) => {
   const [recordingTime, setRecordingTime] = useState(0);
   const [interimText, setInterimText] = useState('');
   const [createMeal, setCreateMeal] = useState(false);
-  const [aiStats, setAiStats] = useState({ tokens: 0, prompts: 0 });
   const [showPreview, setShowPreview] = useState(false);
   const [previewData, setPreviewData] = useState(null);
   const [previewInputText, setPreviewInputText] = useState('');
@@ -32,7 +32,6 @@ const FoodChatbot = ({ onFoodsLogged }) => {
   const previewTextareaRef = useRef(null);
 
   useEffect(() => {
-    loadAiStats();
     return () => {
       if (timerRef.current) {
         clearInterval(timerRef.current);
@@ -57,21 +56,6 @@ const FoodChatbot = ({ onFoodsLogged }) => {
       previewTextareaRef.current.style.height = `${previewTextareaRef.current.scrollHeight}px`;
     }
   }, [previewInputText]);
-
-  const loadAiStats = async () => {
-    try {
-      const response = await api.getUsageStats();
-      if (response.data && response.data.data) {
-        setAiStats({
-          tokens: response.data.data.total_tokens || 0,
-          prompts: response.data.data.total_requests || 0
-        });
-      }
-    } catch (err) {
-      console.error('Failed to load AI stats:', err);
-      setAiStats({ tokens: 0, prompts: 0 });
-    }
-  };
 
   const startVoiceRecording = async () => {
     if (!voiceService.isVoiceSupported()) {
@@ -126,6 +110,31 @@ const FoodChatbot = ({ onFoodsLogged }) => {
     setIsRecording(false);
   };
 
+  const metadataFields = [
+    { key: 'serving_size', label: 'Serving Size', type: 'number', step: '0.01' },
+    { key: 'unit', label: 'Unit', type: 'text' },
+    { key: 'calories', label: 'Calories', type: 'number', step: '0.01' },
+    { key: 'protein', label: 'Protein (g)', type: 'number', step: '0.01' },
+    { key: 'fat', label: 'Fat (g)', type: 'number', step: '0.01' },
+    { key: 'carbohydrates', label: 'Carbs (g)', type: 'number', step: '0.01' },
+    { key: 'fiber', label: 'Fiber (g)', type: 'number', step: '0.01' },
+    { key: 'sodium', label: 'Sodium (mg)', type: 'number', step: '0.01' },
+    { key: 'sugar', label: 'Sugar (g)', type: 'number', step: '0.01' },
+    { key: 'saturated_fat', label: 'Saturated Fat (g)', type: 'number', step: '0.01' },
+    { key: 'trans_fat', label: 'Trans Fat (g)', type: 'number', step: '0.01' },
+    { key: 'calcium', label: 'Calcium (mg)', type: 'number', step: '0.01' },
+    { key: 'iron', label: 'Iron (mg)', type: 'number', step: '0.01' },
+    { key: 'magnesium', label: 'Magnesium (mg)', type: 'number', step: '0.01' },
+    { key: 'cholesterol', label: 'Cholesterol (mg)', type: 'number', step: '0.01' },
+    { key: 'vitamin_a', label: 'Vitamin A (IU)', type: 'number', step: '0.01' },
+    { key: 'vitamin_c', label: 'Vitamin C (mg)', type: 'number', step: '0.01' },
+    { key: 'vitamin_d', label: 'Vitamin D (IU)', type: 'number', step: '0.01' },
+    { key: 'caffeine', label: 'Caffeine (mg)', type: 'number', step: '0.01' },
+    { key: 'food_group', label: 'Food Group', type: 'select', options: ['fruit', 'vegetable', 'grain', 'protein', 'dairy', 'other'] },
+    { key: 'brand', label: 'Brand', type: 'text' },
+    { key: 'cost', label: 'Cost', type: 'number', step: '0.01' }
+  ];
+
   const handlePreview = async () => {
     const textToUse = inputText.trim() || interimText.trim();
     if (!textToUse) {
@@ -138,10 +147,7 @@ const FoodChatbot = ({ onFoodsLogged }) => {
 
     try {
       const response = await api.parseFoodInput(textToUse, createMeal, true);
-      console.log('Parse response:', response);
-      console.log('Response status:', response.status);
-      console.log('Response data:', response.data);
-      
+
       // Handle both success (200) and partial success (207) responses
       // Backend returns: {data: result} on 200, or {error: {...}, data: result} on 207
       let result = null;
@@ -159,17 +165,26 @@ const FoodChatbot = ({ onFoodsLogged }) => {
         result = response.data;
       }
 
-      console.log('Extracted result:', result);
-      console.log('Foods parsed:', result?.foods_parsed);
-      console.log('Result success:', result?.success);
-      console.log('Result errors:', result?.errors);
-
       // Check if we have foods_parsed, even if success is false
       // The backend returns foods_parsed even when success=false if foods were found
       if (result && result.foods_parsed && Array.isArray(result.foods_parsed) && result.foods_parsed.length > 0) {
         setPreviewData(result);
         setPreviewInputText(textToUse);
-        setEditedFoods(result.foods_parsed.map(food => ({ ...food })));
+        const mergeWithPrevious = showPreview && editedFoods.length > 0;
+        const normalizedFoods = result.foods_parsed.map((parsed, index) => {
+          const previousRow = mergeWithPrevious ? editedFoods[index] : null;
+          const apiLayer = buildFoodLayerFromParse(parsed, metadataFields);
+          const mergedFood = mergeApiFoodWithPrevious(apiLayer, previousRow?.food, metadataFields);
+          const servingsRaw = parsed.servings ?? previousRow?.servings ?? 1;
+          const servingsNum = typeof servingsRaw === 'number' ? servingsRaw : parseFloat(servingsRaw);
+          return {
+            ...parsed,
+            food: mergedFood,
+            servings: Number.isFinite(servingsNum) ? servingsNum : 1
+          };
+        });
+
+        setEditedFoods(normalizedFoods);
         setShowPreview(true);
         setError(''); // Clear any previous errors
         
@@ -228,10 +243,11 @@ const FoodChatbot = ({ onFoodsLogged }) => {
 
   const handleFoodEdit = (index, field, value) => {
     const updated = [...editedFoods];
-    if (updated[index].food) {
+    if (field === 'servings') {
+      const n = parseFloat(value);
+      updated[index] = { ...updated[index], servings: Number.isFinite(n) ? n : 0 };
+    } else if (updated[index].food) {
       updated[index].food = { ...updated[index].food, [field]: value };
-    } else if (field === 'servings') {
-      updated[index].servings = parseFloat(value) || 0;
     }
     setEditedFoods(updated);
   };
@@ -282,7 +298,7 @@ const FoodChatbot = ({ onFoodsLogged }) => {
               caffeine: edited.food.caffeine,
               food_group: edited.food.food_group,
               brand: edited.food.brand || '',
-              cost: edited.food.cost || null
+              cost: edited.food.cost ?? null
             };
             
             try {
@@ -319,7 +335,6 @@ const FoodChatbot = ({ onFoodsLogged }) => {
         setShowPreview(false);
         setPreviewData(null);
         setEditedFoods([]);
-        loadAiStats();
         if (onFoodsLogged) {
           onFoodsLogged();
         }
@@ -351,37 +366,19 @@ const FoodChatbot = ({ onFoodsLogged }) => {
     }
   };
 
-  const metadataFields = [
-    { key: 'serving_size', label: 'Serving Size', type: 'number', step: '0.01' },
-    { key: 'unit', label: 'Unit', type: 'text' },
-    { key: 'calories', label: 'Calories', type: 'number', step: '0.01' },
-    { key: 'protein', label: 'Protein (g)', type: 'number', step: '0.01' },
-    { key: 'fat', label: 'Fat (g)', type: 'number', step: '0.01' },
-    { key: 'carbohydrates', label: 'Carbs (g)', type: 'number', step: '0.01' },
-    { key: 'fiber', label: 'Fiber (g)', type: 'number', step: '0.01' },
-    { key: 'sodium', label: 'Sodium (mg)', type: 'number', step: '0.01' },
-    { key: 'sugar', label: 'Sugar (g)', type: 'number', step: '0.01' },
-    { key: 'saturated_fat', label: 'Saturated Fat (g)', type: 'number', step: '0.01' },
-    { key: 'trans_fat', label: 'Trans Fat (g)', type: 'number', step: '0.01' },
-    { key: 'calcium', label: 'Calcium (mg)', type: 'number', step: '0.01' },
-    { key: 'iron', label: 'Iron (mg)', type: 'number', step: '0.01' },
-    { key: 'magnesium', label: 'Magnesium (mg)', type: 'number', step: '0.01' },
-    { key: 'cholesterol', label: 'Cholesterol (mg)', type: 'number', step: '0.01' },
-    { key: 'vitamin_a', label: 'Vitamin A (IU)', type: 'number', step: '0.01' },
-    { key: 'vitamin_c', label: 'Vitamin C (mg)', type: 'number', step: '0.01' },
-    { key: 'vitamin_d', label: 'Vitamin D (IU)', type: 'number', step: '0.01' },
-    { key: 'caffeine', label: 'Caffeine (mg)', type: 'number', step: '0.01' },
-    { key: 'food_group', label: 'Food Group', type: 'select', options: ['fruit', 'vegetable', 'grain', 'protein', 'dairy', 'other'] },
-    { key: 'brand', label: 'Brand', type: 'text' },
-    { key: 'cost', label: 'Cost', type: 'number', step: '0.01' }
-  ];
-
   return (
     <div className="food-chatbot">
+      {onClose && (
+        <div className="chatbot-modal-header modal-app-header modal-app-header--compact">
+          <h2 className="modal-app-header__title">Voice Food Log</h2>
+          <button type="button" className="btn-close modal-app-header__close chatbot-close" onClick={onClose} aria-label="Close">
+            <svg className="icon icon-md" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+            </svg>
+          </button>
+        </div>
+      )}
       <div className="chatbot-layout">
-        {/* Text Input Card - 80% of left side */}
-        <div className="chatbot-input-card">
-          <div className="card">
             {error && (
               <div className="error-message mb-4">
                 <svg className="icon icon-sm" viewBox="0 0 20 20" fill="currentColor">
@@ -440,29 +437,29 @@ const FoodChatbot = ({ onFoodsLogged }) => {
             </div>
 
             {/* Actions */}
-            <div className="flex gap-6 justify-center">
+            <div className="flex gap-2 justify-center chatbot-action-buttons">
               <button
-                className={`btn btn-voice-logger ${isRecording ? 'recording' : ''}`}
+                className={`btn btn-voice-logger btn-icon-only ${isRecording ? 'recording' : ''}`}
                 onClick={isRecording ? stopVoiceRecording : startVoiceRecording}
                 disabled={loading}
                 title={isRecording ? 'Stop Recording' : 'Voice Logger'}
+                aria-label={isRecording ? 'Stop Recording' : 'Voice Logger'}
               >
                 <svg className="icon icon-md" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8a1 1 0 10-2 0A5 5 0 015 8a1 1 0 00-2 0 7.001 7.001 0 006 6.93V17H6a1 1 0 100 2h8a1 1 0 100-2h-3v-2.07z" clipRule="evenodd" />
                 </svg>
-                Voice Logger
               </button>
 
               <button
-                className="btn btn-primary"
+                className="btn btn-primary btn-icon-only"
                 onClick={handlePreview}
                 disabled={loading || (!inputText.trim() && !interimText.trim())}
                 title={loading ? 'Parsing...' : 'Parse Food'}
+                aria-label="Parse Food"
               >
                 <svg className="icon icon-md" viewBox="0 0 20 20" fill="currentColor">
                   <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
                 </svg>
-                Parse Food
               </button>
             </div>
 
@@ -501,16 +498,6 @@ const FoodChatbot = ({ onFoodsLogged }) => {
                     <div key={index} className="preview-food-card">
                       <div className="preview-food-header">
                         <h4>{food.name}</h4>
-                        <div className="servings-input">
-                          <label>Servings:</label>
-                          <input
-                            type="number"
-                            step="0.1"
-                            value={food.servings}
-                            onChange={(e) => handleFoodEdit(index, 'servings', e.target.value)}
-                            className="form-input-small"
-                          />
-                        </div>
                       </div>
 
                       {food.food && (
@@ -521,7 +508,7 @@ const FoodChatbot = ({ onFoodsLogged }) => {
                                 <label className="metadata-label">{field.label}</label>
                                 {field.type === 'select' ? (
                                   <select
-                                    value={food.food[field.key] || ''}
+                                    value={food.food[field.key] ?? ''}
                                     onChange={(e) => handleFoodEdit(index, field.key, e.target.value)}
                                     className="form-input-small"
                                   >
@@ -533,13 +520,28 @@ const FoodChatbot = ({ onFoodsLogged }) => {
                                   <input
                                     type={field.type}
                                     step={field.step}
-                                    value={food.food[field.key] || ''}
+                                    value={
+                                      field.type === 'number' && food.food[field.key] !== undefined && food.food[field.key] !== null
+                                        ? food.food[field.key]
+                                        : (food.food[field.key] ?? '')
+                                    }
                                     onChange={(e) => handleFoodEdit(index, field.key, e.target.value)}
                                     className="form-input-small"
                                   />
                                 )}
                               </div>
                             ))}
+                          </div>
+                          <div className="preview-servings-row">
+                            <label className="preview-servings-label" htmlFor={`preview-servings-${index}`}>Servings</label>
+                            <input
+                              id={`preview-servings-${index}`}
+                              type="number"
+                              step="0.1"
+                              value={food.servings}
+                              onChange={(e) => handleFoodEdit(index, 'servings', e.target.value)}
+                              className="form-input preview-servings-input"
+                            />
                           </div>
                         </div>
                       )}
@@ -566,7 +568,7 @@ const FoodChatbot = ({ onFoodsLogged }) => {
 
                 <div className="preview-actions">
                   <button
-                    className="btn btn-secondary"
+                    className="btn btn-secondary btn-preview-action"
                     onClick={() => {
                       setPreviewInputText(previewInputText);
                       setShowPreview(false);
@@ -577,7 +579,7 @@ const FoodChatbot = ({ onFoodsLogged }) => {
                     Re-parse
                   </button>
                   <button
-                    className="btn btn-primary"
+                    className="btn btn-primary btn-preview-action"
                     onClick={handleConfirmLog}
                     disabled={loading}
                   >
@@ -586,24 +588,6 @@ const FoodChatbot = ({ onFoodsLogged }) => {
                 </div>
               </div>
             )}
-          </div>
-        </div>
-
-        {/* AI Usage Statistics - 20% of right side */}
-        <div className="chatbot-stats-card">
-          <div className="card">
-            <div className="ai-stats-grid">
-              <div className="stat-item">
-                <div className="stat-label">Prompts Sent (past 10 days)</div>
-                <div className="stat-value">{aiStats.prompts}</div>
-              </div>
-              <div className="stat-item">
-                <div className="stat-label">Tokens Used (past 10 days)</div>
-                <div className="stat-value">{aiStats.tokens.toLocaleString()}</div>
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
 
       {/* Recent Interactions */}
@@ -646,21 +630,80 @@ const FoodChatbot = ({ onFoodsLogged }) => {
       )}
 
       <style>{`
+        .chatbot-modal-header.modal-app-header {
+          flex-shrink: 0;
+        }
+
+        .chatbot-close {
+          padding: var(--space-2);
+          color: var(--text-tertiary);
+        }
+
+        .chatbot-close:hover {
+          color: var(--text-primary);
+        }
+
         .chatbot-layout {
-          display: grid;
-          grid-template-columns: 80% 20%;
-          gap: var(--space-4);
-          margin-bottom: var(--space-6);
-        }
-
-        .chatbot-input-card {
           display: flex;
           flex-direction: column;
+          gap: var(--space-1);
+          margin-bottom: var(--space-2);
+          flex: 1;
+          min-width: 0;
+          padding: var(--space-2);
         }
 
-        .chatbot-stats-card {
+        .chatbot-layout .form-group {
+          margin-bottom: var(--space-2);
+        }
+
+        .chatbot-layout .form-label {
+          margin-bottom: var(--space-1);
+          font-size: var(--text-xs);
+        }
+
+        .btn-icon-only {
+          padding: var(--space-2);
+        }
+
+        .btn-icon-only .icon {
+          margin: 0;
+        }
+
+        .preview-servings-row {
           display: flex;
-          flex-direction: column;
+          flex-direction: row;
+          align-items: center;
+          gap: var(--space-2);
+          margin-top: var(--space-1);
+          padding-top: var(--space-1);
+          border-top: 1px solid var(--border-primary);
+          flex-wrap: wrap;
+        }
+
+        .preview-servings-label {
+          font-size: var(--text-xs);
+          font-weight: var(--font-weight-medium);
+          color: var(--text-secondary);
+          white-space: nowrap;
+        }
+
+        .preview-servings-input {
+          width: min(100%, 220px);
+          min-width: 140px;
+          flex: 1 1 160px;
+          padding: var(--space-1) var(--space-2);
+          font-size: var(--text-xs);
+          border: 1px solid var(--border-primary) !important;
+          border-radius: var(--radius-md);
+          box-shadow: none !important;
+          background: var(--bg-tertiary);
+          box-sizing: border-box;
+        }
+
+        .btn-preview-action {
+          padding: var(--space-2) var(--space-3);
+          font-size: var(--text-sm);
         }
 
         .chatbot-textarea {
@@ -706,9 +749,10 @@ const FoodChatbot = ({ onFoodsLogged }) => {
         .checkbox-container {
           display: flex;
           align-items: center;
-          gap: var(--space-3);
+          gap: var(--space-2);
           cursor: pointer;
           user-select: none;
+          padding: 0;
         }
 
         .checkbox-input {
@@ -757,7 +801,7 @@ const FoodChatbot = ({ onFoodsLogged }) => {
           display: flex;
           align-items: center;
           gap: var(--space-2);
-          padding: var(--space-3) var(--space-4);
+          padding: var(--space-2) var(--space-3);
         }
 
         .btn-voice-logger.recording {
@@ -788,20 +832,22 @@ const FoodChatbot = ({ onFoodsLogged }) => {
         }
 
         .preview-section {
-          margin-top: var(--space-6);
-          padding-top: var(--space-6);
-          border-top: 2px solid var(--border-primary);
+          margin-top: var(--space-2);
+          padding-top: var(--space-2);
+          border-top: 1px solid var(--border-primary);
         }
 
         .preview-header {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          margin-bottom: var(--space-4);
+          margin-bottom: var(--space-1);
         }
 
         .preview-header h3 {
           margin: 0;
+          font-size: var(--text-sm);
+          font-weight: var(--font-weight-semibold);
         }
 
         .btn-icon-close {
@@ -818,25 +864,25 @@ const FoodChatbot = ({ onFoodsLogged }) => {
         }
 
         .preview-foods-list {
-          margin-top: var(--space-4);
+          margin-top: var(--space-2);
         }
 
         .preview-food-card {
           background: var(--bg-secondary);
           border: 1px solid var(--border-primary);
           border-radius: var(--radius-lg);
-          padding: var(--space-4);
-          margin-bottom: var(--space-4);
+          padding: var(--space-3);
+          margin-bottom: var(--space-2);
           overflow: hidden;
           box-sizing: border-box;
         }
 
         .preview-food-header {
           display: flex;
-          justify-content: space-between;
+          justify-content: flex-start;
           align-items: center;
-          margin-bottom: var(--space-4);
-          gap: var(--space-3);
+          margin-bottom: var(--space-2);
+          gap: var(--space-2);
           flex-wrap: wrap;
         }
 
@@ -845,7 +891,7 @@ const FoodChatbot = ({ onFoodsLogged }) => {
           font-size: var(--text-lg);
           font-weight: var(--font-weight-semibold);
           color: var(--text-primary);
-          flex: 1;
+          width: 100%;
           min-width: 0;
         }
 
@@ -865,8 +911,8 @@ const FoodChatbot = ({ onFoodsLogged }) => {
         .form-input-small {
           max-width: 100px;
           width: 100%;
-          padding: var(--space-2) var(--space-3);
-          font-size: var(--text-sm);
+          padding: var(--space-1) var(--space-2);
+          font-size: var(--text-xs);
           border: 1px solid var(--border-primary);
           border-radius: var(--radius-md);
           background: var(--bg-tertiary);
@@ -876,21 +922,21 @@ const FoodChatbot = ({ onFoodsLogged }) => {
         }
 
         .preview-food-metadata {
-          margin-top: var(--space-4);
+          margin-top: var(--space-1);
           overflow: auto;
-          max-height: 320px;
+          max-height: min(280px, 42vh);
         }
 
         .metadata-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-          gap: var(--space-3);
+          grid-template-columns: repeat(auto-fill, minmax(128px, 1fr));
+          gap: var(--space-2);
         }
 
         .metadata-field {
           display: flex;
           flex-direction: column;
-          gap: var(--space-1);
+          gap: 2px;
           min-width: 0;
         }
 
@@ -909,9 +955,9 @@ const FoodChatbot = ({ onFoodsLogged }) => {
         .preview-actions {
           display: flex;
           justify-content: flex-end;
-          gap: var(--space-3);
-          margin-top: var(--space-4);
-          padding-top: var(--space-4);
+          gap: var(--space-2);
+          margin-top: var(--space-1);
+          padding-top: var(--space-1);
           border-top: 1px solid var(--border-primary);
         }
 
@@ -920,9 +966,38 @@ const FoodChatbot = ({ onFoodsLogged }) => {
           color: var(--accent-danger);
         }
 
+        .modal--food-chatbot .food-chatbot {
+          margin: 0 !important;
+          max-width: 100% !important;
+          padding: 0 !important;
+        }
+
+        .modal--food-chatbot .chatbot-layout {
+          padding: var(--space-2) !important;
+        }
+
+        .food-chatbot .error-message.mb-4 {
+          margin-bottom: var(--space-2) !important;
+        }
+
+        .food-chatbot .chatbot-action-buttons {
+          gap: var(--space-2) !important;
+        }
+
         @media (max-width: 768px) {
+          .food-chatbot {
+            width: 100%;
+            max-width: 92%;
+            box-sizing: border-box;
+            overflow-x: hidden;
+            padding: var(--space-2);
+            margin: 0 auto;
+          }
+
           .chatbot-layout {
             grid-template-columns: 1fr;
+            width: 100%;
+            min-width: 0;
           }
 
           .metadata-grid {
@@ -934,6 +1009,28 @@ const FoodChatbot = ({ onFoodsLogged }) => {
             align-items: flex-start;
             gap: var(--space-2);
           }
+
+          .preview-foods-list,
+          .parsed-foods-table {
+            max-width: 100%;
+            overflow-x: auto;
+          }
+
+          .chatbot-input-section,
+          .parsed-foods-section,
+          [class*="parser"],
+          .preview-section {
+            max-width: 100%;
+            width: 100%;
+            box-sizing: border-box;
+          }
+
+          .preview-servings-input {
+            width: min(100%, 260px);
+            min-width: 180px;
+            max-width: 100%;
+          }
+
         }
       `}</style>
     </div>

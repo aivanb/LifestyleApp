@@ -47,21 +47,27 @@ Input: "{input_text}"
 CRITICAL INSTRUCTIONS:
 1. Return ONLY a JSON array. No explanations, no markdown code blocks, just raw JSON.
 2. Extract each food/meal mentioned
-3. For metadata, ONLY include: brand name if mentioned
-4. Do NOT include: quantity, servings, protein_per_item, or any nutritional data in metadata
-5. Nutritional data will be looked up separately
+3. For metadata, include ONLY fields the user clearly stated (no guessing macros):
+   - "brand": string if a brand is mentioned
+   - "cost": number (USD, e.g. 4.99) if the user gives a price ("$3", "5 dollars", "about 2 bucks")
+   - "servings": number if an explicit quantity is given for that item (e.g. "2 apples" → servings 2)
+4. Do NOT include calories, protein, or other full nutrition in metadata (those are filled by a separate step)
+5. Nutritional data will be looked up or generated separately
 
 Required JSON format:
 [
-  {{"name": "food name", "metadata": {{"brand": "Brand Name"}}}}
+  {{"name": "food name", "metadata": {{"brand": "Brand Name", "cost": 3.5}}}}
 ]
 
 Examples:
 Input: "3 brown eggs from Trader Joe's"
-Output: [{{"name": "brown eggs", "metadata": {{"brand": "Trader Joes"}}}}]
+Output: [{{"name": "brown eggs", "metadata": {{"brand": "Trader Joes", "servings": 3}}}}]
 
 Input: "chicken breast and rice"
 Output: [{{"name": "chicken breast", "metadata": {{}}}}, {{"name": "rice", "metadata": {{}}}}]
+
+Input: "$5 turkey sandwich"
+Output: [{{"name": "turkey sandwich", "metadata": {{"cost": 5}}}}]
 
 Input: "My Breakfast"
 Output: [{{"name": "My Breakfast", "metadata": {{}}}}]
@@ -81,9 +87,10 @@ CRITICAL INSTRUCTIONS:
 3. If a field already has a value in "Existing metadata", use that exact value - DO NOT override it
 4. For missing fields, provide accurate values based on USDA nutritional data for similar foods
 5. The brand field should contain the actual brand name if mentioned (e.g., "Trader Joes", "Kodiak", "Chobani")
-6. Never leave fields null or empty - use 0 if truly unknown
-7. Use appropriate serving sizes (e.g., 100g for most foods, 1 cup for liquids, 1 item for whole items)
-8. Be realistic with micronutrients - don't make up excessive vitamin/mineral values
+6. Never leave numeric nutrition fields null - use 0 if truly unknown
+7. **cost**: required numeric USD — your best estimate of typical US retail price for **one serving** as described (single banana, one restaurant meal, 100g dry rice, etc.). Use 0 only if you cannot estimate at all.
+8. Use appropriate serving sizes (e.g., 100g for most foods, 1 cup for liquids, 1 item for whole items)
+9. Be realistic with micronutrients - don't make up excessive vitamin/mineral values
 
 Required JSON structure (include ALL these fields):
 {{
@@ -108,7 +115,7 @@ Required JSON structure (include ALL these fields):
   "caffeine": 0,
   "food_group": "protein",
   "brand": "",
-  "cost": null
+  "cost": 2.49
 }}
 
 Food groups: "protein", "grain", "vegetable", "fruit", "dairy", "other"
@@ -173,7 +180,9 @@ Return ONLY the JSON object, nothing else.
                     'name': processed['name'],
                     'source': processed['source'],
                     'servings': float(processed.get('servings', 1)),
-                    'error': processed.get('error')
+                    'error': processed.get('error'),
+                    # Hints from the parse step (brand, user-mentioned price, etc.) for client preview
+                    'metadata': processed.get('metadata') or {},
                 }
                 
                 # Add food info if available
@@ -203,7 +212,8 @@ Return ONLY the JSON object, nothing else.
                         'caffeine': float(food.caffeine),
                         'food_group': food.food_group,
                         'brand': food.brand or '',
-                        'cost': float(food.cost) if food.cost else None
+                        # Use `is not None` so Decimal('0') is included (truthiness would drop zero)
+                        'cost': float(food.cost) if food.cost is not None else None
                     }
                 
                 # Add meal info if available

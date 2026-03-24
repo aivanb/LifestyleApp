@@ -1,407 +1,440 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { Link, useLocation } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
+import {
+  HomeIcon,
+  UserCircleIcon,
+  Cog6ToothIcon,
+  BoltIcon,
+  Squares2X2Icon,
+  ChartBarIcon,
+  CircleStackIcon,
+  RectangleGroupIcon,
+  ArrowRightOnRectangleIcon,
+  UserPlusIcon,
+} from '@heroicons/react/24/outline';
+
+const AUTH_LINKS = [
+  { to: '/home', label: 'Home', Icon: HomeIcon },
+  { to: '/profile', label: 'Profile', Icon: UserCircleIcon },
+  { to: '/personalization', label: 'Personalization', Icon: Cog6ToothIcon },
+  { to: '/food-log', label: 'Food log', Icon: Squares2X2Icon },
+  { to: '/workout-tracker', label: 'Workout', Icon: BoltIcon },
+  { to: '/additional-trackers', label: 'Trackers', Icon: RectangleGroupIcon },
+  { to: '/analytics', label: 'Analytics', Icon: ChartBarIcon },
+  { to: '/data-viewer', label: 'Data', Icon: CircleStackIcon },
+];
+
+const GUEST_LINKS = [
+  { to: '/login', label: 'Login', Icon: ArrowRightOnRectangleIcon },
+  { to: '/register', label: 'Register', Icon: UserPlusIcon },
+];
+
+const PAGE_SIZE = 3;
+
+/** Mobile: [0]=left of hub, [1]=above hub, [2]=right of hub (anchor: bottom-center of arc). */
+function hubTripodOffsets(n) {
+  if (n <= 1) return [{ x: 0, y: -70 }];
+  if (n === 2) {
+    return [
+      { x: -88, y: 2 },
+      { x: 88, y: 2 },
+    ];
+  }
+  return [
+    { x: -94, y: 4 },
+    { x: 0, y: -76 },
+    { x: 94, y: 4 },
+  ];
+}
+
+function chunkLinks(links, page) {
+  const start = page * PAGE_SIZE;
+  return links.slice(start, start + PAGE_SIZE);
+}
 
 const Navbar = () => {
   const { isAuthenticated } = useAuth();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [isHamburgerActive, setIsHamburgerActive] = useState(true);
-  const hamburgerFadeTimeoutRef = useRef(null);
+  const [open, setOpen] = useState(false);
+  const [mobilePage, setMobilePage] = useState(0);
+  const [touchStartX, setTouchStartX] = useState(null);
   const location = useLocation();
+  const links = isAuthenticated ? AUTH_LINKS : GUEST_LINKS;
 
-  const clearHamburgerFadeTimeout = useCallback(() => {
-    if (hamburgerFadeTimeoutRef.current) {
-      clearTimeout(hamburgerFadeTimeoutRef.current);
-      hamburgerFadeTimeoutRef.current = null;
-    }
-  }, []);
-
-  const startHamburgerFade = useCallback(() => {
-    clearHamburgerFadeTimeout();
-    hamburgerFadeTimeoutRef.current = setTimeout(() => {
-      setIsHamburgerActive(false);
-    }, 3000);
-  }, [clearHamburgerFadeTimeout]);
-
-  const handleHamburgerInteraction = useCallback(() => {
-    setIsHamburgerActive(true);
-    startHamburgerFade();
-  }, [startHamburgerFade]);
+  const numPages = Math.max(1, Math.ceil(links.length / PAGE_SIZE));
 
   useEffect(() => {
-    startHamburgerFade();
-    return () => clearHamburgerFadeTimeout();
-  }, [startHamburgerFade, clearHamburgerFadeTimeout]);
+    setOpen(false);
+  }, [location.pathname]);
 
-  const toggleSidebar = () => {
-    handleHamburgerInteraction();
-    setSidebarOpen(!sidebarOpen);
-  };
+  useEffect(() => {
+    document.body.classList.add('has-bottom-nav');
+    return () => document.body.classList.remove('has-bottom-nav');
+  }, []);
 
-  const closeSidebar = () => {
-    handleHamburgerInteraction();
-    setSidebarOpen(false);
-  };
+  useEffect(() => {
+    if (!open) setMobilePage(0);
+  }, [open]);
 
-  const isActive = (path) => {
-    return location.pathname === path;
-  };
+  useEffect(() => {
+    setMobilePage((p) => Math.min(p, numPages - 1));
+  }, [numPages]);
+
+  const mobileChunk = useMemo(() => chunkLinks(links, mobilePage), [links, mobilePage]);
+  const hubOffsets = useMemo(() => hubTripodOffsets(mobileChunk.length), [mobileChunk.length]);
+
+  const onTouchStart = useCallback((e) => {
+    setTouchStartX(e.targetTouches[0].clientX);
+  }, []);
+
+  const onTouchEnd = useCallback(
+    (e) => {
+      if (touchStartX == null) return;
+      const x = e.changedTouches[0].clientX;
+      const dx = x - touchStartX;
+      setTouchStartX(null);
+      if (dx < -48) {
+        setMobilePage((p) => (p + 1) % numPages);
+      } else if (dx > 48) {
+        setMobilePage((p) => (p - 1 + numPages) % numPages);
+      }
+    },
+    [touchStartX, numPages]
+  );
 
   return (
     <>
-      {/* Hamburger Menu Button */}
-      {!sidebarOpen && (
-      <button 
-        className={`hamburger-btn ${sidebarOpen ? 'open' : ''}`}
-        onClick={toggleSidebar}
-          onMouseEnter={handleHamburgerInteraction}
-          onFocus={handleHamburgerInteraction}
-        aria-label="Toggle navigation menu"
-          style={{ opacity: isHamburgerActive ? 1 : 0.1, transition: 'opacity 0.4s var(--ease-out-cubic)' }}
-      >
-        <span></span>
-        <span></span>
-        <span></span>
-      </button>
+      {open && (
+        <button
+          type="button"
+          className="nav-hub-overlay"
+          aria-label="Close menu"
+          onClick={() => setOpen(false)}
+        />
       )}
 
-      {/* Overlay */}
-      {sidebarOpen && (
-        <div 
-          className="sidebar-overlay"
-          onClick={closeSidebar}
-        ></div>
-      )}
+      <div className="nav-hub-root">
+        <div
+          className={`nav-hub-fan ${open ? 'nav-hub-fan--open' : ''}`}
+          aria-hidden={!open}
+        >
+          {/* Desktop: single row, large light-blue icons */}
+          <div className="nav-hub-fan-desktop">
+            {links.map((item, index) => (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                className={({ isActive }) =>
+                  `nav-hub-link nav-hub-link--desktop${isActive ? ' nav-hub-link--active' : ''}`
+                }
+                style={{ animationDelay: open ? `${index * 45}ms` : '0ms' }}
+                onClick={() => setOpen(false)}
+              >
+                <span className="nav-hub-link-icon-wrap nav-hub-link-icon-wrap--desktop">
+                  <item.Icon className="nav-hub-icon nav-hub-icon--desktop" aria-hidden />
+                </span>
+                <span className="nav-hub-link-label">{item.label}</span>
+              </NavLink>
+            ))}
+          </div>
 
-      {/* Sidebar */}
-      <nav className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
-        <div className="sidebar-header">
-          <Link to="/" className="sidebar-brand" onClick={closeSidebar}>
-            Tracking App
-          </Link>
-          <button 
-            className="sidebar-close"
-            onClick={closeSidebar}
-            aria-label="Close navigation menu"
+          {/* Mobile: one icon above hub, two on left/right; swipe changes page (wraps) */}
+          <div
+            className="nav-hub-fan-mobile"
+            onTouchStart={onTouchStart}
+            onTouchEnd={onTouchEnd}
+            role="presentation"
           >
-            ×
-          </button>
-        </div>
-        
-        <div className="sidebar-content">
-          {isAuthenticated ? (
-            <>
-              <ul className="sidebar-nav">
-                <li>
-                  <Link 
-                    to="/profile" 
-                    className={`sidebar-link ${isActive('/profile') ? 'active' : ''}`}
-                    onClick={closeSidebar}
-                  >
-                    <svg className="icon" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-                    </svg>
-                    Profile
-                  </Link>
-                </li>
-                <li>
-                  <Link 
-                    to="/personalization" 
-                    className={`sidebar-link ${isActive('/personalization') ? 'active' : ''}`}
-                    onClick={closeSidebar}
-                  >
-                    <svg className="icon" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
-                    </svg>
-                    Personalization
-                  </Link>
-                </li>
-                <li>
-                  <Link 
-                    to="/food-log" 
-                    className={`sidebar-link ${isActive('/food-log') ? 'active' : ''}`}
-                    onClick={closeSidebar}
-                  >
-                    <svg className="icon" viewBox="0 0 20 20" fill="currentColor">
-                      <path d="M3 1a1 1 0 000 2h1.22l.305 1.222a.997.997 0 00.01.042H6a1 1 0 00.01-1.82L5.5 2.5H3a1 1 0 00-1 1v.5a1 1 0 001 1h1.382l1.724 8.618A2 2 0 008.234 14h3.532a2 2 0 001.128-3.882L12.5 3.5H17a1 1 0 100-2H3z" />
-                    </svg>
-                    Food Log
-                  </Link>
-                </li>
-                <li>
-                  <Link 
-                    to="/workout-tracker" 
-                    className={`sidebar-link ${isActive('/workout-tracker') ? 'active' : ''}`}
-                    onClick={closeSidebar}
-                  >
-                    <svg className="icon" viewBox="0 0 20 20" fill="currentColor">
-                      <path d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 2v8h8V6H6zm4-4v2h2V2h-2zm0 4v2h2V6h-2zm0 4v2h2v-2h-2z" />
-                    </svg>
-                    Workout Tracker
-                  </Link>
-                </li>
-                <li>
-                  <Link 
-                    to="/additional-trackers" 
-                    className={`sidebar-link ${isActive('/additional-trackers') ? 'active' : ''}`}
-                    onClick={closeSidebar}
-                  >
-                    <svg className="icon" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm3 2a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H7a1 1 0 01-1-1V6zM3 14a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1v-2z" clipRule="evenodd" />
-                    </svg>
-                    Additional Trackers
-                  </Link>
-                </li>
-                <li>
-                  <Link 
-                    to="/analytics" 
-                    className={`sidebar-link ${isActive('/analytics') ? 'active' : ''}`}
-                    onClick={closeSidebar}
-                  >
-                    <svg className="icon" viewBox="0 0 20 20" fill="currentColor">
-                      <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" />
-                    </svg>
-                    Analytics
-                  </Link>
-                </li>
-                <li>
-                  <Link 
-                    to="/data-viewer" 
-                    className={`sidebar-link ${isActive('/data-viewer') ? 'active' : ''}`}
-                    onClick={closeSidebar}
-                  >
-                    <svg className="icon" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01.293.707L18 9.414V18a2 2 0 01-2 2H4a2 2 0 01-2-2V4zm2 2v10h12V9.414l-2-2V6H5z" clipRule="evenodd" />
-                    </svg>
-                    Data Viewer
-                  </Link>
-                </li>
-              </ul>
-            </>
-          ) : (
-            <ul className="sidebar-nav">
-              <li>
-                <Link 
-                  to="/login" 
-                  className={`sidebar-link ${isActive('/login') ? 'active' : ''}`}
-                  onClick={closeSidebar}
+            <div className="nav-hub-arc">
+              {mobileChunk.map((item, i) => {
+                const off = hubOffsets[i] ?? { x: 0, y: -88 };
+                return (
+                <NavLink
+                  key={`${mobilePage}-${item.to}`}
+                  to={item.to}
+                  className={({ isActive }) =>
+                    `nav-hub-arc-link${isActive ? ' nav-hub-arc-link--active' : ''}`
+                  }
+                  style={{
+                    '--hub-x': `${off.x}px`,
+                    '--hub-y': `${off.y}px`,
+                    animationDelay: open ? `${i * 60}ms` : '0ms',
+                  }}
+                  onClick={() => setOpen(false)}
                 >
-                  <svg className="icon" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M3 3a1 1 0 011 1v12a1 1 0 11-2 0V4a1 1 0 011-1zm7.707 3.293a1 1 0 010 1.414L9.414 9H17a1 1 0 110 2H9.414l1.293 1.293a1 1 0 01-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 011.414 0z" clipRule="evenodd" />
-                  </svg>
-                  Login
-                </Link>
-              </li>
-              <li>
-                <Link 
-                  to="/register" 
-                  className={`sidebar-link ${isActive('/register') ? 'active' : ''}`}
-                  onClick={closeSidebar}
-                >
-                  <svg className="icon" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
-                  </svg>
-                  Register
-                </Link>
-              </li>
-            </ul>
-          )}
+                  <span className="nav-hub-arc-icon-wrap">
+                    <item.Icon className="nav-hub-icon nav-hub-icon--mobile" aria-hidden />
+                  </span>
+                </NavLink>
+                );
+              })}
+            </div>
+          </div>
         </div>
-      </nav>
+
+        <button
+          type="button"
+          className="nav-hub-trigger"
+          aria-expanded={open}
+          aria-label={open ? 'Close navigation' : 'Open navigation'}
+          onClick={() => setOpen((v) => !v)}
+        >
+          <span className="nav-hub-trigger-inner-ring" aria-hidden />
+        </button>
+      </div>
 
       <style>{`
-        /* Hamburger Button */
-        .hamburger-btn {
+        .nav-hub-overlay {
           position: fixed;
-          top: var(--space-6);
-          left: var(--space-4);
-          z-index: 1001;
-          background: var(--accent-primary);
+          inset: 0;
+          z-index: 1040;
+          background: rgba(0, 0, 0, 0.45);
           border: none;
-          border-radius: var(--radius-md);
-          width: 48px;
-          height: 48px;
+          cursor: pointer;
+          animation: navHubFade 0.25s ease-out both;
+        }
+        @keyframes navHubFade {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+
+        .nav-hub-root {
+          position: fixed;
+          left: 50%;
+          bottom: 0;
+          transform: translateX(-50%);
+          z-index: 1050;
           display: flex;
           flex-direction: column;
-          justify-content: center;
           align-items: center;
-          cursor: pointer;
-          transition: all 0.3s var(--ease-out-cubic);
-          box-shadow: var(--shadow-md);
-        }
-
-        .hamburger-btn:hover {
-          background: var(--accent-primary-dark);
-          transform: translateY(-1px);
-          box-shadow: var(--shadow-lg);
-        }
-
-        .hamburger-btn span {
-          width: 20px;
-          height: 2px;
-          background: white;
-          margin: 2px 0;
-          transition: all 0.3s var(--ease-out-cubic);
-          border-radius: 1px;
-        }
-
-        .hamburger-btn.open span:nth-child(1) {
-          transform: rotate(45deg) translate(5px, 5px);
-        }
-
-        .hamburger-btn.open span:nth-child(2) {
-          opacity: 0;
-        }
-
-        .hamburger-btn.open span:nth-child(3) {
-          transform: rotate(-45deg) translate(7px, -6px);
-        }
-
-        .hamburger-btn.open {
-          opacity: 0;
           pointer-events: none;
         }
 
-        /* Sidebar Overlay */
-        .sidebar-overlay {
-          position: fixed;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background: rgba(0, 0, 0, 0.5);
-          z-index: 999;
-          opacity: 0;
-          animation: fadeIn 0.3s var(--ease-out-cubic) forwards;
+        .nav-hub-root .nav-hub-trigger {
+          pointer-events: auto;
         }
 
-        @keyframes fadeIn {
-          to {
-            opacity: 1;
-          }
+        .nav-hub-root .nav-hub-fan {
+          pointer-events: none;
+          visibility: hidden;
         }
 
-        /* Sidebar */
-        .sidebar {
-          position: fixed;
-          top: 0;
-          left: 0;
-          width: 280px;
-          height: 100vh;
-          background: var(--bg-secondary);
-          border-right: 1px solid var(--border-primary);
-          z-index: 1000;
-          transform: translateX(-100%);
-          transition: transform 0.3s var(--ease-out-cubic);
-          overflow-y: auto;
-          box-shadow: var(--shadow-lg);
+        .nav-hub-root .nav-hub-fan--open {
+          pointer-events: auto;
+          visibility: visible;
         }
 
-        .sidebar.open {
-          transform: translateX(0);
-        }
-
-        .sidebar-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: var(--space-4);
-          border-bottom: 1px solid var(--border-primary);
-        }
-
-        .sidebar-brand {
-          font-size: var(--text-lg);
-          font-weight: var(--font-weight-bold);
-          color: var(--text-primary);
-          text-decoration: none;
-          font-family: var(--font-primary);
-        }
-
-        .sidebar-brand:hover {
-          color: var(--accent-primary);
-        }
-
-        .sidebar-close {
-          background: none;
-          border: none;
-          font-size: var(--text-2xl);
-          color: var(--text-secondary);
-          cursor: pointer;
-          padding: var(--space-1);
-          border-radius: var(--radius-sm);
-          transition: all 0.2s var(--ease-out-cubic);
-        }
-
-        .sidebar-close:hover {
-          background: var(--bg-tertiary);
-          color: var(--text-primary);
-        }
-
-        .sidebar-content {
-          padding: var(--space-4);
-        }
-
-        .sidebar-nav {
-          list-style: none;
+        /* Semicircles: outer & inner share the same width:height ratio (2:1) and corner radii = half inner width */
+        .nav-hub-trigger {
+          --nav-outer: #1a4a7a;
+          --nav-inner: #3d8bc4;
+          --hub-w: 120px;
+          --hub-h: 60px;
+          --inner-scale: 0.7;
+          width: var(--hub-w);
+          height: var(--hub-h);
           padding: 0;
-          margin: 0;
-        }
-
-        .sidebar-nav li {
-          margin-bottom: var(--space-1);
-        }
-
-        .sidebar-link {
+          border: none;
+          border-radius: calc(var(--hub-w) / 2) calc(var(--hub-w) / 2) 0 0;
+          background: var(--nav-outer);
+          box-shadow:
+            0 0 0 3px #ffffff,
+            0 -10px 32px rgba(0, 0, 0, 0.35);
+          cursor: pointer;
+          position: relative;
           display: flex;
-          align-items: center;
-          gap: var(--space-3);
-          padding: var(--space-3);
-          color: var(--text-secondary);
-          text-decoration: none;
-          border-radius: var(--radius-md);
-          transition: all 0.2s var(--ease-out-cubic);
-          font-family: var(--font-primary);
+          align-items: flex-end;
+          justify-content: center;
+          transition: transform 0.2s var(--ease-out-cubic), filter 0.2s;
         }
-
-        .sidebar-link:hover {
-          background: var(--bg-tertiary);
-          color: var(--text-primary);
-          transform: translateX(4px);
+        .nav-hub-trigger:hover {
+          filter: brightness(1.05);
         }
-
-        .sidebar-link.active {
-          background: var(--accent-primary);
-          color: white;
-          font-weight: var(--font-weight-medium);
+        .nav-hub-trigger[aria-expanded="true"] {
+          transform: translateY(2px);
         }
-
-        .sidebar-link.active:hover {
-          background: var(--accent-primary-dark);
-          transform: translateX(4px);
-        }
-
-        .sidebar-link .icon {
-          width: 20px;
-          height: 20px;
+        .nav-hub-trigger-inner-ring {
+          width: calc(var(--hub-w) * var(--inner-scale));
+          height: calc(var(--hub-h) * var(--inner-scale));
+          border-radius: calc(var(--hub-w) * var(--inner-scale) / 2)
+            calc(var(--hub-w) * var(--inner-scale) / 2) 0 0;
+          background: var(--nav-inner);
+          box-shadow: 0 0 0 4px #000000;
+          display: block;
           flex-shrink: 0;
         }
 
-        /* Mobile Responsive */
-        @media (max-width: 768px) {
-          .sidebar {
-            width: 100%;
-            max-width: 320px;
+        .nav-hub-fan {
+          width: min(100vw - 16px, 720px);
+          max-height: 0;
+          opacity: 0;
+          overflow: visible;
+          transition: max-height 0.35s var(--ease-out-cubic), opacity 0.25s ease;
+          margin-bottom: 2px;
+        }
+        .nav-hub-fan--open {
+          max-height: 300px;
+          opacity: 1;
+        }
+
+        .nav-hub-fan-desktop {
+          display: none;
+          flex-direction: row;
+          flex-wrap: nowrap;
+          justify-content: center;
+          align-items: flex-end;
+          gap: var(--space-4);
+          padding: var(--space-4) var(--space-3) var(--space-2);
+        }
+
+        .nav-hub-fan-mobile {
+          display: none;
+          flex-direction: column;
+          align-items: center;
+          padding: var(--space-2) 0 var(--space-1);
+          touch-action: pan-y;
+        }
+
+        .nav-hub-arc {
+          position: relative;
+          width: min(92vw, 360px);
+          height: 92px;
+          margin: 0 auto;
+        }
+
+        .nav-hub-arc-link {
+          position: absolute;
+          left: 50%;
+          bottom: 0;
+          width: 64px;
+          height: 64px;
+          margin-left: -32px;
+          margin-bottom: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          text-decoration: none;
+          transform-origin: 50% 100%;
+          transform: translate(var(--hub-x, 0px), var(--hub-y, -80px));
+          opacity: 0;
+          pointer-events: none;
+        }
+        .nav-hub-fan--open .nav-hub-arc-link {
+          animation: navHubTripodIn 0.38s var(--ease-out-cubic) forwards;
+          pointer-events: auto;
+        }
+        @keyframes navHubTripodIn {
+          from {
+            opacity: 0;
+            transform: translate(var(--hub-x, 0px), calc(var(--hub-y, -80px) + 20px));
           }
-          
-          .hamburger-btn {
-            width: 44px;
-            height: 44px;
+          to {
+            opacity: 1;
+            transform: translate(var(--hub-x, 0px), var(--hub-y, -80px));
           }
         }
 
-        @media (max-width: 480px) {
-          .sidebar {
-            width: 100%;
+        .nav-hub-arc-icon-wrap {
+          width: 64px;
+          height: 64px;
+          border-radius: 50%;
+          background: var(--bg-secondary);
+          border: 1px solid rgba(125, 211, 252, 0.35);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+        }
+        .nav-hub-arc-link--active .nav-hub-arc-icon-wrap {
+          border-color: var(--accent-primary);
+          box-shadow: 0 0 0 2px rgba(125, 211, 252, 0.4);
+        }
+
+        .nav-hub-icon--mobile {
+          width: 36px;
+          height: 36px;
+          color: #7dd3fc;
+          display: block;
+        }
+        .nav-hub-arc-link--active .nav-hub-icon--mobile {
+          color: #e0f2fe;
+        }
+
+        .nav-hub-link--desktop {
+          flex: 0 0 auto;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: var(--space-2);
+          text-decoration: none;
+          color: var(--text-primary);
+          padding: var(--space-2);
+          border-radius: var(--radius-lg);
+          opacity: 0;
+          transform: translateX(28px);
+          pointer-events: none;
+        }
+        .nav-hub-fan--open .nav-hub-link--desktop {
+          animation: navHubFromRight 0.38s var(--ease-out-cubic) forwards;
+          pointer-events: auto;
+        }
+        @keyframes navHubFromRight {
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+
+        .nav-hub-link-icon-wrap--desktop {
+          width: 78px;
+          height: 78px;
+          border-radius: 50%;
+          background: var(--bg-secondary);
+          border: 1px solid rgba(125, 211, 252, 0.4);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          box-shadow: var(--shadow-md);
+        }
+        .nav-hub-link--active .nav-hub-link-icon-wrap--desktop {
+          background: var(--bg-secondary);
+          border-color: var(--accent-primary);
+          box-shadow: var(--shadow-md), 0 0 0 1px var(--accent-primary);
+        }
+
+        .nav-hub-icon--desktop {
+          width: 42px;
+          height: 42px;
+          color: #7dd3fc;
+          display: block;
+        }
+        .nav-hub-link--active .nav-hub-icon--desktop {
+          color: #e0f2fe;
+        }
+
+        .nav-hub-link-label {
+          font-size: var(--text-xs);
+          font-weight: var(--font-weight-medium);
+          text-align: center;
+          max-width: 92px;
+          line-height: 1.2;
+        }
+
+        @media (max-width: 768px) {
+          .nav-hub-fan-mobile {
+            display: flex;
+          }
+          .nav-hub-fan-desktop {
+            display: none !important;
+          }
+        }
+
+        @media (min-width: 769px) {
+          .nav-hub-fan-desktop {
+            display: flex;
+          }
+          .nav-hub-fan-mobile {
+            display: none !important;
           }
         }
       `}</style>

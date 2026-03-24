@@ -24,7 +24,10 @@ test.describe('Profile: rankings UI', () => {
     await page.locator('input[name="password_confirm"]').fill('E2ePass123!');
 
     await page.locator('button[type="submit"]').click();
-    await page.waitForURL('**/profile', { timeout: 20000 });
+    await page.waitForURL('**/home', { timeout: 20000 });
+
+    await page.goto('/profile');
+    await page.waitForLoadState('networkidle');
 
     await expect(page.getByTestId('rank-badge')).toBeVisible();
     await expect(page.getByRole('button', { name: /personal info/i })).toHaveCount(0);

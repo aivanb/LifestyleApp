@@ -9,6 +9,14 @@ const WorkoutAnalytics = ({ workout, isOpen, onClose }) => {
   const [dateRange, setDateRange] = useState('6months');
   const [customStartDate, setCustomStartDate] = useState('');
   const [customEndDate, setCustomEndDate] = useState('');
+  // eslint-disable-next-line no-unused-vars -- isMobile used in JSX (chart height, margins, tick fontSize, class)
+  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' && window.innerWidth <= 768);
+
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
 
   // Get all workout logs to determine date range - optimized with workout_id filter
   const getAllWorkoutLogs = useCallback(async () => {
@@ -275,12 +283,13 @@ const WorkoutAnalytics = ({ workout, isOpen, onClose }) => {
 
               {/* Graph */}
               {graphData.length > 0 ? (
-                <div className="analytics-graph-section">
-                  <ResponsiveContainer width="100%" height={400}>
-                    <ComposedChart data={graphData}>
+                <div className={`analytics-graph-section ${isMobile ? 'analytics-graph-section--mobile' : ''}`}>
+                  <ResponsiveContainer width="100%" height={isMobile ? 280 : 400}>
+                    <ComposedChart data={graphData} margin={isMobile ? { top: 6, right: 0, left: 0, bottom: 6 } : undefined}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis 
                         dataKey="date" 
+                        tick={{ fontSize: isMobile ? 10 : 12 }}
                         tickFormatter={(value) => {
                           const date = new Date(value);
                           return `${date.getMonth() + 1}/${date.getDate()}`;
@@ -288,12 +297,14 @@ const WorkoutAnalytics = ({ workout, isOpen, onClose }) => {
                       />
                       <YAxis 
                         yAxisId="weight"
-                        label={{ value: 'Weight (lbs)', angle: -90, position: 'insideLeft' }}
+                        tick={{ fontSize: isMobile ? 10 : 12 }}
+                        label={!isMobile ? { value: 'Weight (lbs)', angle: -90, position: 'insideLeft' } : undefined}
                       />
                       <YAxis 
                         yAxisId="count"
                         orientation="right"
-                        label={{ value: 'Times Logged', angle: 90, position: 'insideRight' }}
+                        tick={{ fontSize: isMobile ? 10 : 12 }}
+                        label={!isMobile ? { value: 'Times Logged', angle: 90, position: 'insideRight' } : undefined}
                       />
                       <Tooltip 
                         formatter={(value, name) => {
@@ -504,6 +515,30 @@ const WorkoutAnalytics = ({ workout, isOpen, onClose }) => {
 
         .analytics-graph-section {
           margin-top: var(--space-6);
+        }
+
+        .analytics-graph-section--mobile {
+          margin: var(--space-2) 0;
+          padding: 0;
+          width: 100%;
+          margin-left: 0;
+          margin-right: 0;
+        }
+
+        @media (max-width: 768px) {
+          .analytics-modal-content {
+            padding-left: var(--space-1);
+            padding-right: var(--space-1);
+          }
+
+          .analytics-modal-body {
+            padding: var(--space-4) var(--space-1);
+          }
+
+          .analytics-graph-section--mobile .recharts-wrapper {
+            margin-left: 0;
+            margin-right: 0;
+          }
         }
 
         .analytics-no-data {

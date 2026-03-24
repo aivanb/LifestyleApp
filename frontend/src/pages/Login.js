@@ -15,7 +15,7 @@ const Login = () => {
 
   useEffect(() => {
     if (isAuthenticated) {
-      navigate('/profile', { replace: true });
+      navigate('/home', { replace: true });
     }
   }, [isAuthenticated, navigate]);
 
@@ -34,7 +34,7 @@ const Login = () => {
     const result = await login(formData.username, formData.password);
     
     if (result.success) {
-      navigate('/profile');
+      navigate('/home');
     } else {
       setError(result.error);
     }

@@ -185,6 +185,14 @@ const MealCreator = ({ onMealCreated, onClose }) => {
 
   return (
     <div className="meal-creator card">
+      <div className="meal-creator-card-header modal-app-header modal-app-header--compact">
+        <h2 className="meal-creator-card-title modal-app-header__title">Create Meal</h2>
+        <button type="button" className="btn-close modal-app-header__close meal-creator-close" onClick={onClose} aria-label="Close">
+          <svg className="icon icon-md" viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+          </svg>
+        </button>
+      </div>
       {error && (
         <div className="error-message">
           <svg className="icon icon-sm" viewBox="0 0 20 20" fill="currentColor">
@@ -268,32 +276,46 @@ const MealCreator = ({ onMealCreated, onClose }) => {
                 availableFoods.map(food => (
                   <div key={food.food_id} className="food-item food-card" onClick={() => addFood(food)}>
                     <div className="food-item-content">
-                      <div className="food-main-info">
-                        <div className="food-name">{food.food_name}</div>
-                        <div className="food-details">
-                          {food.brand && `${food.brand} • `}
-                          {food.serving_size}{food.unit} • {food.food_group}
-                        </div>
-                      </div>
-                      
                       <div className="food-metadata">
-                        <div className="metadata-grid">
+                        <div className="metadata-grid metadata-grid--inline">
                           <div className="metadata-item">
-                            <span className="metadata-label">Calories</span>
+                            <span className="metadata-label">Cal</span>
                             <span className="metadata-value">{food.macro_preview?.calories || 0}</span>
                           </div>
                           <div className="metadata-item">
-                            <span className="metadata-label macro-label-protein">Protein</span>
-                            <span className="metadata-value">{food.macro_preview?.protein || 0}g</span>
+                            <span className="metadata-label macro-label-protein">Pro</span>
+                            <span className="metadata-value">
+                              <span className="metadata-value-num">{food.macro_preview?.protein || 0}</span>
+                              <span className="metadata-value-unit">g</span>
+                            </span>
                           </div>
                           <div className="metadata-item">
-                            <span className="metadata-label macro-label-carbohydrates">Carbohydrates</span>
-                            <span className="metadata-value">{food.macro_preview?.carbohydrates || 0}g</span>
+                            <span className="metadata-label macro-label-carbohydrates">Carb</span>
+                            <span className="metadata-value">
+                              <span className="metadata-value-num">{food.macro_preview?.carbohydrates || 0}</span>
+                              <span className="metadata-value-unit">g</span>
+                            </span>
                           </div>
                           <div className="metadata-item">
-                            <span className="metadata-label macro-label-fats">Fats</span>
+                            <span className="metadata-label macro-label-fats">Fat</span>
                             <span className="metadata-value">{food.macro_preview?.fat || 0}g</span>
                           </div>
+                        </div>
+                      </div>
+
+                      <div className="food-main-info food-main-info--row food-name-details-row">
+                        <div className="food-name">{food.food_name}</div>
+                        <div className="food-details">
+                          {food.brand && (
+                            <>
+                              <span className="food-detail-text">{food.brand}</span>
+                              <span className="food-detail-sep"> • </span>
+                            </>
+                          )}
+                          <span className="food-detail-text">{food.serving_size}</span>
+                          <span className="food-detail-unit">{food.unit}</span>
+                          <span className="food-detail-sep"> • </span>
+                          <span className="food-detail-text">{food.food_group}</span>
                         </div>
                       </div>
                     </div>
@@ -312,34 +334,48 @@ const MealCreator = ({ onMealCreated, onClose }) => {
           <div className="selected-foods">
             <h3 className="text-sm font-medium mb-3">FOODS IN MEAL ({selectedFoods.length})</h3>
             {selectedFoods.map(food => (
-              <div key={food.food_id} className="selected-food-item card animate-slide-in-right" style={{ background: 'var(--bg-tertiary)', marginBottom: 'var(--space-4)' }}>
+              <div key={food.food_id} className="selected-food-item card animate-slide-in-right selected-food-item--tinted" style={{ marginBottom: 'var(--space-4)' }}>
                 <div className="food-content">
-                  <div className="food-main-info">
-                    <div className="food-name">{food.food_name}</div>
-                    <div className="food-details">
-                      {food.brand && `${food.brand} • `}
-                      {food.serving_size}{food.unit} • {food.food_group}
-                    </div>
-                  </div>
-                  
                   <div className="food-metadata">
-                    <div className="metadata-grid">
+                    <div className="metadata-grid metadata-grid--inline">
                       <div className="metadata-item">
-                        <span className="metadata-label">Calories</span>
+                        <span className="metadata-label">Cal</span>
                         <span className="metadata-value">{(food.macro_preview?.calories * food.servings).toFixed(0)}</span>
                       </div>
                       <div className="metadata-item">
-                        <span className="metadata-label macro-label-protein">Protein</span>
-                        <span className="metadata-value">{(food.macro_preview?.protein * food.servings).toFixed(1)}g</span>
+                        <span className="metadata-label macro-label-protein">Pro</span>
+                        <span className="metadata-value">
+                          <span className="metadata-value-num">{(food.macro_preview?.protein * food.servings).toFixed(1)}</span>
+                          <span className="metadata-value-unit">g</span>
+                        </span>
                       </div>
                       <div className="metadata-item">
-                        <span className="metadata-label macro-label-carbohydrates">Carbohydrates</span>
-                        <span className="metadata-value">{(food.macro_preview?.carbohydrates * food.servings).toFixed(1)}g</span>
+                        <span className="metadata-label macro-label-carbohydrates">Carb</span>
+                        <span className="metadata-value">
+                          <span className="metadata-value-num">{(food.macro_preview?.carbohydrates * food.servings).toFixed(1)}</span>
+                          <span className="metadata-value-unit">g</span>
+                        </span>
                       </div>
                       <div className="metadata-item">
-                        <span className="metadata-label macro-label-fats">Fats</span>
+                        <span className="metadata-label macro-label-fats">Fat</span>
                         <span className="metadata-value">{(food.macro_preview?.fat * food.servings).toFixed(1)}g</span>
                       </div>
+                    </div>
+                  </div>
+
+                  <div className="food-main-info food-main-info--row food-name-details-row">
+                    <div className="food-name">{food.food_name}</div>
+                    <div className="food-details">
+                      {food.brand && (
+                        <>
+                          <span className="food-detail-text">{food.brand}</span>
+                          <span className="food-detail-sep"> • </span>
+                        </>
+                      )}
+                      <span className="food-detail-text">{food.serving_size}</span>
+                      <span className="food-detail-unit">{food.unit}</span>
+                      <span className="food-detail-sep"> • </span>
+                      <span className="food-detail-text">{food.food_group}</span>
                     </div>
                   </div>
 
@@ -391,21 +427,21 @@ const MealCreator = ({ onMealCreated, onClose }) => {
       {selectedFoods.length > 0 && (
         <div className="macro-preview card animate-scale-in" style={{ background: 'var(--accent-secondary-alpha)', marginTop: 'var(--space-6)' }}>
           <h3 className="text-sm font-medium mb-4" style={{ color: 'var(--accent-secondary)' }}>TOTAL MACROS</h3>
-          <div className="grid grid-cols-4 gap-4">
+          <div className="macro-preview-grid">
             <div className="macro-item">
-              <div className="macro-label">Calories</div>
+              <div className="macro-label">Cal</div>
               <div className="macro-value" style={{ color: 'var(--accent-secondary)' }}>{totalMacros.calories}</div>
             </div>
             <div className="macro-item">
-              <div className="macro-label macro-label-protein">Protein</div>
+              <div className="macro-label macro-label-protein">Pro</div>
               <div className="macro-value" style={{ color: 'var(--accent-secondary)' }}>{totalMacros.protein}g</div>
             </div>
             <div className="macro-item">
-              <div className="macro-label macro-label-carbohydrates">Carbohydrates</div>
+              <div className="macro-label macro-label-carbohydrates">Carb</div>
               <div className="macro-value" style={{ color: 'var(--accent-secondary)' }}>{totalMacros.carbs}g</div>
             </div>
             <div className="macro-item">
-              <div className="macro-label macro-label-fats">Fats</div>
+              <div className="macro-label macro-label-fats">Fat</div>
               <div className="macro-value" style={{ color: 'var(--accent-secondary)' }}>{totalMacros.fat}g</div>
             </div>
           </div>
@@ -451,9 +487,18 @@ const MealCreator = ({ onMealCreated, onClose }) => {
       <style jsx>{`
         .meal-creator-layout {
           display: grid;
-          grid-template-columns: 40% 60%;
+          grid-template-columns: 1fr;
           gap: var(--space-6);
+          margin-top: var(--space-4);
           margin-bottom: var(--space-6);
+        }
+
+        .meal-creator-layout .meal-creator-left {
+          order: 1;
+        }
+
+        .meal-creator-layout .meal-creator-right {
+          order: 2;
         }
 
         .meal-creator-left {
@@ -472,6 +517,18 @@ const MealCreator = ({ onMealCreated, onClose }) => {
           border-left: 4px solid var(--accent-secondary);
         }
 
+        .macro-preview-grid {
+          display: flex;
+          flex-wrap: nowrap;
+          gap: var(--space-2);
+          align-items: center;
+        }
+
+        .macro-preview-grid .macro-item {
+          flex: 1;
+          min-width: 0;
+        }
+
         .macro-item {
           text-align: center;
         }
@@ -487,6 +544,32 @@ const MealCreator = ({ onMealCreated, onClose }) => {
         .macro-value {
           font-size: var(--text-2xl);
           font-weight: var(--font-weight-bold);
+        }
+
+        .macro-preview-grid .macro-label {
+          font-size: 10px;
+          margin-bottom: 2px;
+        }
+
+        .macro-preview-grid .macro-value {
+          font-size: var(--text-sm);
+        }
+
+        .meal-creator-card-header {
+          margin-bottom: var(--space-2);
+        }
+
+        .meal-creator-card-title {
+          color: var(--text-primary);
+        }
+
+        .meal-creator-close {
+          padding: var(--space-2);
+          color: var(--text-tertiary);
+        }
+
+        .meal-creator-close:hover {
+          color: var(--text-primary);
         }
 
         .food-item {
@@ -512,10 +595,61 @@ const MealCreator = ({ onMealCreated, onClose }) => {
           gap: var(--space-3);
         }
 
+        .food-item .food-main-info.food-main-info--row.food-name-details-row,
+        .selected-food-item .food-main-info.food-main-info--row.food-name-details-row {
+          order: 0;
+        }
+
+        .food-item .food-metadata,
+        .selected-food-item .food-metadata {
+          order: 1;
+        }
+
         .food-main-info {
           display: flex;
           flex-direction: column;
           gap: var(--space-1);
+        }
+
+        .food-main-info--row {
+          flex-direction: row;
+          align-items: baseline;
+          flex-wrap: wrap;
+          gap: var(--space-1);
+        }
+
+        .selected-food-item .food-main-info.food-main-info--row {
+          display: flex;
+          flex-direction: row;
+          align-items: baseline;
+          flex-wrap: wrap;
+        }
+
+        .food-main-info--row .food-name {
+          flex: 0 0 auto;
+        }
+
+        .food-main-info--row .food-details {
+          flex: 1 1 auto;
+          min-width: 0;
+        }
+
+        /* Make "food name · details" stay on one line under food-metadata */
+        .food-main-info.food-main-info--row.food-name-details-row {
+          flex-wrap: nowrap !important;
+          gap: var(--space-2);
+        }
+
+        .selected-food-item .food-main-info.food-main-info--row.food-name-details-row {
+          flex-wrap: nowrap !important;
+        }
+
+        .food-main-info.food-main-info--row.food-name-details-row .food-details {
+          flex: 1 1 auto;
+          min-width: 0;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
         }
 
         .food-name {
@@ -527,6 +661,19 @@ const MealCreator = ({ onMealCreated, onClose }) => {
         .food-details {
           font-size: var(--text-sm);
           color: var(--text-tertiary);
+        }
+
+        .food-detail-unit {
+          margin-left: 0.25em;
+        }
+
+        .metadata-value-unit {
+          margin-left: 0.25em;
+        }
+
+        .metadata-value-num,
+        .metadata-value-unit {
+          display: inline;
         }
 
         .food-metadata {
@@ -556,6 +703,70 @@ const MealCreator = ({ onMealCreated, onClose }) => {
           font-weight: var(--font-weight-medium);
         }
 
+        .metadata-grid--inline {
+          display: flex;
+          flex-wrap: nowrap;
+          gap: var(--space-2);
+          align-items: center;
+        }
+
+        .metadata-grid--inline .metadata-item {
+          flex: 1;
+          min-width: 0;
+          flex-direction: row;
+          gap: var(--space-1);
+          white-space: nowrap;
+        }
+
+        .metadata-grid--inline .metadata-label,
+        .metadata-grid--inline .metadata-value {
+          font-size: var(--text-xs);
+        }
+
+        .food-item.food-card .metadata-grid--inline .metadata-label,
+        .selected-food-item .metadata-grid--inline .metadata-label {
+          font-size: var(--text-xs);
+        }
+
+        .food-item.food-card .metadata-grid--inline .metadata-value,
+        .selected-food-item .metadata-grid--inline .metadata-value {
+          font-size: var(--text-xs);
+        }
+
+        .food-item.food-card .food-details,
+        .selected-food-item .food-details {
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          max-width: 100%;
+        }
+
+        .food-item.food-card .food-metadata,
+        .selected-food-item .food-metadata {
+          min-width: 0;
+          overflow: hidden;
+          display: flex;
+          flex-direction: row;
+          flex-wrap: nowrap;
+        }
+
+        .food-item.food-card .food-metadata .metadata-grid--inline,
+        .selected-food-item .food-metadata .metadata-grid--inline {
+          display: flex;
+          flex-wrap: nowrap;
+          flex: 1 1 0;
+          min-width: 0;
+          gap: var(--space-1);
+        }
+
+        .food-item.food-card .food-metadata .metadata-grid--inline .metadata-item,
+        .selected-food-item .food-metadata .metadata-grid--inline .metadata-item {
+          flex: 0 1 auto;
+          min-width: 0;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
         .metadata-value {
           font-size: var(--text-sm);
           font-weight: var(--font-weight-bold);
@@ -570,13 +781,32 @@ const MealCreator = ({ onMealCreated, onClose }) => {
           padding: var(--space-4);
         }
 
+        .selected-food-item--tinted {
+          background: rgba(59, 130, 246, 0.08) !important;
+          border: 1px solid rgba(59, 130, 246, 0.2);
+        }
+
         .food-content {
           display: flex;
           flex-direction: column;
           gap: var(--space-4);
         }
 
-        .food-main-info {
+        /* Keep the "food name · details" row above the food metadata */
+        .selected-food-item .food-main-info.food-main-info--row {
+          order: 0;
+        }
+
+        .selected-food-item .food-metadata {
+          order: 1;
+        }
+
+        .selected-food-item .food-controls {
+          order: 2;
+        }
+
+        /* Do not override .food-main-info--row (earlier block sets row layout) */
+        .food-main-info:not(.food-main-info--row) {
           display: flex;
           flex-direction: column;
           gap: var(--space-2);
@@ -630,12 +860,16 @@ const MealCreator = ({ onMealCreated, onClose }) => {
           display: flex;
           justify-content: space-between;
           align-items: center;
+          padding: var(--space-2) 0 0;
         }
 
         .servings-control {
           display: flex;
           align-items: center;
           gap: var(--space-3);
+          padding: var(--space-2) var(--space-3);
+          background: var(--bg-tertiary);
+          border-radius: var(--radius-md);
         }
 
         .servings-label {
@@ -651,13 +885,14 @@ const MealCreator = ({ onMealCreated, onClose }) => {
         }
 
         .servings-input-with-steppers .servings-input {
-          width: 80px;
-          padding: var(--space-2);
+          width: 72px;
+          padding: var(--space-2) var(--space-3);
           border: 1px solid var(--border-primary);
           border-radius: var(--radius-sm);
           background: var(--bg-secondary);
           color: var(--text-primary);
           text-align: center;
+          font-size: var(--text-sm);
           font-family: var(--font-primary);
           transition: all 0.2s var(--ease-out-cubic);
         }
@@ -670,7 +905,7 @@ const MealCreator = ({ onMealCreated, onClose }) => {
           border: 1px solid var(--border-primary);
           border-radius: var(--radius-md);
           color: var(--text-primary);
-          font-size: var(--text-lg);
+          font-size: var(--text-base);
           font-weight: var(--font-weight-bold);
           cursor: pointer;
           transition: all 0.2s var(--ease-out-cubic);
@@ -725,20 +960,103 @@ const MealCreator = ({ onMealCreated, onClose }) => {
           border-color: var(--accent-danger);
         }
 
+        .meal-creator.card {
+          max-width: 100%;
+          box-sizing: border-box;
+          overflow-x: hidden;
+        }
+
         @media (max-width: 768px) {
+          .meal-creator.card {
+            padding: var(--space-2);
+            margin: 0;
+            max-width: 100%;
+            box-sizing: border-box;
+          }
+
+          .meal-creator-layout {
+            gap: var(--space-2);
+            margin-top: var(--space-5);
+            margin-bottom: var(--space-2);
+          }
+
+          .meal-creator-left,
+          .meal-creator-right {
+            gap: var(--space-1);
+            min-width: 0;
+          }
+
+          .meal-creator-card-header {
+            margin-bottom: 0;
+          }
+
+          .meal-creator-card-title {
+            font-size: var(--text-base);
+          }
+
+          .meal-creator-left .form-group {
+            margin-bottom: var(--space-2);
+          }
+
+          .meal-creator-left .form-label,
+          .sorting-controls-group .form-label {
+            font-size: var(--text-sm);
+            margin-bottom: var(--space-1);
+            line-height: var(--leading-normal);
+          }
+
+          .form-input-large {
+            padding: var(--space-2) var(--space-3);
+            font-size: var(--text-base);
+          }
+
+          .food-item {
+            padding: var(--space-2);
+            margin-bottom: var(--space-2);
+          }
+
+          .food-list.card {
+            max-height: min(220px, 32vh) !important;
+            margin-bottom: var(--space-2) !important;
+          }
+
+          .selected-foods {
+            max-height: min(240px, 36vh);
+            overflow-y: auto;
+            overflow-x: hidden;
+            -webkit-overflow-scrolling: touch;
+            padding-right: 2px;
+          }
+
           .metadata-grid {
             grid-template-columns: repeat(2, 1fr);
+            gap: var(--space-1);
+          }
+
+          .food-main-info.food-main-info--row.food-name-details-row {
+            flex-wrap: nowrap !important;
+            align-items: center;
+          }
+
+          .food-main-info.food-main-info--row.food-name-details-row .food-name {
+            flex: 0 1 auto;
+            min-width: 0;
           }
           
           .food-controls {
             flex-direction: column;
-            gap: var(--space-4);
+            gap: var(--space-2);
             align-items: flex-start;
           }
           
           .servings-control {
             width: 100%;
             justify-content: space-between;
+          }
+
+          .meal-creator-actions {
+            margin-top: var(--space-3);
+            padding-top: var(--space-2);
           }
         }
 
@@ -858,16 +1176,28 @@ const MealCreator = ({ onMealCreated, onClose }) => {
           display: flex;
           justify-content: flex-end;
           align-items: center;
-          gap: var(--space-4);
+          gap: var(--space-2);
           margin-top: var(--space-6);
           padding-top: var(--space-4);
           border-top: 1px solid var(--border-primary);
+          flex-wrap: wrap;
+          max-width: 100%;
         }
 
         .meal-creator-actions .form-group {
           margin: 0;
           display: flex;
           align-items: center;
+        }
+
+        .meal-creator-actions .flex {
+          flex-wrap: wrap;
+          gap: var(--space-2);
+        }
+
+        .meal-creator-actions .btn {
+          padding: var(--space-2) var(--space-4);
+          font-size: var(--text-sm);
         }
       `}</style>
     </div>

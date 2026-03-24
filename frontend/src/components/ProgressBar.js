@@ -429,6 +429,11 @@ export const ExpandedProgressView = ({ goals, consumed, onClose }) => {
           border-bottom: 1px solid var(--border-primary);
         }
 
+        .expanded-progress-header .btn-icon {
+          margin-left: auto;
+          flex-shrink: 0;
+        }
+
         .expanded-progress-title {
           font-size: var(--text-xl);
           font-weight: var(--font-weight-medium);
@@ -457,9 +462,8 @@ export const ExpandedProgressView = ({ goals, consumed, onClose }) => {
           }
           
           .expanded-progress-header {
-            flex-direction: column;
-            gap: var(--space-3);
-            align-items: flex-start;
+            flex-direction: row;
+            align-items: center;
           }
         }
       `}</style>

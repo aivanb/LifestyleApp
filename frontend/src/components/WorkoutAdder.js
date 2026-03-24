@@ -397,9 +397,11 @@ const WorkoutAdder = ({ onWorkoutAdded }) => {
 
           {/* Right Side - Muscle Selection (40%) */}
           <div className="workout-adder-right-section">
-        {/* Muscles */}
+        {/* Muscles - collapsible on mobile */}
+        <details className="workout-adder-muscles-details" open>
+          <summary className="workout-adder-muscles-summary">Muscle Activation Ratings</summary>
         <div className="workout-adder-form-group">
-          <div className="workout-adder-muscles-header">
+          <div className="workout-adder-muscles-header workout-adder-muscles-header--inside">
                  <div className="muscles-title-with-tooltip">
                    <h3 className="muscles-section-title">Muscle Activation Ratings</h3>
                    <button
@@ -546,6 +548,7 @@ const WorkoutAdder = ({ onWorkoutAdded }) => {
             </button>
           </div>
         </div>
+        </details>
           </div>
         </div>
       </form>
@@ -1241,6 +1244,89 @@ const WorkoutAdder = ({ onWorkoutAdded }) => {
         .workout-adder-submit-button:disabled {
           opacity: 0.5;
           cursor: not-allowed;
+        }
+
+        @media (max-width: 768px) {
+          .workout-adder-muscles-details {
+            width: 100%;
+          }
+
+          .workout-adder-muscles-summary {
+            list-style: none;
+            cursor: pointer;
+            padding: var(--space-2) var(--space-3);
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-primary);
+            border-radius: var(--radius-sm);
+            font-weight: var(--font-weight-medium);
+            font-size: var(--text-sm);
+          }
+
+          .workout-adder-muscles-summary::-webkit-details-marker {
+            display: none;
+          }
+
+          .workout-adder-muscles-header--inside {
+            display: none;
+          }
+
+          .workout-adder-remove-muscle-button {
+            color: var(--text-secondary);
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-primary);
+          }
+
+          .workout-adder-remove-muscle-button:hover {
+            color: var(--text-primary);
+            background: var(--bg-hover);
+          }
+
+          .workout-adder-remove-muscle-button,
+          .workout-adder-remove-muscle-button:hover {
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
+          }
+
+          .workout-adder-muscles-summary {
+            min-height: 44px;
+            padding: var(--space-3) var(--space-4);
+            font-size: var(--text-base);
+            display: flex;
+            align-items: center;
+          }
+
+          .workout-adder-muscles-details .muscles-section-title {
+            font-size: var(--text-base);
+          }
+
+          .workout-adder-muscle-row {
+            flex-wrap: wrap;
+            gap: var(--space-2);
+          }
+
+          .workout-adder-muscle-rating-cell {
+            min-width: 0;
+            flex: 1 1 100%;
+          }
+
+          .muscle-rating-stepper,
+          .stepper-input {
+            max-width: 100%;
+          }
+
+          .muscle-description-overlay {
+            padding: 0;
+            align-items: stretch;
+          }
+
+          .muscle-description-modal {
+            width: 100%;
+            max-width: none;
+            height: 100%;
+            max-height: none;
+            border-radius: 0;
+            padding: var(--space-6);
+          }
         }
       `}</style>
     </div>

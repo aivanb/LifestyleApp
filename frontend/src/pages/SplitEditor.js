@@ -74,6 +74,19 @@ const SplitEditor = () => {
           background: var(--bg-hover);
           border-color: var(--border-secondary);
         }
+
+        @media (max-width: 768px) {
+          .split-editor-page {
+            padding-left: 0;
+            padding-right: 0;
+          }
+
+          .split-editor-page .page-actions {
+            padding-left: 0;
+            padding-right: 0;
+            margin-bottom: var(--space-2);
+          }
+        }
       `}</style>
     </div>
   );

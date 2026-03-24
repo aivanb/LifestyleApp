@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 // import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
 import { ArrowLeftIcon } from '@heroicons/react/24/solid';
@@ -197,6 +197,19 @@ const hexToRgba = (hex, alpha) => {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 };
 
+/** Lighter tint of a hex fill (for rank badge border). */
+const lightenHexForBorder = (hex, amount = 0.4) => {
+  const cleaned = typeof hex === 'string' ? hex.replace('#', '') : '';
+  const full = cleaned.length === 3 ? cleaned.split('').map((c) => c + c).join('') : cleaned;
+  if (full.length !== 6) return 'rgb(200, 200, 200)';
+  const r = Number.parseInt(full.slice(0, 2), 16);
+  const g = Number.parseInt(full.slice(2, 4), 16);
+  const b = Number.parseInt(full.slice(4, 6), 16);
+  if ([r, g, b].some((n) => Number.isNaN(n))) return 'rgb(200, 200, 200)';
+  const mix = (c) => Math.round(c + (255 - c) * amount);
+  return `rgb(${mix(r)}, ${mix(g)}, ${mix(b)})`;
+};
+
 const calculateMetricRank = (value, type) => {
   const config = METRIC_CONFIG[type];
   const ranges = config?.ranges || [];
@@ -210,19 +223,28 @@ const calculateMetricRank = (value, type) => {
   return { rank: match?.rank || 'dirt', ranges };
 };
 
+/**
+ * Overall rank = rounded mean of every metric's rank index (same ordering as metric cards).
+ * Missing or invalid values count as `dirt` so the badge reflects all categories, not a subset.
+ */
 const calculateOverallRank = (metrics) => {
   const ranks = METRIC_ORDER.map((type) => {
     const value = metrics?.[type];
     const numeric = Number(value);
-    if (!Number.isFinite(numeric) || numeric <= 0) return null;
-    return calculateMetricRank(numeric, type).rank;
-  }).filter(Boolean);
+    const { rank } = calculateMetricRank(
+      Number.isFinite(numeric) ? numeric : NaN,
+      type
+    );
+    return rank;
+  });
 
-  if (ranks.length === 0) return 'dirt';
-
-  const indices = ranks.map((rank) => RANK_ORDER.indexOf(rank)).filter((i) => i >= 0);
-  if (indices.length === 0) return 'dirt';
-  const averageIndex = Math.round(indices.reduce((sum, i) => sum + i, 0) / indices.length);
+  const indices = ranks.map((rank) => {
+    const i = RANK_ORDER.indexOf(rank);
+    return i >= 0 ? i : 0;
+  });
+  const averageIndex = Math.round(
+    indices.reduce((sum, i) => sum + i, 0) / indices.length
+  );
   return RANK_ORDER[Math.max(0, Math.min(averageIndex, RANK_ORDER.length - 1))];
 };
 
@@ -240,10 +262,41 @@ const formatRange = (value, decimals) => {
   return formatNumber(value, decimals);
 };
 
+/** Human-readable unit labels (API uses `metric` / `imperial` unit_name values). */
+const formatUnitDisplayName = (unitName) => {
+  if (!unitName) return '';
+  const key = String(unitName).toLowerCase();
+  if (key === 'metric') return 'Metric (kg, cm)';
+  if (key === 'imperial') return 'Imperial (lbs, ft)';
+  return unitName;
+};
+
+/** 6-week grid for custom birthday calendar (same logic as FoodLoggingDashboard). */
+function buildCalendarDays(viewMonth) {
+  const year = viewMonth.getFullYear();
+  const month = viewMonth.getMonth();
+  const firstDay = new Date(year, month, 1);
+  const startDate = new Date(firstDay);
+  startDate.setDate(startDate.getDate() - firstDay.getDay());
+  const days = [];
+  const currentDate = new Date(startDate);
+  for (let i = 0; i < 42; i += 1) {
+    const dateString = currentDate.toISOString().split('T')[0];
+    days.push({
+      day: currentDate.getDate(),
+      date: dateString,
+      isCurrentMonth: currentDate.getMonth() === month,
+    });
+    currentDate.setDate(currentDate.getDate() + 1);
+  }
+  return days;
+}
+
 const Profile = () => {
   // const { logout } = useAuth();
   const { theme, setTheme } = useTheme();
   const [profileData, setProfileData] = useState(null);
+  const [unitsCatalog, setUnitsCatalog] = useState([]);
   const [metrics, setMetrics] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -263,6 +316,7 @@ const Profile = () => {
       if (response.data.data) {
         setProfileData(response.data.data.user);
         setMetrics(response.data.data.metrics);
+        setUnitsCatalog(response.data.data.units || []);
       }
     } catch (err) {
       setError('Failed to load profile data');
@@ -284,6 +338,10 @@ const Profile = () => {
   };
   const overallRank = calculateOverallRank(metrics);
   const overallRankColor = getFitnessRankColor(overallRank);
+  const overallRankBorderColor = useMemo(
+    () => lightenHexForBorder(overallRankColor, 0.55),
+    [overallRankColor]
+  );
 
   if (loading) {
     return (
@@ -295,29 +353,21 @@ const Profile = () => {
   }
 
   return (
-    <div className="profile-page">
-      {view === 'info' ? (
-        <div className="info-top-row">
-          <div className="info-top-left" />
-          <div className="info-top-center" />
-          <div className="info-top-right" />
-        </div>
-      ) : (
-        <div className="rankings-top-row">
-          <div className="rankings-top-left" />
-          <div className="rankings-top-center" />
-          <div className="rankings-top-right">
-            <button
-              type="button"
-              data-testid="back-to-info"
-              className="nav-back-btn"
-              onClick={() => setView('info')}
-              aria-label="Back"
-              title="Back"
-            >
-              <ArrowLeftIcon className="nav-back-icon" aria-hidden="true" />
-            </button>
-          </div>
+    <div
+      className={`profile-page profile-page--info${view === 'rankings' ? ' profile-page--rankings' : ''}${theme === 'light' ? ' profile-page--info-light' : ''}`}
+    >
+      {view === 'rankings' && (
+        <div className="profile-rankings-header">
+          <button
+            type="button"
+            data-testid="back-to-info"
+            className="nav-back-btn nav-back-btn--ghost"
+            onClick={() => setView('info')}
+            aria-label="Back"
+            title="Back"
+          >
+            <ArrowLeftIcon className="nav-back-icon" aria-hidden="true" />
+          </button>
         </div>
       )}
 
@@ -330,28 +380,63 @@ const Profile = () => {
 
       {view === 'info' ? (
         <div className="profile-info-layout">
-          <PersonalInfoSection
-            profileData={profileData}
-            editing={editing}
-            setEditing={setEditing}
-            updateProfile={updateProfile}
-            overallRank={overallRank}
-            overallRankColor={overallRankColor}
-            onRankingsClick={() => { setView('rankings'); setEditing(false); }}
-          />
-          <div className="profile-page-footer">
-            <label className="theme-toggle theme-toggle--no-label" aria-label="Toggle theme">
-              <input
-                type="checkbox"
-                checked={theme === 'dark'}
-                onChange={(e) => setTheme(e.target.checked ? 'dark' : 'light')}
+          <div className="profile-info-stack">
+            {overallRank != null && (
+              <div className="profile-rank-row">
+                <button
+                  type="button"
+                  data-testid="rank-badge"
+                  className="rank-badge rank-badge-lg rank-badge--solid"
+                  onClick={() => { setView('rankings'); setEditing(false); }}
+                  style={{
+                    backgroundColor: overallRankColor,
+                    color: '#0a0a0a',
+                    border: `4px solid ${overallRankBorderColor}`,
+                    boxSizing: 'border-box',
+                  }}
+                  aria-label="Rankings"
+                  title="Rankings"
+                >
+                  <span className="rank-emoji" aria-hidden="true">
+                    {getRankEmoji(overallRank)}
+                  </span>
+                  <span className="rank-text">{overallRank.toUpperCase()}</span>
+                </button>
+              </div>
+            )}
+            <div className="profile-info-primary">
+              <PersonalInfoSection
+                profileData={profileData}
+                unitsCatalog={unitsCatalog}
+                editing={editing}
+                setEditing={setEditing}
+                updateProfile={updateProfile}
               />
-              <span className="theme-toggle-track" aria-hidden="true" />
-            </label>
+              <section className="profile-theme-section profile-info-surface" aria-label="Theme">
+                <h3 className="profile-theme-heading">Appearance</h3>
+                <div className="profile-theme-buttons">
+                  <button
+                    type="button"
+                    className={`profile-theme-btn${theme === 'dark' ? ' profile-theme-btn--active' : ''}`}
+                    onClick={() => setTheme('dark')}
+                  >
+                    Dark
+                  </button>
+                  <button
+                    type="button"
+                    className={`profile-theme-btn${theme === 'light' ? ' profile-theme-btn--active' : ''}`}
+                    onClick={() => setTheme('light')}
+                  >
+                    Light
+                  </button>
+                </div>
+              </section>
+            </div>
           </div>
         </div>
       ) : (
         <RankingsSection
+          className="rankings-section--in-profile"
           metrics={metrics}
           selectedMetricType={selectedMetricType}
           setSelectedMetricType={setSelectedMetricType}
@@ -360,17 +445,117 @@ const Profile = () => {
 
       <style jsx>{`
         .profile-page {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
           width: 100%;
-          max-width: none;
-          margin: 0 auto;
-          padding: 0 var(--space-6) var(--space-6);
-          min-height: calc(100vh - calc(var(--space-4) * 2) - calc(var(--space-6) * 2));
+          max-width: 100%;
+          margin: 0;
+          box-sizing: border-box;
+          padding: 0;
+          min-height: 100dvh;
+          min-height: 100svh;
+          overflow-x: hidden;
+          padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px));
+        }
+
+        .profile-page--info {
+          --profile-shell-tint: rgba(255, 255, 255, 0.045);
+          --profile-shell-strong: rgba(255, 255, 255, 0.11);
+          --profile-card-bg: #171c24;
+          --profile-card-border: #2a3140;
+          background-color: #040508;
+          background-image:
+            linear-gradient(var(--profile-shell-tint) 1px, transparent 1px),
+            linear-gradient(90deg, var(--profile-shell-tint) 1px, transparent 1px),
+            linear-gradient(var(--profile-shell-strong) 1px, transparent 1px),
+            linear-gradient(90deg, var(--profile-shell-strong) 1px, transparent 1px);
+          background-size: 20px 20px, 20px 20px, 80px 80px, 80px 80px;
+          background-position: 0 0, 0 0, 0 0, 0 0;
+        }
+
+        .profile-page--info-light {
+          --profile-shell-tint: rgba(0, 0, 0, 0.04);
+          --profile-shell-strong: rgba(0, 0, 0, 0.1);
+          --profile-card-bg: #ffffff;
+          --profile-card-border: #d8dce8;
+          background-color: #e8eaf2;
         }
 
         .profile-info-layout {
           position: relative;
-          max-width: 1200px;
+          width: 100%;
+          max-width: 800px;
           margin: 0 auto;
+          padding: var(--space-4) var(--space-4) var(--space-6);
+          box-sizing: border-box;
+        }
+
+        .profile-info-stack {
+          display: flex;
+          flex-direction: column;
+          align-items: stretch;
+          gap: var(--space-6);
+        }
+
+        .profile-rank-row {
+          display: flex;
+          justify-content: flex-end;
+          width: 100%;
+        }
+
+        .profile-info-primary {
+          display: flex;
+          flex-direction: column;
+          gap: 0;
+          min-width: 0;
+          width: 100%;
+        }
+
+        .rank-badge--solid {
+          min-width: 0 !important;
+          max-width: 220px;
+        }
+
+        .profile-theme-section {
+          margin-top: var(--space-8);
+          padding: var(--space-5);
+        }
+
+        .profile-theme-heading {
+          margin: 0 0 var(--space-4);
+          font-size: var(--text-xs);
+          text-transform: uppercase;
+          letter-spacing: 0.14em;
+          color: var(--text-secondary);
+          font-weight: var(--font-weight-semibold);
+        }
+
+        .profile-theme-buttons {
+          display: flex;
+          gap: var(--space-3);
+        }
+
+        .profile-theme-btn {
+          flex: 1;
+          padding: var(--space-3) var(--space-4);
+          border-radius: var(--radius-md);
+          border: 1px solid var(--border-primary);
+          background: var(--bg-tertiary);
+          color: var(--text-primary);
+          font-weight: var(--font-weight-semibold);
+          cursor: pointer;
+          transition: background 0.2s var(--ease-out-cubic), border-color 0.2s;
+        }
+
+        .profile-theme-btn:hover {
+          border-color: var(--border-secondary);
+        }
+
+        .profile-theme-btn--active {
+          background: var(--accent-primary);
+          border-color: var(--accent-primary);
+          color: #fff;
         }
 
         .profile-loading {
@@ -401,7 +586,7 @@ const Profile = () => {
           color: var(--accent-danger);
           padding: var(--space-4);
           border-radius: var(--radius-md);
-          margin-bottom: var(--space-6);
+          margin: 0 var(--space-4) var(--space-6);
         }
 
         .rank-badge {
@@ -415,6 +600,7 @@ const Profile = () => {
           letter-spacing: 0.12em;
           text-transform: uppercase;
           border: 2px solid transparent;
+          outline: none;
           display: inline-flex;
           align-items: center;
           justify-content: center;
@@ -422,8 +608,17 @@ const Profile = () => {
           cursor: pointer;
         }
 
+        .rank-badge:focus-visible {
+          outline: 2px solid var(--accent-primary);
+          outline-offset: 3px;
+        }
+
         .rank-badge-lg {
-          font-size: clamp(1.1rem, 2.4vw, 1.6rem);
+          font-size: clamp(1rem, 2vw, 1.35rem);
+        }
+
+        .rank-badge--solid {
+          box-shadow: 0 10px 28px rgba(0, 0, 0, 0.22);
         }
 
         .rank-emoji {
@@ -436,39 +631,27 @@ const Profile = () => {
           line-height: 1;
         }
 
-        .info-top-row,
-        .rankings-top-row {
-          display: grid;
-          grid-template-columns: 1fr auto 1fr;
-          align-items: center;
-          gap: var(--space-4);
-          padding-top: var(--space-2);
-          margin-bottom: var(--space-5);
-        }
-
-        .info-top-left,
-        .rankings-top-left {
-          display: flex;
-          justify-content: flex-start;
-          align-items: center;
-        }
-
-        .info-top-center,
-        .rankings-top-center {
-          display: flex;
-          justify-content: center;
-          align-items: center;
-        }
-
-        .info-top-right,
-        .rankings-top-right {
+        .profile-rankings-header {
           display: flex;
           justify-content: flex-end;
-          align-items: center;
+          margin-bottom: var(--space-3);
+          padding-top: var(--space-2);
+        }
+
+        @media (min-width: 769px) {
+          /* Match profile rankings section horizontal inset so back aligns with metrics column right edge */
+          .profile-rankings-header {
+            width: 100%;
+            max-width: none;
+            margin-left: 0;
+            margin-right: 0;
+            padding-right: var(--space-4);
+            box-sizing: border-box;
+          }
         }
 
         .nav-back-btn {
-          padding: var(--space-3) var(--space-4);
+          padding: var(--space-2);
           background: var(--bg-tertiary);
           border: 1px solid var(--border-primary);
           color: var(--text-primary);
@@ -480,108 +663,81 @@ const Profile = () => {
           justify-content: center;
         }
 
+        .nav-back-btn--ghost {
+          background: transparent;
+          border: none;
+          box-shadow: none;
+        }
+
+        .nav-back-btn--ghost:hover {
+          background: transparent;
+          color: var(--accent-primary);
+        }
+
+        .profile-page--rankings .nav-back-btn--ghost {
+          min-width: 48px;
+          min-height: 48px;
+          padding: var(--space-3);
+        }
+
         .nav-back-icon {
-          width: 22px;
-          height: 22px;
+          width: 32px;
+          height: 32px;
         }
 
-        .nav-back-btn:hover {
-          background: var(--bg-tertiary);
-          border-color: var(--border-secondary);
-        }
-
-        .theme-toggle--no-label {
-          display: inline-flex;
-          align-items: center;
-        }
-
-        .theme-toggle--no-label .theme-toggle-track {
-          width: 56px;
-          height: 30px;
-          border-radius: 999px;
-          background: var(--bg-tertiary);
-          border: 1px solid var(--border-primary);
-          position: relative;
-          transition: background 0.2s var(--ease-out-cubic), border-color 0.2s var(--ease-out-cubic);
-        }
-
-        .theme-toggle--no-label .theme-toggle-track::after {
-          content: '';
-          position: absolute;
-          top: 50%;
-          left: 4px;
-          transform: translateY(-50%);
-          width: 22px;
-          height: 22px;
-          border-radius: 999px;
-          background: var(--text-primary);
-          transition: transform 0.2s var(--ease-out-cubic), background 0.2s var(--ease-out-cubic);
-        }
-
-        .theme-toggle--no-label input:checked + .theme-toggle-track::after {
-          transform: translate(26px, -50%);
-          background: #ffffff;
-        }
-
-        .theme-toggle--no-label input:checked + .theme-toggle-track {
-          background: rgba(255, 255, 255, 0.08);
-          border-color: var(--border-secondary);
-        }
-
-        .theme-toggle--no-label input {
-          position: absolute;
-          opacity: 0;
-          pointer-events: none;
-        }
-
-        .rank-badge--inside-info {
-          margin-bottom: var(--space-10);
-          display: block;
-          width: 100%;
-        }
-
-        .profile-page-footer {
-          margin-top: var(--space-4);
-          padding: 0;
-          display: flex;
-          justify-content: flex-end;
-          align-items: center;
+        .profile-page--rankings .rankings-section {
+          padding: 0 var(--space-4) var(--space-6);
+          box-sizing: border-box;
         }
 
         @media (max-width: 768px) {
           .profile-page {
-            padding: 0 var(--space-4) var(--space-4);
-            min-height: calc(100vh - calc(var(--space-4) * 2) - calc(var(--space-6) * 2));
+            padding: 0;
+            width: 100%;
+            max-width: 100%;
+            overflow-x: clip;
+            padding-top: calc(var(--space-3) + env(safe-area-inset-top, 0px));
+            padding-bottom: calc(110px + env(safe-area-inset-bottom, 0px));
+            min-height: min-content;
           }
 
-          .info-top-row,
-          .rankings-top-row {
-            grid-template-columns: 1fr;
-            justify-items: center;
-            margin-bottom: var(--space-4);
+          .profile-info-layout {
+            padding: var(--space-3) var(--space-3) var(--space-4);
           }
 
-          .info-top-left,
-          .rankings-top-left,
-          .info-top-right,
-          .rankings-top-right {
-            justify-content: center;
+          .profile-rankings-header {
+            position: fixed;
+            top: calc(var(--space-2) + env(safe-area-inset-top, 0px));
+            right: calc(var(--space-3) + env(safe-area-inset-right, 0px));
+            z-index: 250;
+            margin: 0;
+            padding: 0;
           }
 
-          .user-info-display {
-            padding: var(--space-4);
+          .profile-page--rankings {
+            padding-top: calc(68px + var(--space-4) + env(safe-area-inset-top, 0px));
           }
 
-          .rank-badge--inside-info {
-            margin-bottom: var(--space-6);
+          .profile-page--rankings .rankings-section {
+            padding: 0 var(--space-3) var(--space-4);
+            margin-top: 0;
           }
 
-          .info-grid {
-            gap: var(--space-4);
+          .personal-info-section {
+            text-align: left;
           }
 
-          .profile-page-footer {
-            justify-content: center;
+          .personal-info-section .form-grid,
+          .personal-info-section .goals-display,
+          .personal-info-section .form-group,
+          .personal-info-section .form-group input,
+          .personal-info-section .form-group select,
+          .personal-info-section .form-group label {
+            text-align: left;
+          }
+
+          .personal-info-section .form-group {
+            align-items: flex-start;
           }
         }
       `}</style>
@@ -590,36 +746,71 @@ const Profile = () => {
 };
 
 // Personal Information Section Component
-const PersonalInfoSection = ({ profileData, editing, setEditing, updateProfile, overallRank, overallRankColor, onRankingsClick }) => {
+const PersonalInfoSection = ({
+  profileData,
+  unitsCatalog = [],
+  editing,
+  setEditing,
+  updateProfile,
+}) => {
+  const unitChoices = useMemo(
+    () =>
+      (unitsCatalog || []).filter((u) =>
+        ['metric', 'imperial'].includes(String(u.unit_name || '').toLowerCase())
+      ),
+    [unitsCatalog]
+  );
+
+  const unitPrefId =
+    profileData?.unit_preference?.unit_id ?? profileData?.unit_preference?.unit_preference_id;
+
   const [formData, setFormData] = useState({
     first_name: profileData?.first_name || '',
     last_name: profileData?.last_name || '',
     username: profileData?.username || '',
     email: profileData?.email || '',
-    height: profileData?.height || '',
+    height: profileData?.height ?? '',
     birthday: profileData?.birthday || '',
     gender: profileData?.gender || '',
-    unit_preference: profileData?.unit_preference?.unit_preference_id || '',
-    activity_level: profileData?.activity_level?.activity_level_id || ''
+    unit_preference: unitPrefId != null && unitPrefId !== '' ? String(unitPrefId) : '',
+    activity_level:
+      profileData?.activity_level?.activity_level_id != null &&
+      profileData?.activity_level?.activity_level_id !== ''
+        ? String(profileData.activity_level.activity_level_id)
+        : '',
   });
 
   useEffect(() => {
+    const upId =
+      profileData?.unit_preference?.unit_id ?? profileData?.unit_preference?.unit_preference_id;
     setFormData({
       first_name: profileData?.first_name || '',
       last_name: profileData?.last_name || '',
       username: profileData?.username || '',
       email: profileData?.email || '',
-      height: profileData?.height || '',
+      height: profileData?.height ?? '',
       birthday: profileData?.birthday || '',
       gender: profileData?.gender || '',
-      unit_preference: profileData?.unit_preference?.unit_preference_id || '',
-      activity_level: profileData?.activity_level?.activity_level_id || ''
+      unit_preference: upId != null && upId !== '' ? String(upId) : '',
+      activity_level:
+        profileData?.activity_level?.activity_level_id != null &&
+        profileData?.activity_level?.activity_level_id !== ''
+          ? String(profileData.activity_level.activity_level_id)
+          : '',
     });
   }, [profileData]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    updateProfile(formData);
+    const payload = {
+      ...formData,
+      unit_preference: formData.unit_preference === '' ? null : parseInt(formData.unit_preference, 10),
+      activity_level:
+        formData.activity_level === '' ? null : parseInt(formData.activity_level, 10),
+    };
+    if (Number.isNaN(payload.unit_preference)) payload.unit_preference = null;
+    if (Number.isNaN(payload.activity_level)) payload.activity_level = null;
+    updateProfile(payload);
   };
 
   const handleChange = (e) => {
@@ -627,217 +818,339 @@ const PersonalInfoSection = ({ profileData, editing, setEditing, updateProfile, 
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  const [showBirthdayCalendar, setShowBirthdayCalendar] = useState(false);
+  const [birthdayViewMonth, setBirthdayViewMonth] = useState(() => new Date());
+  const birthdayPickerRef = useRef(null);
+
+  const todayIso = useMemo(() => new Date().toISOString().split('T')[0], []);
+
+  useEffect(() => {
+    if (!showBirthdayCalendar) return undefined;
+    const onDown = (event) => {
+      if (birthdayPickerRef.current && !birthdayPickerRef.current.contains(event.target)) {
+        setShowBirthdayCalendar(false);
+      }
+    };
+    document.addEventListener('mousedown', onDown);
+    return () => document.removeEventListener('mousedown', onDown);
+  }, [showBirthdayCalendar]);
+
+  const openBirthdayCalendar = () => {
+    if (formData.birthday) {
+      const d = new Date(`${formData.birthday}T12:00:00`);
+      if (!Number.isNaN(d.getTime())) {
+        setBirthdayViewMonth(new Date(d.getFullYear(), d.getMonth(), 1));
+      }
+    } else {
+      setBirthdayViewMonth(new Date());
+    }
+    setShowBirthdayCalendar(true);
+  };
+
+  const selectBirthdayDate = (isoDate) => {
+    setFormData((prev) => ({ ...prev, birthday: isoDate }));
+    setShowBirthdayCalendar(false);
+  };
+
+  const birthdayCalendarDays = useMemo(
+    () => buildCalendarDays(birthdayViewMonth),
+    [birthdayViewMonth]
+  );
+
+  const now = new Date();
+  const canBirthdayMonthGoNext =
+    birthdayViewMonth.getFullYear() < now.getFullYear() ||
+    (birthdayViewMonth.getFullYear() === now.getFullYear() &&
+      birthdayViewMonth.getMonth() < now.getMonth());
+
+  const fieldInputClass = 'profile-field-input';
+  const birthdayDisplay = profileData?.birthday
+    ? new Date(profileData.birthday).toLocaleDateString()
+    : 'Not set';
+
+  const birthdayFieldDisplay =
+    formData.birthday && !Number.isNaN(new Date(`${formData.birthday}T12:00:00`).getTime())
+      ? new Date(`${formData.birthday}T12:00:00`).toLocaleDateString()
+      : '';
+
   return (
     <div className="personal-info-section">
       {editing ? (
-        <div className="personal-info-edit-card card">
+        <div className="personal-info-edit-card profile-info-surface">
           <form onSubmit={handleSubmit} className="personal-info-form">
-            <div className="form-grid">
-            <div className="form-group">
-              <label className="form-label">First name</label>
-              <input
-                type="text"
-                name="first_name"
-                value={formData.first_name}
-                onChange={handleChange}
-                className="form-input"
-                placeholder="Enter first name"
-              />
+            <div className="profile-rows">
+              <div className="profile-row profile-row--2">
+                <label className="profile-field">
+                  <span className="profile-field-label">First name</span>
+                  <input
+                    type="text"
+                    name="first_name"
+                    value={formData.first_name}
+                    onChange={handleChange}
+                    className={fieldInputClass}
+                    autoComplete="given-name"
+                  />
+                </label>
+                <label className="profile-field">
+                  <span className="profile-field-label">Last name</span>
+                  <input
+                    type="text"
+                    name="last_name"
+                    value={formData.last_name}
+                    onChange={handleChange}
+                    className={fieldInputClass}
+                    autoComplete="family-name"
+                  />
+                </label>
+              </div>
+              <div className="profile-row profile-row--2">
+                <label className="profile-field">
+                  <span className="profile-field-label">Username</span>
+                  <input
+                    type="text"
+                    name="username"
+                    value={formData.username}
+                    onChange={handleChange}
+                    className={fieldInputClass}
+                    autoComplete="username"
+                  />
+                </label>
+                <label className="profile-field">
+                  <span className="profile-field-label">Email</span>
+                  <input
+                    type="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    className={fieldInputClass}
+                    autoComplete="email"
+                  />
+                </label>
+              </div>
+              <div className="profile-row profile-row--2">
+                <label className="profile-field">
+                  <span className="profile-field-label">Height (cm)</span>
+                  <input
+                    type="number"
+                    name="height"
+                    value={formData.height}
+                    onChange={handleChange}
+                    className={fieldInputClass}
+                    step="0.1"
+                  />
+                </label>
+                <label className="profile-field">
+                  <span className="profile-field-label">Gender</span>
+                  <select
+                    name="gender"
+                    value={formData.gender}
+                    onChange={handleChange}
+                    className={fieldInputClass}
+                  >
+                    <option value="">Select gender</option>
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                    <option value="other">Other</option>
+                  </select>
+                </label>
+              </div>
+              <div className="profile-row profile-row--1">
+                <label className="profile-field">
+                  <span className="profile-field-label">Birthday</span>
+                  <div className="profile-birthday-picker" ref={birthdayPickerRef}>
+                    <input
+                      type="text"
+                      name="birthday_display"
+                      readOnly
+                      value={birthdayFieldDisplay}
+                      placeholder="Select date"
+                      className={`${fieldInputClass} profile-birthday-input`}
+                      onClick={openBirthdayCalendar}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          openBirthdayCalendar();
+                        }
+                      }}
+                      aria-label="Birthday, opens calendar"
+                    />
+                    {showBirthdayCalendar && (
+                      <div className="custom-calendar-popup" role="dialog" aria-label="Choose birthday">
+                        <div className="calendar-header">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setBirthdayViewMonth(
+                                new Date(
+                                  birthdayViewMonth.getFullYear(),
+                                  birthdayViewMonth.getMonth() - 1,
+                                  1
+                                )
+                              )
+                            }
+                          >
+                            ←
+                          </button>
+                          <span>
+                            {birthdayViewMonth.toLocaleDateString('en-US', {
+                              month: 'long',
+                              year: 'numeric',
+                            })}
+                          </span>
+                          <button
+                            type="button"
+                            disabled={!canBirthdayMonthGoNext}
+                            onClick={() =>
+                              setBirthdayViewMonth(
+                                new Date(
+                                  birthdayViewMonth.getFullYear(),
+                                  birthdayViewMonth.getMonth() + 1,
+                                  1
+                                )
+                              )
+                            }
+                          >
+                            →
+                          </button>
+                        </div>
+                        <div className="calendar-grid">
+                          <div className="calendar-day-header">Sun</div>
+                          <div className="calendar-day-header">Mon</div>
+                          <div className="calendar-day-header">Tue</div>
+                          <div className="calendar-day-header">Wed</div>
+                          <div className="calendar-day-header">Thu</div>
+                          <div className="calendar-day-header">Fri</div>
+                          <div className="calendar-day-header">Sat</div>
+                          {birthdayCalendarDays.map((day, index) => {
+                            const isFuture = day.date > todayIso;
+                            return (
+                              <button
+                                key={index}
+                                type="button"
+                                className={`calendar-day ${day.isCurrentMonth ? 'current-month' : 'other-month'} ${day.date === formData.birthday ? 'selected' : ''}`}
+                                onClick={() => !isFuture && selectBirthdayDate(day.date)}
+                                disabled={!day.isCurrentMonth || isFuture}
+                              >
+                                {day.day}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </label>
+              </div>
+              <div className="profile-row profile-row--1">
+                <label className="profile-field">
+                  <span className="profile-field-label">Units</span>
+                  <select
+                    name="unit_preference"
+                    value={formData.unit_preference}
+                    onChange={handleChange}
+                    className={fieldInputClass}
+                  >
+                    <option value="">Select unit system</option>
+                    {unitChoices.map((u) => (
+                      <option key={u.unit_id} value={String(u.unit_id)}>
+                        {formatUnitDisplayName(u.unit_name)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+              <div className="profile-row profile-row--1">
+                <label className="profile-field">
+                  <span className="profile-field-label">Activity level</span>
+                  <select
+                    name="activity_level"
+                    value={formData.activity_level}
+                    onChange={handleChange}
+                    className={fieldInputClass}
+                  >
+                    <option value="">Select activity level</option>
+                    <option value="1">Sedentary - Little to no exercise, desk job</option>
+                    <option value="2">Light Activity - Light exercise 1-3 days/week</option>
+                    <option value="3">Moderate Activity - Moderate exercise 3-5 days/week</option>
+                    <option value="4">Active - Heavy exercise 6-7 days/week</option>
+                    <option value="5">Very Active - Very heavy exercise, physical job</option>
+                  </select>
+                </label>
+              </div>
             </div>
-
-            <div className="form-group">
-              <label className="form-label">Last name</label>
-              <input
-                type="text"
-                name="last_name"
-                value={formData.last_name}
-                onChange={handleChange}
-                className="form-input"
-                placeholder="Enter last name"
-              />
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">Username</label>
-              <input
-                type="text"
-                name="username"
-                value={formData.username}
-                onChange={handleChange}
-                className="form-input"
-                placeholder="Enter username"
-              />
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">Email</label>
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                className="form-input"
-                placeholder="Enter email"
-              />
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">Height (cm)</label>
-              <input
-                type="number"
-                name="height"
-                value={formData.height}
-                onChange={handleChange}
-                className="form-input"
-                step="0.1"
-                placeholder="Enter height"
-              />
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">Birthday</label>
-              <input
-                type="date"
-                name="birthday"
-                value={formData.birthday}
-                onChange={handleChange}
-                className="form-input"
-              />
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">Gender</label>
-              <select
-                name="gender"
-                value={formData.gender}
-                onChange={handleChange}
-                className="form-input"
-              >
-                <option value="">Select Gender</option>
-                <option value="male">Male</option>
-                <option value="female">Female</option>
-                <option value="other">Other</option>
-              </select>
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">Unit Preference</label>
-              <select
-                name="unit_preference"
-                value={formData.unit_preference}
-                onChange={handleChange}
-                className="form-input"
-              >
-                <option value="">Select Unit</option>
-                <option value="1">Metric (kg, cm)</option>
-                <option value="2">Imperial (lbs, ft)</option>
-              </select>
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">Activity Level</label>
-              <select
-                name="activity_level"
-                value={formData.activity_level}
-                onChange={handleChange}
-                className="form-input"
-              >
-                <option value="">Select Activity Level</option>
-                <option value="1">Sedentary - Little to no exercise, desk job</option>
-                <option value="2">Light Activity - Light exercise 1-3 days/week</option>
-                <option value="3">Moderate Activity - Moderate exercise 3-5 days/week</option>
-                <option value="4">Active - Heavy exercise 6-7 days/week</option>
-                <option value="5">Very Active - Very heavy exercise, physical job</option>
-              </select>
-            </div>
-          </div>
-
             <div className="form-actions">
               <button type="submit" className="text-action text-action-primary">
                 Save Changes
               </button>
-              <button
-                type="button"
-                className="text-action"
-                onClick={() => setEditing(false)}
-              >
+              <button type="button" className="text-action" onClick={() => setEditing(false)}>
                 Cancel
               </button>
             </div>
           </form>
         </div>
       ) : (
-        <div className="user-info-display">
+        <div className="user-info-display profile-info-surface">
           <div className="info-section">
-            {overallRank != null && (
-              <button
-                type="button"
-                data-testid="rank-badge"
-                className="rank-badge rank-badge-lg rank-badge--inside-info"
-                onClick={onRankingsClick}
-                style={{
-                  background: `linear-gradient(135deg, ${hexToRgba(overallRankColor, 0.18)}, rgba(0,0,0,0) 55%), #181b22`,
-                  borderColor: overallRankColor,
-                }}
-                aria-label="Rankings"
-                title="Rankings"
-              >
-                <span className="rank-emoji" aria-hidden="true">
-                  {getRankEmoji(overallRank)}
-                </span>
-                <span className="rank-text">{overallRank.toUpperCase()}</span>
-              </button>
-            )}
-            <div className="info-grid">
-              <div className="info-item">
-                <span className="info-label">First name</span>
-                <span className="info-value">{profileData?.first_name || 'Not set'}</span>
+            <div className="profile-rows">
+              <div className="profile-row profile-row--2">
+                <div className="profile-field">
+                  <span className="profile-field-label">First name</span>
+                  <span className="profile-field-value">{profileData?.first_name || 'Not set'}</span>
+                </div>
+                <div className="profile-field">
+                  <span className="profile-field-label">Last name</span>
+                  <span className="profile-field-value">{profileData?.last_name || 'Not set'}</span>
+                </div>
               </div>
-              <div className="info-item">
-                <span className="info-label">Last name</span>
-                <span className="info-value">{profileData?.last_name || 'Not set'}</span>
+              <div className="profile-row profile-row--2">
+                <div className="profile-field">
+                  <span className="profile-field-label">Username</span>
+                  <span className="profile-field-value">{profileData?.username || 'Not set'}</span>
+                </div>
+                <div className="profile-field">
+                  <span className="profile-field-label">Email</span>
+                  <span className="profile-field-value">{profileData?.email || 'Not set'}</span>
+                </div>
               </div>
-              <div className="info-item">
-                <span className="info-label">Username</span>
-                <span className="info-value">{profileData?.username || 'Not set'}</span>
+              <div className="profile-row profile-row--2">
+                <div className="profile-field">
+                  <span className="profile-field-label">Height</span>
+                  <span className="profile-field-value">
+                    {profileData?.height ? `${profileData.height} cm` : 'Not set'}
+                  </span>
+                </div>
+                <div className="profile-field">
+                  <span className="profile-field-label">Gender</span>
+                  <span className="profile-field-value">{profileData?.gender || 'Not set'}</span>
+                </div>
               </div>
-              <div className="info-item">
-                <span className="info-label">Email</span>
-                <span className="info-value">{profileData?.email || 'Not set'}</span>
+              <div className="profile-row profile-row--1">
+                <div className="profile-field">
+                  <span className="profile-field-label">Birthday</span>
+                  <span className="profile-field-value">{birthdayDisplay}</span>
+                </div>
               </div>
-              <div className="info-item">
-                <span className="info-label">Height</span>
-                <span className="info-value">{profileData?.height ? `${profileData.height} cm` : 'Not set'}</span>
+              <div className="profile-row profile-row--1">
+                <div className="profile-field">
+                  <span className="profile-field-label">Units</span>
+                  <span className="profile-field-value">
+                    {profileData?.unit_preference?.unit_name
+                      ? formatUnitDisplayName(profileData.unit_preference.unit_name)
+                      : 'Not set'}
+                  </span>
+                </div>
               </div>
-              <div className="info-item">
-                <span className="info-label">Birthday</span>
-                <span className="info-value">
-                  {profileData?.birthday ? new Date(profileData.birthday).toLocaleDateString() : 'Not set'}
-                </span>
-              </div>
-              <div className="info-item">
-                <span className="info-label">Gender</span>
-                <span className="info-value">{profileData?.gender || 'Not set'}</span>
-              </div>
-              <div className="info-item">
-                <span className="info-label">Units</span>
-                <span className="info-value">
-                  {profileData?.unit_preference?.unit_name || 'Not set'}
-                </span>
-              </div>
-              <div className="info-item">
-                <span className="info-label">Activity Level</span>
-                <span className="info-value">
-                  {profileData?.activity_level?.name || 'Not set'}
-                </span>
+              <div className="profile-row profile-row--1">
+                <div className="profile-field">
+                  <span className="profile-field-label">Activity level</span>
+                  <span className="profile-field-value">
+                    {profileData?.activity_level?.name || 'Not set'}
+                  </span>
+                </div>
               </div>
             </div>
             <div className="info-footer">
-              <button
-                type="button"
-                className="text-action"
-                onClick={() => setEditing(true)}
-              >
+              <button type="button" className="text-action" onClick={() => setEditing(true)}>
                 Edit info
               </button>
             </div>
@@ -847,34 +1160,227 @@ const PersonalInfoSection = ({ profileData, editing, setEditing, updateProfile, 
 
       <style jsx>{`
         .personal-info-section {
-          max-width: 1200px;
-          margin: 0 auto;
+          max-width: none;
+          width: 100%;
+          margin: 0;
+        }
+
+        .profile-info-surface {
+          background: var(--profile-card-bg, var(--bg-secondary));
+          border: 1px solid var(--profile-card-border, var(--border-primary));
+          border-radius: var(--radius-lg);
+          box-shadow: var(--shadow-md);
+        }
+
+        .profile-birthday-picker {
+          position: relative;
+          width: 100%;
+        }
+
+        .profile-birthday-input {
+          cursor: pointer;
+        }
+
+        .profile-birthday-picker .custom-calendar-popup {
+          position: absolute;
+          top: 100%;
+          left: 0;
+          right: auto;
+          background: var(--bg-secondary);
+          border: 1px solid var(--border-primary);
+          border-radius: var(--radius-md);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+          z-index: 1000;
+          padding: var(--space-5);
+          min-width: min(100%, 350px);
+          max-width: 400px;
+          margin-top: var(--space-2);
+        }
+
+        .profile-birthday-picker .calendar-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: var(--space-3);
+          padding-bottom: var(--space-2);
+          border-bottom: 1px solid var(--border-primary);
+        }
+
+        .profile-birthday-picker .calendar-header button {
+          background: var(--bg-tertiary);
+          border: 1px solid var(--border-primary);
+          border-radius: var(--radius-sm);
+          color: var(--text-primary);
+          padding: var(--space-1) var(--space-2);
+          cursor: pointer;
+          font-size: var(--text-sm);
+          transition: all 0.2s var(--ease-out-cubic);
+        }
+
+        .profile-birthday-picker .calendar-header button:hover:not(:disabled) {
+          background: var(--accent-primary);
+          color: white;
+        }
+
+        .profile-birthday-picker .calendar-header button:disabled {
+          opacity: 0.35;
+          cursor: not-allowed;
+        }
+
+        .profile-birthday-picker .calendar-header span {
+          font-size: var(--text-base);
+          font-weight: 600;
+          color: var(--text-primary);
+        }
+
+        .profile-birthday-picker .calendar-grid {
+          display: grid;
+          grid-template-columns: repeat(7, 1fr);
+          gap: 4px;
+        }
+
+        .profile-birthday-picker .calendar-day-header {
+          text-align: center;
+          font-size: var(--text-sm);
+          font-weight: 600;
+          color: var(--text-secondary);
+          padding: var(--space-2);
+        }
+
+        .profile-birthday-picker .calendar-day {
+          background: var(--bg-tertiary);
+          border: 1px solid var(--border-primary);
+          border-radius: var(--radius-sm);
+          color: var(--text-primary);
+          padding: var(--space-3);
+          cursor: pointer;
+          font-size: var(--text-base);
+          transition: all 0.2s var(--ease-out-cubic);
+          min-height: 40px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .profile-birthday-picker .calendar-day:hover:not(:disabled) {
+          background: var(--accent-primary);
+          color: white;
+        }
+
+        .profile-birthday-picker .calendar-day.selected {
+          background: var(--accent-primary);
+          color: white;
+          font-weight: 600;
+        }
+
+        .profile-birthday-picker .calendar-day.other-month {
+          color: var(--text-secondary);
+          opacity: 0.5;
+        }
+
+        .profile-birthday-picker .calendar-day.other-month:hover:not(:disabled) {
+          opacity: 0.8;
+        }
+
+        .profile-birthday-picker .calendar-day:disabled {
+          cursor: not-allowed;
+          opacity: 0.3;
+        }
+
+        .profile-birthday-picker .calendar-day:disabled:hover {
+          background: var(--bg-tertiary);
+          color: var(--text-primary);
+        }
+
+        @media (max-width: 400px) {
+          .profile-birthday-picker .custom-calendar-popup {
+            left: 0;
+            right: 0;
+            width: calc(100vw - 2rem);
+            max-width: none;
+            margin-left: 0;
+            margin-right: 0;
+          }
         }
 
         .personal-info-edit-card {
-          padding: var(--space-6);
-          margin-bottom: var(--space-6);
+          padding: var(--space-5);
+          margin-bottom: var(--space-4);
         }
 
-        .form-grid {
+        .user-info-display {
+          padding: var(--space-5);
+        }
+
+        .profile-rows {
+          display: flex;
+          flex-direction: column;
+          gap: var(--space-5);
+        }
+
+        .profile-row--2 {
           display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+          grid-template-columns: 1fr 1fr;
           gap: var(--space-4);
-          margin-bottom: var(--space-6);
+          align-items: start;
         }
 
-        .form-group {
+        .profile-row--1 {
+          display: block;
+        }
+
+        .profile-field {
           display: flex;
           flex-direction: column;
           gap: var(--space-2);
-          align-items: center;
+          margin: 0;
+          min-width: 0;
         }
 
-        .form-label {
-          font-size: var(--text-sm);
+        .profile-field-label {
+          font-size: var(--text-xs);
           color: var(--text-secondary);
+          font-weight: var(--font-weight-semibold);
+          text-transform: uppercase;
+          letter-spacing: 0.1em;
+        }
+
+        .profile-field-value {
+          display: flex;
+          align-items: center;
+          min-height: 52px;
+          padding: var(--space-3) var(--space-4);
+          border-radius: var(--radius-md);
+          border: 1px solid transparent;
+          font-size: var(--text-lg);
+          color: var(--text-primary);
           font-weight: var(--font-weight-medium);
-          text-align: center;
+          line-height: 1.3;
+        }
+
+        .profile-field-input {
+          width: 100%;
+          box-sizing: border-box;
+          min-height: 52px;
+          padding: var(--space-3) var(--space-4);
+          border: 1px solid var(--border-primary);
+          border-radius: var(--radius-md);
+          background: var(--bg-tertiary);
+          color: var(--text-primary);
+          font-family: var(--font-primary);
+          font-size: var(--text-lg);
+          text-align: left;
+          transition: border-color 0.2s var(--ease-out-cubic), box-shadow 0.2s;
+        }
+
+        select.profile-field-input {
+          cursor: pointer;
+        }
+
+        .profile-field-input:focus {
+          outline: none;
+          border-color: var(--accent-primary);
+          box-shadow: 0 0 0 3px rgba(var(--accent-primary-rgb), 0.12);
         }
 
         .form-actions {
@@ -882,6 +1388,7 @@ const PersonalInfoSection = ({ profileData, editing, setEditing, updateProfile, 
           gap: var(--space-3);
           justify-content: flex-end;
           align-items: center;
+          margin-top: var(--space-6);
         }
 
         .text-action {
@@ -904,84 +1411,14 @@ const PersonalInfoSection = ({ profileData, editing, setEditing, updateProfile, 
           color: var(--text-primary);
         }
 
-        .user-info-display {
-          background: var(--bg-secondary);
-          border: 1px solid var(--border-primary);
-          border-radius: var(--radius-lg);
-          padding: var(--space-6);
-          box-shadow: var(--shadow-md);
-        }
-
         .info-footer {
           display: flex;
           justify-content: flex-end;
-          align-items: center;
-          margin-top: var(--space-8);
-          gap: var(--space-6);
-        }
-
-        .info-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-          gap: var(--space-6);
-          text-align: center;
-        }
-
-        .info-item {
-          display: flex;
-          flex-direction: column;
-          gap: var(--space-2);
-          align-items: center;
-        }
-
-        .info-item-full {
-          grid-column: 1 / -1;
-        }
-
-        .info-label {
-          font-size: var(--text-base);
-          color: var(--text-secondary);
-          font-weight: var(--font-weight-medium);
-          text-transform: uppercase;
-          letter-spacing: 0.1em;
-        }
-
-        .info-value {
-          font-size: var(--text-xl);
-          color: var(--text-primary);
-          font-weight: var(--font-weight-medium);
-        }
-
-        .form-input {
-          width: 100%;
-          max-width: 520px;
-          margin: 0 auto;
-          padding: var(--space-4) var(--space-5);
-          border: 1px solid var(--border-primary);
-          border-radius: var(--radius-md);
-          background: var(--bg-secondary);
-          color: var(--text-primary);
-          font-family: var(--font-primary);
-          font-size: var(--text-lg);
-          transition: all 0.2s var(--ease-out-cubic);
-          text-align: center;
-        }
-        select.form-input {
-          text-align-last: center;
-        }
-
-        .form-input:focus {
-          outline: none;
-          border-color: var(--accent-primary);
-          box-shadow: 0 0 0 3px rgba(var(--accent-primary-rgb), 0.1);
+          margin-top: var(--space-6);
         }
 
         @media (max-width: 768px) {
-          .form-grid {
-            grid-template-columns: 1fr;
-          }
-
-          .info-grid {
+          .profile-row--2 {
             grid-template-columns: 1fr;
           }
         }
@@ -990,7 +1427,25 @@ const PersonalInfoSection = ({ profileData, editing, setEditing, updateProfile, 
   );
 };
 
-const RankingsSection = ({ metrics, selectedMetricType, setSelectedMetricType }) => {
+const RankingsSection = ({ className = '', metrics, selectedMetricType, setSelectedMetricType }) => {
+  const [mobileRankingPanelOpen, setMobileRankingPanelOpen] = useState(false);
+  const mobilePanelOpenedAtRef = useRef(0);
+
+  const openMobileRankingPanel = useCallback(() => {
+    mobilePanelOpenedAtRef.current =
+      typeof performance !== 'undefined' ? performance.now() : Date.now();
+    setMobileRankingPanelOpen(true);
+  }, []);
+
+  const handleMobileOverlayDismiss = useCallback((e) => {
+    const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
+    if (now - mobilePanelOpenedAtRef.current < 700) {
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+    setMobileRankingPanelOpen(false);
+  }, []);
   const metricsData = METRIC_ORDER.map((type) => {
     const config = METRIC_CONFIG[type];
     const value = metrics?.[type];
@@ -1028,9 +1483,35 @@ const RankingsSection = ({ metrics, selectedMetricType, setSelectedMetricType })
   const selectedRank = calculateMetricRank(selectedValue, selectedMetricType);
 
   return (
-    <div className="rankings-section">
+    <div className={`rankings-section${className ? ` ${className}` : ''}`}>
+      <button
+        type="button"
+        className="ranking-panel-toggle-mobile"
+        onClick={openMobileRankingPanel}
+        aria-label="Open ranking panel"
+      >
+        RANKS
+      </button>
+      {mobileRankingPanelOpen && (
+        <div
+          className="ranking-panel-overlay-mobile"
+          onClick={handleMobileOverlayDismiss}
+          aria-hidden="true"
+        />
+      )}
       <div className="rankings-layout">
-        <div className="ranking-panel" data-testid="ranking-panel">
+        <div
+          className={`ranking-panel ${mobileRankingPanelOpen ? 'ranking-panel--mobile-open' : ''}`}
+          data-testid="ranking-panel"
+        >
+          <button
+            type="button"
+            className="ranking-panel-close-mobile"
+            onClick={() => setMobileRankingPanelOpen(false)}
+            aria-label="Close ranking panel"
+          >
+            ×
+          </button>
           <div className="ranking-panel-value">
             <div className="ranking-panel-value-label">{selectedConfig.label}</div>
             <div className="ranking-panel-value-number">
@@ -1152,7 +1633,7 @@ const RankingsSection = ({ metrics, selectedMetricType, setSelectedMetricType })
         }
 
         .ranking-panel-value-label {
-          font-size: var(--text-sm);
+          font-size: var(--text-base);
           color: var(--text-secondary);
           text-transform: uppercase;
           letter-spacing: 0.12em;
@@ -1161,20 +1642,20 @@ const RankingsSection = ({ metrics, selectedMetricType, setSelectedMetricType })
         }
 
         .ranking-panel-value-number {
-          font-size: var(--text-3xl);
+          font-size: var(--text-4xl);
           font-weight: var(--font-weight-bold);
           color: var(--text-primary);
           margin-bottom: var(--space-2);
         }
 
         .ranking-panel-unit {
-          font-size: var(--text-base);
+          font-size: var(--text-lg);
           color: var(--text-secondary);
           font-weight: var(--font-weight-medium);
         }
 
         .ranking-panel-rank {
-          font-size: var(--text-base);
+          font-size: var(--text-lg);
           font-weight: var(--font-weight-bold);
           letter-spacing: 0.12em;
           text-transform: uppercase;
@@ -1202,13 +1683,13 @@ const RankingsSection = ({ metrics, selectedMetricType, setSelectedMetricType })
         }
 
         .ranking-row-rank {
-          font-size: var(--text-xs);
+          font-size: var(--text-sm);
           font-weight: var(--font-weight-bold);
           letter-spacing: 0.1em;
         }
 
         .ranking-row-values {
-          font-size: var(--text-xs);
+          font-size: var(--text-sm);
           color: var(--text-secondary);
           white-space: nowrap;
         }
@@ -1235,8 +1716,8 @@ const RankingsSection = ({ metrics, selectedMetricType, setSelectedMetricType })
           cursor: pointer;
           transition: transform 0.25s var(--ease-out-cubic), box-shadow 0.25s var(--ease-out-cubic), border-color 0.25s var(--ease-out-cubic);
           box-shadow: var(--shadow-md);
-          height: 280px;
-          min-height: 280px;
+          height: 300px;
+          min-height: 300px;
           display: flex;
           flex-direction: column;
           align-items: center;
@@ -1261,7 +1742,7 @@ const RankingsSection = ({ metrics, selectedMetricType, setSelectedMetricType })
         }
 
         .metric-label {
-          font-size: var(--text-lg);
+          font-size: var(--text-xl);
           font-weight: var(--font-weight-bold);
           color: var(--text-secondary);
           text-align: center;
@@ -1281,27 +1762,27 @@ const RankingsSection = ({ metrics, selectedMetricType, setSelectedMetricType })
         }
 
         .metric-value {
-          font-size: clamp(1.7rem, 2.6vw, 2.2rem);
+          font-size: clamp(2rem, 3.2vw, 2.75rem);
           font-weight: var(--font-weight-bold);
           color: var(--text-primary);
           margin-bottom: var(--space-2);
         }
 
         .metric-unit {
-          font-size: var(--text-base);
+          font-size: var(--text-lg);
           color: var(--text-secondary);
           font-weight: var(--font-weight-medium);
         }
 
         .metric-description {
-          font-size: var(--text-sm);
+          font-size: var(--text-base);
           color: var(--text-tertiary);
-          line-height: 1.4;
+          line-height: 1.45;
         }
 
         .metric-equation {
           margin-top: var(--space-2);
-          font-size: var(--text-xs);
+          font-size: var(--text-sm);
           line-height: 1.5;
         }
 
@@ -1326,6 +1807,18 @@ const RankingsSection = ({ metrics, selectedMetricType, setSelectedMetricType })
           max-width: 100%;
         }
 
+        .ranking-panel-toggle-mobile {
+          display: none;
+        }
+
+        .ranking-panel-close-mobile {
+          display: none;
+        }
+
+        .ranking-panel-overlay-mobile {
+          display: none;
+        }
+
         @media (max-width: 900px) {
           .rankings-layout {
             grid-template-columns: 1fr;
@@ -1338,6 +1831,193 @@ const RankingsSection = ({ metrics, selectedMetricType, setSelectedMetricType })
 
           .metrics-grid {
             grid-template-columns: 1fr;
+          }
+        }
+
+        @media (max-width: 768px) {
+          .rankings-section {
+            padding-left: var(--space-1);
+            padding-right: var(--space-1);
+          }
+
+          .rankings-layout {
+            padding: 0 var(--space-1);
+          }
+
+          .ranking-panel-toggle-mobile {
+            display: block;
+            position: fixed;
+            bottom: calc(102px + env(safe-area-inset-bottom, 0px));
+            right: var(--space-3);
+            z-index: 400;
+            padding: var(--space-4) var(--space-5);
+            min-height: 52px;
+            min-width: 88px;
+            background: var(--accent-primary-alpha);
+            color: var(--accent-primary);
+            border: 1px solid var(--accent-primary);
+            border-radius: var(--radius-lg);
+            font-size: var(--text-sm);
+            font-weight: var(--font-weight-semibold);
+            letter-spacing: 0.06em;
+            cursor: pointer;
+            box-shadow: var(--shadow-lg);
+          }
+
+          .ranking-panel-overlay-mobile {
+            display: block;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.4);
+            z-index: 450;
+          }
+
+          .ranking-panel {
+            position: fixed;
+            top: 0;
+            right: 0;
+            bottom: calc(88px + env(safe-area-inset-bottom, 0px));
+            width: 88%;
+            max-width: 340px;
+            z-index: 500;
+            transform: translateX(100%);
+            transition: transform 0.3s var(--ease-out-cubic);
+            border-radius: var(--radius-lg) 0 0 var(--radius-lg);
+            padding-top: calc(var(--space-3) + env(safe-area-inset-top, 0px));
+            box-sizing: border-box;
+            animation: none;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+          }
+
+          .ranking-panel .ranking-panel-value {
+            flex-shrink: 0;
+            margin-bottom: var(--space-2);
+            padding-bottom: var(--space-2);
+          }
+
+          .ranking-panel .ranking-panel-value-label {
+            margin-bottom: 4px;
+            font-size: var(--text-sm);
+            letter-spacing: 0.1em;
+          }
+
+          .ranking-panel .ranking-panel-value-number {
+            margin-bottom: 4px;
+            font-size: var(--text-2xl);
+            line-height: 1.2;
+          }
+
+          .ranking-panel .ranking-panel-unit {
+            font-size: var(--text-sm);
+          }
+
+          .ranking-panel .ranking-panel-rank {
+            font-size: var(--text-sm);
+            line-height: 1.25;
+            margin: 0;
+          }
+
+          .ranking-panel .ranking-list {
+            flex: 1 1 0;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: stretch;
+            gap: 0;
+            overflow: hidden;
+            padding-bottom: 0;
+          }
+
+          .ranking-panel .ranking-row {
+            flex: 1 1 0;
+            min-height: 0;
+            padding: 2px var(--space-2);
+            gap: var(--space-2);
+            align-items: center;
+          }
+
+          .ranking-panel .ranking-row-rank {
+            font-size: var(--text-xs);
+            letter-spacing: 0.06em;
+            line-height: 1.2;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            min-width: 0;
+          }
+
+          .ranking-panel .ranking-row-values {
+            font-size: var(--text-xs);
+            line-height: 1.2;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            min-width: 0;
+            flex-shrink: 1;
+          }
+
+          .ranking-panel.ranking-panel--mobile-open {
+            transform: translateX(0);
+          }
+
+          .ranking-panel-close-mobile {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: absolute;
+            top: var(--space-3);
+            right: var(--space-3);
+            min-width: 52px;
+            min-height: 52px;
+            padding: var(--space-3);
+            background: transparent;
+            border: none;
+            box-shadow: none;
+            border-radius: var(--radius-md);
+            font-size: 2rem;
+            font-weight: var(--font-weight-bold);
+            color: var(--text-primary);
+            cursor: pointer;
+            line-height: 1;
+          }
+
+          .rankings-section--in-profile .metrics-grid {
+            margin-top: var(--space-2);
+          }
+
+          .metrics-grid {
+            grid-template-columns: 1fr 1fr;
+            gap: var(--space-2);
+          }
+
+          .metric-card {
+            height: auto;
+            min-height: 0;
+            padding: var(--space-3);
+          }
+
+          .metric-equation,
+          .metric-equation-legend {
+            display: none !important;
+          }
+
+          .metric-description {
+            display: none !important;
+          }
+
+          .metric-value {
+            font-size: clamp(1.35rem, 4.5vw, 1.85rem);
+          }
+
+          .metric-label {
+            font-size: var(--text-base);
+          }
+
+          .metric-unit {
+            font-size: var(--text-sm);
           }
         }
       `}</style>

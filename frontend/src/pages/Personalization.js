@@ -542,12 +542,23 @@ const Personalization = () => {
 
         @media (max-width: 768px) {
           .personalization-page {
-            padding: var(--space-3);
+            padding: var(--space-2);
+            box-sizing: border-box;
           }
 
           .personalization-actions {
             justify-content: stretch;
             flex-direction: column;
+            max-width: 100%;
+            width: 100%;
+            box-sizing: border-box;
+            padding: 0;
+            margin-bottom: var(--space-4);
+            gap: var(--space-2);
+          }
+
+          .personalization-actions .btn {
+            width: 100%;
           }
 
           .personalization-splits-btn,
@@ -556,37 +567,60 @@ const Personalization = () => {
             transform: none;
           }
 
-          .macro-primary-row {
-            grid-template-columns: 1fr 1fr;
-          }
-
           .goals-section {
+            width: 100%;
+            box-sizing: border-box;
             padding: var(--space-4);
-            margin-bottom: var(--space-4);
+            margin-bottom: var(--space-3);
           }
 
-          .goals-display,
+          .goals-display {
+            gap: var(--space-1);
+          }
+
+          .goal-item {
+            gap: 2px;
+          }
+
+          .goals-section--body-comp {
+            padding-top: var(--space-4);
+          }
+
+          .macro-goals-display {
+            gap: var(--space-1);
+          }
+
+          .macro-primary-row {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-1);
+          }
+
+          .macro-primary-row .macro-item--primary {
+            display: block;
+            width: 100%;
+          }
+
           .macro-grid {
-            gap: var(--space-3);
+            gap: var(--space-1);
           }
 
-          .goal-item,
-          .macro-item {
-            padding: var(--space-2);
+          .macro-item,
+          .macro-item.macro-item--primary {
+            flex-direction: column;
+            align-items: flex-start;
+            text-align: left;
           }
 
+          .macro-item .macro-label,
+          .macro-item--primary .macro-label {
+            display: block;
+          }
+
+          .macro-item .macro-value,
           .macro-item--primary .macro-value {
-            font-size: var(--text-3xl);
-          }
-
-          .personalization-actions {
-            gap: var(--space-3);
-            padding-right: 0;
-          }
-
-          .personalization-action-btn,
-          .personalization-splits-btn {
-            min-height: 44px;
+            display: block;
+            margin-top: var(--space-1);
           }
         }
       `}</style>

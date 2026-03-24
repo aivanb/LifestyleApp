@@ -34,6 +34,10 @@ const DataViewer = () => {
   // State for errors
   const [error, setError] = useState('');
 
+  // Mobile: collapsible tables sidebar (used in JSX below)
+  // eslint-disable-next-line no-unused-vars -- used in onClick, className, conditional
+  const [tablesSidebarOpen, setTablesSidebarOpen] = useState(false);
+
   // Load available tables on mount
   useEffect(() => {
     loadTables();
@@ -211,10 +215,33 @@ const DataViewer = () => {
       )}
 
       <div className="data-viewer-layout">
+        <button
+          type="button"
+          className="data-viewer-tables-toggle"
+          onClick={() => setTablesSidebarOpen(true)}
+          aria-label="Open tables list"
+        >
+          Available Tables
+        </button>
+        {tablesSidebarOpen && (
+          <div
+            className="data-viewer-tables-overlay"
+            onClick={() => setTablesSidebarOpen(false)}
+            aria-hidden="true"
+          />
+        )}
         {/* Tables List Sidebar */}
-        <div className="data-viewer-tables-col">
+        <div className={`data-viewer-tables-col ${tablesSidebarOpen ? 'data-viewer-tables-col--mobile-open' : ''}`}>
           <div className="card data-viewer-tables-card">
             <div className="flex items-center gap-4 mb-4 data-viewer-card-header">
+              <button
+                type="button"
+                className="data-viewer-tables-close"
+                onClick={() => setTablesSidebarOpen(false)}
+                aria-label="Close tables list"
+              >
+                ×
+              </button>
               <svg className="icon" viewBox="0 0 20 20" fill="currentColor">
                 <path d="M7 3a1 1 0 000 2h6a1 1 0 100-2H7zM4 7a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1zM2 11a2 2 0 012-2h12a2 2 0 012 2v4a2 2 0 01-2 2H4a2 2 0 01-2-2v-4z" />
               </svg>
@@ -459,6 +486,91 @@ const DataViewer = () => {
           color: var(--text-tertiary);
         }
 
+        .data-viewer-tables-toggle {
+          display: none;
+        }
+
+        .data-viewer-tables-close {
+          display: none;
+        }
+
+        @media (max-width: 768px) {
+          .data-viewer-tables-toggle {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: var(--space-2) var(--space-4);
+            margin-bottom: var(--space-3);
+            font-size: var(--text-sm);
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-primary);
+            border-radius: var(--radius-md);
+            color: var(--text-primary);
+            cursor: pointer;
+          }
+
+          .data-viewer-tables-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.4);
+            z-index: 999;
+          }
+
+          .data-viewer-tables-col {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            width: 100%;
+            height: 60vh;
+            max-height: 60vh;
+            z-index: 1000;
+            transform: translateY(100%);
+            transition: transform 0.2s ease;
+            margin: 0;
+            border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+            box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
+          }
+
+          .data-viewer-tables-col.data-viewer-tables-col--mobile-open {
+            transform: translateY(0);
+          }
+
+          .data-viewer-tables-col .data-viewer-tables-card {
+            height: 100%;
+            max-height: 60vh;
+            overflow-y: auto;
+            border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+          }
+
+          .data-viewer-tables-col .data-viewer-card-header {
+            position: relative;
+            padding-right: 2.5rem;
+          }
+
+          .data-viewer-tables-close {
+            display: flex;
+            position: absolute;
+            top: var(--space-2);
+            right: var(--space-2);
+            padding: var(--space-2);
+            background: transparent;
+            border: none;
+            font-size: var(--text-xl);
+            color: var(--text-secondary);
+            cursor: pointer;
+          }
+
+          .data-viewer-filters-wrap .flex {
+            flex-wrap: wrap;
+            gap: var(--space-2);
+          }
+
+          .data-viewer-filters-wrap button {
+            min-width: 0;
+          }
+        }
+
         @media (max-width: 1024px) {
           .data-viewer-layout {
             grid-template-columns: 1fr;
@@ -470,39 +582,12 @@ const DataViewer = () => {
             min-width: 0;
           }
           
-          .data-viewer-layout > div:first-child {
+          .data-viewer-layout > .data-viewer-tables-col {
             order: 2;
           }
           
-          .data-viewer-layout > div:last-child {
+          .data-viewer-layout > .data-viewer-main-col {
             order: 1;
-          }
-        }
-
-        @media (max-width: 768px) {
-          .data-viewer {
-            padding: var(--space-4) 0;
-          }
-
-          .data-viewer-layout {
-            gap: var(--space-3);
-          }
-
-          .data-viewer-tables-card,
-          .card {
-            padding: var(--space-4);
-          }
-
-          .tables-list {
-            max-height: 260px;
-          }
-
-          .data-viewer-filters-wrap {
-            margin-top: var(--space-3);
-          }
-
-          .data-viewer-table-wrap {
-            margin-top: var(--space-3);
           }
         }
       `}</style>

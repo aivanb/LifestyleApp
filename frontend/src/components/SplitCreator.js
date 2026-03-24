@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import api from '../services/api';
-import { PlusIcon, XMarkIcon, InformationCircleIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, XMarkIcon, InformationCircleIcon, TrashIcon, ChartBarIcon } from '@heroicons/react/24/outline';
 import { useNavigate } from 'react-router-dom';
 import { getMuscleDescription } from '../utils/muscleDescriptions';
 
@@ -29,6 +29,7 @@ const SplitCreator = ({
   // UI State
   const [activeTab, setActiveTab] = useState('manage'); // 'manage' or 'new'
   const [selectedSplit, setSelectedSplit] = useState(null);
+  const [mobileMuscleSidebarOpen, setMobileMuscleSidebarOpen] = useState(false);
   
   const [formData, setFormData] = useState({
     split_name: '',
@@ -820,9 +821,36 @@ const SplitCreator = ({
 
             {/* Muscle Status Sidebar */}
             {Object.keys(analysis).length > 0 && (
-              <aside className="split-creator-sidebar" aria-label="Muscle status">
-                <h4 className="split-creator-sidebar-title">Muscle Status</h4>
-                <div className="split-creator-status-list">
+              <>
+                <button
+                  type="button"
+                  className="split-creator-mobile-sidebar-toggle"
+                  onClick={() => setMobileMuscleSidebarOpen(true)}
+                  aria-label="Open muscle status"
+                >
+                  <ChartBarIcon className="split-creator-mobile-sidebar-toggle-icon" aria-hidden="true" />
+                </button>
+                {mobileMuscleSidebarOpen && (
+                  <div
+                    className="split-creator-sidebar-overlay"
+                    onClick={() => setMobileMuscleSidebarOpen(false)}
+                    aria-hidden="true"
+                  />
+                )}
+                <aside
+                  className={`split-creator-sidebar ${mobileMuscleSidebarOpen ? 'split-creator-sidebar--mobile-open' : ''}`}
+                  aria-label="Muscle status"
+                >
+                  <button
+                    type="button"
+                    className="split-creator-sidebar-close"
+                    onClick={() => setMobileMuscleSidebarOpen(false)}
+                    aria-label="Close muscle status"
+                  >
+                    <XMarkIcon className="split-creator-icon" aria-hidden="true" />
+                  </button>
+                  <h4 className="split-creator-sidebar-title">Muscle Status</h4>
+                  <div className="split-creator-status-list">
                   {Object.entries(analysis).map(([muscleId, data]) => {
                     const status = getMuscleStatus(muscleId);
                     const isOptimal = status.status === 'optimal';
@@ -898,7 +926,8 @@ const SplitCreator = ({
                     );
                   })}
                 </div>
-              </aside>
+                </aside>
+              </>
             )}
           </div>
 
@@ -1248,9 +1277,36 @@ const SplitCreator = ({
 
             {/* Muscle Status Sidebar */}
             {Object.keys(analysis).length > 0 && (
-              <aside className="split-creator-sidebar" aria-label="Muscle status">
-                <h4 className="split-creator-sidebar-title">Muscle Status</h4>
-                <div className="split-creator-status-list">
+              <>
+                <button
+                  type="button"
+                  className="split-creator-mobile-sidebar-toggle"
+                  onClick={() => setMobileMuscleSidebarOpen(true)}
+                  aria-label="Open muscle status"
+                >
+                  <ChartBarIcon className="split-creator-mobile-sidebar-toggle-icon" aria-hidden="true" />
+                </button>
+                {mobileMuscleSidebarOpen && (
+                  <div
+                    className="split-creator-sidebar-overlay"
+                    onClick={() => setMobileMuscleSidebarOpen(false)}
+                    aria-hidden="true"
+                  />
+                )}
+                <aside
+                  className={`split-creator-sidebar ${mobileMuscleSidebarOpen ? 'split-creator-sidebar--mobile-open' : ''}`}
+                  aria-label="Muscle status"
+                >
+                  <button
+                    type="button"
+                    className="split-creator-sidebar-close"
+                    onClick={() => setMobileMuscleSidebarOpen(false)}
+                    aria-label="Close muscle status"
+                  >
+                    <XMarkIcon className="split-creator-icon" aria-hidden="true" />
+                  </button>
+                  <h4 className="split-creator-sidebar-title">Muscle Status</h4>
+                  <div className="split-creator-status-list">
                   {Object.entries(analysis).map(([muscleId, data]) => {
                     const status = getMuscleStatus(muscleId);
                     const isOptimal = status.status === 'optimal';
@@ -1282,7 +1338,8 @@ const SplitCreator = ({
                     );
                   })}
                 </div>
-              </aside>
+                </aside>
+              </>
             )}
           </div>
 
@@ -1654,6 +1711,14 @@ const SplitCreator = ({
           color: var(--accent-primary);
           font-size: var(--text-xs);
           flex-shrink: 0;
+        }
+
+        .split-creator-mobile-sidebar-toggle {
+          display: none;
+        }
+
+        .split-creator-sidebar-close {
+          display: none;
         }
 
         .split-creator-sidebar {
@@ -2198,6 +2263,14 @@ const SplitCreator = ({
 
         .split-creator-submit {
           width: 100%;
+          background: var(--bg-tertiary);
+          border-color: var(--border-primary);
+          color: var(--text-primary);
+        }
+
+        .split-creator-submit:hover:not(:disabled) {
+          background: var(--bg-hover, var(--bg-tertiary));
+          border-color: var(--border-secondary);
         }
 
         @media (max-width: 1024px) {
@@ -2208,6 +2281,380 @@ const SplitCreator = ({
           .split-creator-sidebar {
             position: static;
             max-height: none;
+          }
+        }
+
+        @media (max-width: 768px) {
+          .split-creator {
+            padding-left: 0;
+            padding-right: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
+            margin: 0;
+            min-height: 0;
+          }
+
+          .split-creator-header,
+          .split-creator-form,
+          .split-creator-edit-layout,
+          .split-creator-days,
+          .split-creator-days-list,
+          .split-creator-day-card,
+          .split-creator-section,
+          .split-creator-banner {
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
+          }
+
+          .split-creator-form {
+            flex: 1;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+          }
+
+          .split-creator-edit-layout {
+            flex: 1;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+          }
+
+          .split-creator-days {
+            flex: 1;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+          }
+
+          .split-creator-days-list {
+            flex: 1;
+            min-height: 0;
+            overflow-y: auto;
+          }
+
+          .split-creator-header {
+            padding-left: 0;
+            padding-right: 0;
+          }
+
+          .split-creator-form {
+            padding-left: 0;
+            padding-right: 0;
+          }
+
+          .split-creator-section {
+            padding-left: 0;
+            padding-right: 0;
+          }
+
+          /* Make main content more compact on mobile for splits pages */
+          .split-creator[data-variant="splitsPage"] .split-creator-section {
+            padding-top: var(--space-3);
+            padding-bottom: var(--space-3);
+            margin-top: var(--space-2);
+            margin-bottom: var(--space-3);
+          }
+
+          .split-creator-top-fields,
+          .split-creator-field,
+          .split-creator-banner {
+            padding-left: 0;
+            padding-right: 0;
+          }
+
+          .split-creator-edit-layout {
+            padding-left: 0;
+            padding-right: 0;
+          }
+
+          .split-creator-mobile-sidebar-toggle {
+            order: unset;
+            position: fixed;
+            bottom: var(--space-6);
+            right: var(--space-4);
+            top: auto;
+            left: auto;
+            z-index: 1000;
+            width: 112px;
+            height: 56px;
+            min-height: 56px;
+            padding: 0;
+            margin: 0;
+            border-radius: var(--radius-md);
+            border: none;
+            background: var(--accent-primary);
+            color: #ffffff;
+            box-shadow: var(--shadow-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          }
+
+          .split-creator-mobile-sidebar-toggle:hover {
+            background: var(--accent-primary-dark, var(--accent-primary));
+          }
+
+          .split-creator-mobile-sidebar-toggle-icon {
+            width: 28px;
+            height: 28px;
+          }
+
+          .split-creator-days {
+            order: 0;
+          }
+
+          .split-creator-days-header,
+          .split-creator-days-list {
+            padding-left: 0;
+            padding-right: 0;
+          }
+
+          .split-creator-top-fields {
+            display: flex;
+            flex-direction: column;
+          }
+
+          .split-creator-top-fields .split-creator-field:first-of-type {
+            order: 1;
+          }
+
+          .split-creator-top-fields .split-creator-field:last-of-type {
+            order: 2;
+          }
+
+          .split-creator-edit-layout {
+            min-width: 0;
+          }
+
+          .split-creator-days {
+            min-width: 0;
+          }
+
+          .split-creator-days-header {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: var(--space-2);
+          }
+
+          .split-creator-mobile-sidebar-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background 0.2s ease, transform 0.2s ease;
+          }
+
+          @media (max-width: 480px) {
+            .split-creator-mobile-sidebar-toggle {
+              width: 96px;
+              height: 48px;
+              min-height: 48px;
+              bottom: var(--space-4);
+              right: var(--space-4);
+            }
+            .split-creator-mobile-sidebar-toggle-icon {
+              width: 24px;
+              height: 24px;
+            }
+          }
+
+          .split-creator-sidebar-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.55);
+            z-index: 1001;
+          }
+
+          .split-creator[data-variant="splitsPage"] .split-creator-sidebar {
+            position: fixed;
+            top: auto;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            width: 100%;
+            max-width: none;
+            height: 82vh;
+            max-height: 82vh;
+            transform: translateY(100%);
+            transition: transform 0.25s ease;
+            z-index: 1002;
+            border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+            border: 1px solid var(--border-primary);
+            border-bottom: none;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            visibility: hidden;
+            pointer-events: none;
+          }
+
+          .split-creator[data-variant="splitsPage"] .split-creator-sidebar.split-creator-sidebar--mobile-open {
+            transform: translateY(0);
+            visibility: visible;
+            pointer-events: auto;
+          }
+
+          .split-creator-sidebar .split-creator-status-list {
+            flex: 1;
+            min-height: 0;
+            overflow-y: auto;
+          }
+
+          .split-creator-sidebar-close {
+            display: flex;
+            position: absolute;
+            top: var(--space-2);
+            right: var(--space-2);
+            padding: var(--space-2);
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+          }
+
+          .split-creator-sidebar-title {
+            padding-right: 36px;
+            font-size: 10px;
+          }
+
+          /* Mobile status typography priorities:
+             - activation + sets value larger
+             - name + range smaller
+             (keep everything readable) */
+          .split-creator[data-variant="splitsPage"] .split-creator-status-item,
+          .split-creator[data-variant="splitsPage"] .split-creator-status-item__top,
+          .split-creator[data-variant="splitsPage"] .split-creator-status-sets,
+          .split-creator[data-variant="splitsPage"] .split-creator-status-separator,
+          .split-creator[data-variant="splitsPage"] .split-creator-status-name-wrap {
+            font-size: 12px;
+          }
+
+          .split-creator[data-variant="splitsPage"] .split-creator-status-activation-value,
+          .split-creator[data-variant="splitsPage"] .split-creator-status-sets-value {
+            font-size: 16px;
+            font-weight: 700;
+          }
+
+          .split-creator[data-variant="splitsPage"] .split-creator-status-name {
+            font-size: 12px;
+          }
+
+          .split-creator[data-variant="splitsPage"] .split-creator-status-range {
+            font-size: 11px;
+          }
+
+          .split-creator-day-card {
+            padding: var(--space-2);
+            font-size: var(--text-sm);
+          }
+
+          .split-creator-targets {
+            gap: var(--space-4);
+            margin-top: var(--space-3);
+          }
+
+          .split-creator-target {
+            padding: var(--space-3) 0;
+          }
+
+          .split-creator-day-card__header {
+            margin-bottom: var(--space-3);
+            gap: var(--space-3);
+          }
+
+          /* Extra internal spacing for splitsPage day cards on mobile */
+          .split-creator[data-variant="splitsPage"] .split-creator-day-card {
+            padding: var(--space-3);
+          }
+
+          .split-creator[data-variant="splitsPage"] .split-creator-day-card__header {
+            margin-bottom: var(--space-3);
+            gap: var(--space-3);
+          }
+
+          .split-creator[data-variant="splitsPage"] .split-creator-targets {
+            gap: var(--space-3);
+            margin-top: var(--space-3);
+          }
+
+          .split-creator[data-variant="splitsPage"] .split-creator-target {
+            padding: var(--space-3) var(--space-3);
+          }
+
+          .split-creator-days-list {
+            gap: var(--space-2);
+          }
+
+          .split-creator-target-row {
+            gap: var(--space-2);
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+          }
+
+          .split-creator-target-row .split-creator-target-select {
+            order: 0;
+            flex: 1 1 100%;
+            min-width: 0;
+          }
+
+          .split-creator-target-row .split-creator-activation-input {
+            order: 1;
+            flex: 1;
+            min-width: 72px;
+          }
+
+          .split-creator-target-row .split-creator-info-btn {
+            order: 2;
+            flex-shrink: 0;
+          }
+
+          .split-creator-target-row .btn-close {
+            order: 3;
+            flex-shrink: 0;
+            align-self: center;
+          }
+
+          .split-creator-target-row .split-creator-btn-xs {
+            order: 4;
+          }
+
+          .split-creator-days-header {
+            margin-bottom: var(--space-2);
+          }
+
+          .split-creator-btn-sm {
+            padding: var(--space-4) var(--space-5);
+            font-size: var(--text-base);
+            min-height: 48px;
+            font-weight: var(--font-weight-semibold);
+          }
+
+          .split-creator-add-day {
+            width: 100%;
+            max-width: 100%;
+            padding: var(--space-2) var(--space-4);
+            min-height: 40px;
+            font-size: var(--text-sm);
+            font-weight: var(--font-weight-semibold);
+          }
+
+          .split-creator-btn-xs {
+            padding: var(--space-2) var(--space-3);
+            font-size: var(--text-sm);
+          }
+
+          .split-creator-submit {
+            padding: var(--space-2) var(--space-3);
+            font-size: var(--text-sm);
           }
         }
 

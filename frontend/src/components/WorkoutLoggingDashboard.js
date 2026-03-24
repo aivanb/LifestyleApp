@@ -56,6 +56,7 @@ const WorkoutLoggingDashboard = () => {
   const [showAnalytics, setShowAnalytics] = useState(false);
   const floatingActionsTimeoutRef = useRef(null);
   const [collapsedWorkouts, setCollapsedWorkouts] = useState({});
+  const [mobileMuscleSidebarOpen, setMobileMuscleSidebarOpen] = useState(false);
 
   const toggleWorkoutCollapse = useCallback((workoutId) => {
     setCollapsedWorkouts((prev) => ({
@@ -759,9 +760,8 @@ const WorkoutLoggingDashboard = () => {
 
       {/* Main Content */}
       <div className="dashboard-content">
-        {/* PC Layout */}
-        {!isMobile && (
-          <div className="dashboard-layout-pc">
+        {/* PC Layout - hidden on mobile via CSS */}
+        <div className="dashboard-layout-pc">
             {/* Left Side - Muscle Progress Sidebar */}
             {currentSplitDay && (
               <div className="muscle-progress-sidebar">
@@ -1079,14 +1079,82 @@ const WorkoutLoggingDashboard = () => {
               </div>
             </div>
           </div>
-        )}
 
-        {/* Mobile Layout */}
-        {isMobile && (
-          <div className="dashboard-layout-mobile">
+        {/* Mobile Layout - hidden on desktop via CSS */}
+        <div className="dashboard-layout-mobile">
+            {/* Muscle targets - collapsible on mobile */}
+            {currentSplitDay && Object.keys(muscleProgress).length > 0 && (
+              <>
+                <button
+                  type="button"
+                  className="workout-mobile-muscle-toggle"
+                  onClick={() => setMobileMuscleSidebarOpen(true)}
+                  aria-label="Open muscle targets"
+                >
+                  Muscle Targets
+                </button>
+                {mobileMuscleSidebarOpen && (
+                  <div
+                    className="workout-muscle-sidebar-overlay"
+                    onClick={() => setMobileMuscleSidebarOpen(false)}
+                    aria-hidden="true"
+                  />
+                )}
+                <div className={`muscle-progress-sidebar muscle-progress-sidebar--mobile ${mobileMuscleSidebarOpen ? 'muscle-progress-sidebar--mobile-open' : ''}`}>
+                  <button
+                    type="button"
+                    className="workout-muscle-sidebar-close"
+                    onClick={() => setMobileMuscleSidebarOpen(false)}
+                    aria-label="Close muscle targets"
+                  >
+                    ×
+                  </button>
+                  <h3 className="section-title">Today&apos;s Muscle Targets</h3>
+                  <div className="muscle-progress-stack">
+                    {Object.entries(muscleProgress)
+                      .filter(([_, progress]) => progress.isInSplit)
+                      .map(([muscleName, progress]) => (
+                        <LinearProgressBar
+                          key={muscleName}
+                          current={progress.current}
+                          target={progress.target}
+                          label={muscleName}
+                          unit=""
+                          color="var(--accent-primary)"
+                          height={12}
+                          showValues={true}
+                          showRemaining={true}
+                        />
+                      ))}
+                    {Object.entries(muscleProgress)
+                      .filter(([_, progress]) => !progress.isInSplit)
+                      .map(([muscleName, progress]) => (
+                        <LinearProgressBar
+                          key={muscleName}
+                          current={progress.current}
+                          target={progress.target}
+                          label={muscleName}
+                          unit=""
+                          color="var(--accent-danger)"
+                          height={12}
+                          showValues={true}
+                          showRemaining={true}
+                        />
+                      ))}
+                  </div>
+                </div>
+              </>
+            )}
+
             {/* Action Buttons */}
             <div className="mobile-actions">
-              
+              <button
+                className="btn-icon-mobile"
+                onClick={() => setShowWorkoutSelectionModal(true)}
+                title="Select Workout"
+              >
+                <span className="icon icon-lg">📋</span>
+              </button>
               <button
                 className="btn-icon-mobile"
                 onClick={() => setShowWorkoutCreator(true)}
@@ -1180,9 +1248,20 @@ const WorkoutLoggingDashboard = () => {
                           <div className="workout-set-header">
                             <div className="workout-emoji-box">{workoutEmoji}</div>
                             <div className="workout-name-row">
-                              <div className="workout-name">{nameWithoutEmoji}</div>
                               <button
-                                className="workout-analytics-button-dashboard"
+                                type="button"
+                                className="workout-name workout-name-button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setAnalyticsWorkout(workout);
+                                  setShowAnalytics(true);
+                                }}
+                                title="View Analytics"
+                              >
+                                {nameWithoutEmoji}
+                              </button>
+                              <button
+                                className="workout-analytics-button-dashboard workout-analytics-button-dashboard--mobile-hide"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   setAnalyticsWorkout(workout);
@@ -1352,16 +1431,14 @@ const WorkoutLoggingDashboard = () => {
             </div>
 
           </div>
-        )}
       </div>
 
       {/* Modals for Mobile */}
       {isMobile && (
         <>
-
           {showWorkoutCreator && (
             <div className="modal-backdrop" onClick={() => setShowWorkoutCreator(false)}>
-              <div className="modal" onClick={(e) => e.stopPropagation()}>
+              <div className="modal workout-modal-mobile" onClick={(e) => e.stopPropagation()}>
                 <div className="modal-header">
                   <h2>Create Workout</h2>
                   <button 
@@ -1376,6 +1453,30 @@ const WorkoutLoggingDashboard = () => {
                 />
               </div>
             </div>
+          )}
+
+          {showWorkoutSelectionModal && (
+            <WorkoutLogger
+              onWorkoutLogged={handleWorkoutLogged}
+              selectedDate={selectedDate}
+              onOpenWorkoutSelection={() => setShowWorkoutSelectionModal(true)}
+              onClose={() => {
+                setShowWorkoutSelectionModal(false);
+                setPreSelectedWorkout(null);
+              }}
+              preSelectedWorkout={preSelectedWorkout}
+            />
+          )}
+
+          {showAnalytics && analyticsWorkout && (
+            <WorkoutAnalytics
+              workout={analyticsWorkout}
+              isOpen={showAnalytics}
+              onClose={() => {
+                setShowAnalytics(false);
+                setAnalyticsWorkout(null);
+              }}
+            />
           )}
         </>
       )}
@@ -2447,6 +2548,30 @@ const WorkoutLoggingDashboard = () => {
             display: none;
           }
 
+          .header-control-bar {
+            left: var(--space-2);
+            right: var(--space-2);
+            transform: none;
+            max-width: 100%;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: var(--space-2);
+            padding: var(--space-2);
+          }
+
+          .header-actions {
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: var(--space-2);
+          }
+
+          .btn-secondary-header,
+          .btn-primary-header {
+            padding: var(--space-2) var(--space-3);
+            font-size: var(--text-sm);
+            min-width: 0;
+          }
+
           .header-content {
             flex-direction: column;
             gap: var(--space-4);
@@ -2458,8 +2583,189 @@ const WorkoutLoggingDashboard = () => {
             padding: var(--space-16) var(--space-3) var(--space-6);
           }
 
+          .dashboard-layout-mobile {
+            padding: 0 var(--space-2);
+            box-sizing: border-box;
+          }
+
+          .dashboard-layout-mobile .workout-log-section {
+            margin-top: 0;
+          }
+
           .stats-grid {
             grid-template-columns: repeat(2, 1fr);
+          }
+
+          .workout-mobile-muscle-toggle {
+            display: inline-flex;
+            padding: var(--space-2) var(--space-4);
+            font-size: var(--text-sm);
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-primary);
+            border-radius: var(--radius-md);
+            color: var(--text-primary);
+            cursor: pointer;
+            margin-bottom: var(--space-3);
+            position: relative;
+            z-index: 20;
+            pointer-events: auto;
+          }
+
+          .workout-muscle-sidebar-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.4);
+            z-index: 999;
+          }
+
+          .muscle-progress-sidebar--mobile {
+            display: none;
+            position: fixed;
+            top: 0;
+            right: 0;
+            width: min(280px, 85vw);
+            height: 100vh;
+            z-index: 1000;
+            transform: translateX(100%);
+            transition: transform 0.2s ease;
+            border-radius: 0;
+            border-left: 1px solid var(--border-primary);
+          }
+
+          .muscle-progress-sidebar--mobile-open {
+            display: flex;
+            transform: translateX(0);
+          }
+
+          .workout-muscle-sidebar-close {
+            position: absolute;
+            top: var(--space-2);
+            right: var(--space-2);
+            padding: var(--space-2);
+            background: transparent;
+            border: none;
+            font-size: var(--text-xl);
+            color: var(--text-secondary);
+            cursor: pointer;
+          }
+
+          .workout-modal-mobile,
+          .workout-logging-dashboard .modal-backdrop .modal {
+            max-width: 100%;
+            width: 100%;
+            max-height: 88vh;
+            padding: var(--space-3);
+            font-size: var(--text-sm);
+          }
+
+          .workout-logging-dashboard .modal-backdrop {
+            padding: var(--space-2);
+            align-items: flex-start;
+          }
+
+          .modal-content.workout-creator-modal {
+            max-width: 100%;
+            width: 100%;
+            max-height: 88vh;
+          }
+
+          .mobile-actions {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: var(--space-3);
+            width: 100%;
+            max-width: 100%;
+            margin-top: var(--space-2);
+            margin-bottom: var(--space-3);
+            position: relative;
+            z-index: 1;
+          }
+
+          .btn-icon-delete {
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
+            border: 1px solid var(--border-primary);
+          }
+
+          .btn-icon-delete:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+            border-color: var(--accent-primary);
+          }
+
+          .workout-set-group,
+          .quick-workout-set-group {
+            padding: var(--space-2) var(--space-3);
+            margin-bottom: var(--space-3);
+          }
+
+          .workout-set-header {
+            gap: var(--space-2);
+            flex-wrap: wrap;
+          }
+
+          .workout-set-summary {
+            gap: var(--space-2);
+          }
+
+          .workout-set-totals {
+            gap: var(--space-2);
+            font-size: var(--text-xs);
+          }
+
+          .workout-log-item.mobile {
+            gap: var(--space-2);
+            padding: var(--space-2);
+          }
+
+          .workout-analytics-button-dashboard--mobile-hide {
+            display: none !important;
+          }
+
+          .workout-set-summary {
+            flex-wrap: nowrap;
+            gap: var(--space-2);
+          }
+
+          .workout-set-summary .workout-set-totals {
+            order: 1;
+            flex: 1;
+            flex-wrap: nowrap;
+            gap: var(--space-2);
+            justify-content: flex-start;
+            min-width: 0;
+          }
+
+          .workout-set-summary .workout-set-totals .metric-item {
+            flex-shrink: 0;
+          }
+
+          .workout-set-summary .btn-add-set {
+            order: 2;
+          }
+
+          .workout-set-summary .workout-collapse-toggle {
+            order: 3;
+          }
+
+          .workout-set-summary .workout-collapse-toggle {
+            margin-left: 0;
+          }
+
+          .workout-log-line {
+            display: flex;
+            flex-wrap: nowrap;
+            gap: var(--space-2);
+            overflow-x: auto;
+          }
+
+          .workout-log-detail {
+            flex-shrink: 0;
+          }
+
+          .workout-log-detail .metric-label-small,
+          .workout-log-detail .metric-value-small {
+            font-size: var(--text-xs);
           }
         }
 
@@ -2619,6 +2925,16 @@ const WorkoutLoggingDashboard = () => {
     line-height: 1.1;
     margin: 0;
     white-space: nowrap;
+  }
+
+  .workout-name-button {
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    font: inherit;
+    color: inherit;
+    text-align: left;
   }
 
   .workout-muscles-inline {

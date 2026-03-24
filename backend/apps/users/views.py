@@ -72,6 +72,8 @@ def profile_detail(request):
             profile_data = {
                 'user': {
                     'user_id': user.user_id,
+                    'first_name': user.first_name or '',
+                    'last_name': user.last_name or '',
                     'username': user.username,
                     'email': user.email,
                     'height': float(user.height) if user.height else None,
@@ -114,7 +116,11 @@ def profile_detail(request):
                     'caffeine_goal': float(goals.caffeine_goal) if goals and goals.caffeine_goal else None,
                 } if goals else {},
                 'metrics': metrics,
-                'historical': historical_data
+                'historical': historical_data,
+                'units': [
+                    {'unit_id': u.unit_id, 'unit_name': u.unit_name}
+                    for u in Unit.objects.all().order_by('unit_name')
+                ],
             }
             
             return Response({'data': profile_data})
@@ -136,8 +142,34 @@ def profile_detail(request):
         try:
             with transaction.atomic():
                 # Update basic user information
+                if 'first_name' in data:
+                    user.first_name = (data.get('first_name') or '').strip()
+
+                if 'last_name' in data:
+                    user.last_name = (data.get('last_name') or '').strip()
+
+                if 'username' in data:
+                    new_username = (data.get('username') or '').strip()
+                    if new_username and new_username != user.username:
+                        if User.objects.filter(username=new_username).exclude(pk=user.pk).exists():
+                            return Response(
+                                {'error': {'message': 'Username already taken'}},
+                                status=status.HTTP_400_BAD_REQUEST,
+                            )
+                        user.username = new_username
+
+                if 'email' in data:
+                    new_email = (data.get('email') or '').strip()
+                    if new_email and new_email.lower() != (user.email or '').lower():
+                        if User.objects.filter(email__iexact=new_email).exclude(pk=user.pk).exists():
+                            return Response(
+                                {'error': {'message': 'Email already registered'}},
+                                status=status.HTTP_400_BAD_REQUEST,
+                            )
+                        user.email = new_email
+
                 if 'height' in data:
-                    user.height = Decimal(str(data['height'])) if data['height'] else None
+                    user.height = Decimal(str(data['height'])) if data['height'] not in (None, '') else None
                 
                 if 'birthday' in data:
                     if data['birthday']:
@@ -148,19 +180,27 @@ def profile_detail(request):
                 if 'gender' in data:
                     user.gender = data['gender']
                 
-                if 'unit_preference' in data and data['unit_preference']:
-                    try:
-                        unit = Unit.objects.get(unit_id=data['unit_preference'])
-                        user.unit_preference = unit
-                    except Unit.DoesNotExist:
-                        pass
+                if 'unit_preference' in data:
+                    raw_unit = data['unit_preference']
+                    if raw_unit in (None, '', 0, '0'):
+                        user.unit_preference = None
+                    else:
+                        try:
+                            unit_id = int(raw_unit)
+                            user.unit_preference = Unit.objects.get(unit_id=unit_id)
+                        except (ValueError, TypeError, Unit.DoesNotExist):
+                            pass
                 
-                if 'activity_level' in data and data['activity_level']:
-                    try:
-                        activity = ActivityLevel.objects.get(activity_level_id=data['activity_level'])
-                        user.activity_level = activity
-                    except ActivityLevel.DoesNotExist:
-                        pass
+                if 'activity_level' in data:
+                    raw_act = data['activity_level']
+                    if raw_act in (None, '', 0, '0'):
+                        user.activity_level = None
+                    else:
+                        try:
+                            act_id = int(raw_act)
+                            user.activity_level = ActivityLevel.objects.get(activity_level_id=act_id)
+                        except (ValueError, TypeError, ActivityLevel.DoesNotExist):
+                            pass
                 
                 user.save()
                 

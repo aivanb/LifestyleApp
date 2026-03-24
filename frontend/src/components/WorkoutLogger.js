@@ -35,6 +35,13 @@ const WorkoutLogger = ({ onOpenWorkoutSelection, onWorkoutLogged, selectedDate, 
     rest_time: ''
   });
   const [isLogging, setIsLogging] = useState(false);
+  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' && window.innerWidth <= 768);
+
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
 
   const resetLogData = () => {
     setLogData({
@@ -440,7 +447,9 @@ const WorkoutLogger = ({ onOpenWorkoutSelection, onWorkoutLogged, selectedDate, 
         </div>
       )}
 
-              {/* Search and Filter Controls */}
+              {/* Search and Filter Controls - collapsible on mobile */}
+      <details className="workout-filter-details" open={!isMobile}>
+        <summary className="workout-filter-details-summary">Filter settings</summary>
       <div className="workout-filter-section">
         <div className="workout-filter-left">
           <div className="search-input-container">
@@ -631,6 +640,7 @@ const WorkoutLogger = ({ onOpenWorkoutSelection, onWorkoutLogged, selectedDate, 
           </div>
         </div>
       </div>
+      </details>
 
               {/* Workout Selection Grid */}
               <div className="workout-selection-grid">
@@ -690,8 +700,10 @@ const WorkoutLogger = ({ onOpenWorkoutSelection, onWorkoutLogged, selectedDate, 
               <button 
                 className="back-button"
                 onClick={goBackToWorkoutSelection}
+                title="Back to Workouts"
               >
-                ← Back to Workouts
+                <span className="back-button-arrow" aria-hidden="true">←</span>
+                <span className="back-button-text">Back to Workouts</span>
               </button>
               <h2 className="modal-title">Log Workout: {selectedWorkout.workout_name}</h2>
               <div className="modal-header-actions">
@@ -893,10 +905,11 @@ const WorkoutLogger = ({ onOpenWorkoutSelection, onWorkoutLogged, selectedDate, 
                   </div>
                 </div>
 
-                {/* Attributes Section */}
+                {/* Attributes Section - collapsible on mobile, collapsed by default */}
+                <details className="workout-logging-attributes-details">
+                  <summary className="workout-logging-attributes-summary">Attributes</summary>
                 <div className="workout-logging-attributes">
-                  <label className="form-label">Attributes</label>
-            <div className="space-y-3">
+                  <div className="space-y-3">
               {attributeOptions.map(attr => (
                       <div key={attr.key} className="attribute-option">
                   <label className="flex items-start space-x-3 cursor-pointer">
@@ -964,6 +977,7 @@ const WorkoutLogger = ({ onOpenWorkoutSelection, onWorkoutLogged, selectedDate, 
               ))}
             </div>
           </div>
+                </details>
             </div>
           </div>
           </div>
@@ -1290,6 +1304,10 @@ const styles = `
   .back-button:hover {
     background: var(--bg-hover);
     border-color: var(--accent-primary);
+  }
+
+  .back-button-arrow {
+    display: none;
   }
 
   .workout-filter-section {
@@ -1954,6 +1972,95 @@ const styles = `
   .log-workout-button:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+  }
+
+  @media (max-width: 768px) {
+    .workout-selection-modal {
+      width: 100%;
+      max-width: 100%;
+    }
+
+    .workout-filter-details-summary {
+      list-style: none;
+      cursor: pointer;
+      padding: var(--space-2) var(--space-3);
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-primary);
+      border-radius: var(--radius-sm);
+      font-weight: var(--font-weight-medium);
+      margin-bottom: var(--space-2);
+    }
+
+    .workout-filter-details-summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .back-button {
+      max-width: 52px;
+      min-width: 44px;
+      padding: var(--space-2);
+    }
+
+    .back-button-text {
+      display: none;
+    }
+
+    .back-button-arrow {
+      display: inline;
+      font-size: var(--text-xl);
+    }
+
+    .workout-filter-section {
+      flex-direction: column;
+      gap: var(--space-3);
+    }
+
+    .workout-filter-left,
+    .workout-filter-right {
+      width: 100%;
+    }
+
+    .filter-controls-multiselect-row {
+      flex-direction: column;
+    }
+
+    .filter-controls-sort-row {
+      flex-direction: column;
+      width: 100%;
+    }
+
+    .workout-logging-attributes-details {
+      width: 100%;
+    }
+
+    .workout-logging-attributes-summary {
+      list-style: none;
+      cursor: pointer;
+      padding: var(--space-2) var(--space-3);
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-primary);
+      border-radius: var(--radius-sm);
+      font-weight: var(--font-weight-medium);
+    }
+
+    .workout-logging-attributes-summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .workout-logging-attributes {
+      width: 100%;
+      max-width: 100%;
+    }
+
+    .workout-logging-content {
+      flex-direction: column;
+    }
+  }
+
+  @media (min-width: 769px) {
+    .workout-filter-details-summary {
+      display: none;
+    }
   }
 `;
 

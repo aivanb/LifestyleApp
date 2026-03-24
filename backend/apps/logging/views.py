@@ -365,26 +365,29 @@ def get_all_tracker_streaks(request):
     user = request.user
     today = date.today()
     
-    def calculate_streak(model_class, date_field='created_at'):
+    def calculate_streak(model_class, date_field='created_at', use_date_lookup=True):
+        """use_date_lookup: True for DateTimeField (use field__date), False for DateField (use field)."""
         streak = 0
         for i in range(365):  # Max 1 year back
             check_date = today - timedelta(days=i)
-            # Use __date lookup for DateTimeFields to avoid naive datetime warning
-            filter_kwargs = {f'{date_field}__date': check_date}
+            if use_date_lookup:
+                filter_kwargs = {f'{date_field}__date': check_date}
+            else:
+                filter_kwargs = {date_field: check_date}
             if model_class.objects.filter(user=user, **filter_kwargs).exists():
                 streak += 1
             else:
                 break
         return streak
-    
+
     streaks = {
         'weight': calculate_streak(WeightLog, 'created_at'),
         'body_measurement': calculate_streak(BodyMeasurementLog, 'created_at'),
         'water': calculate_streak(WaterLog, 'created_at'),
         'steps': calculate_streak(StepsLog, 'date_time'),
         'cardio': calculate_streak(CardioLog, 'date_time'),
-        'sleep': calculate_streak(SleepLog, 'date_time'),
-        'health_metrics': calculate_streak(HealthMetricsLog, 'date_time'),
+        'sleep': calculate_streak(SleepLog, 'date_time', use_date_lookup=False),  # DateField
+        'health_metrics': calculate_streak(HealthMetricsLog, 'date_time', use_date_lookup=False),  # DateField
     }
-    
+
     return Response(streaks, status=status.HTTP_200_OK)

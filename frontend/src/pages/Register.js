@@ -23,7 +23,7 @@ const Register = () => {
 
   useEffect(() => {
     if (isAuthenticated) {
-      navigate('/profile', { replace: true });
+      navigate('/home', { replace: true });
     }
   }, [isAuthenticated, navigate]);
 
@@ -91,7 +91,7 @@ const Register = () => {
     const result = await register(payload);
     
     if (result.success) {
-      navigate('/profile');
+      navigate('/home');
     } else {
       setError(result.error);
     }

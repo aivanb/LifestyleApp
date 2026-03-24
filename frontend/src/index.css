@@ -140,10 +140,23 @@
 
 html {
   font-size: 16px;
+  height: 100%;
+}
+
+#root {
+  min-height: 100%;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  max-width: 100%;
+  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 body {
   margin: 0;
+  min-height: 100%;
+  min-height: 100dvh;
   font-family: var(--font-primary), var(--font-fallback);
   font-size: var(--text-base);
   font-weight: var(--font-weight-regular);
@@ -153,6 +166,7 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
+  overflow-x: clip;
 }
 
 code {
@@ -238,6 +252,7 @@ a:hover {
 
 .App {
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
 }
@@ -245,48 +260,8 @@ a:hover {
 main {
   flex: 1;
   padding: var(--space-6) 0;
-}
-
-@media (max-width: 768px) {
-  body {
-    font-size: 0.9rem;
-    line-height: var(--leading-relaxed);
-  }
-
-  h1 {
-    font-size: var(--text-2xl);
-    margin-bottom: var(--space-4);
-  }
-
-  h2 {
-    font-size: var(--text-xl);
-    margin-bottom: var(--space-3);
-  }
-
-  h3 {
-    font-size: var(--text-lg);
-    margin-bottom: var(--space-3);
-  }
-
-  .card {
-    padding: var(--space-4);
-    margin-bottom: var(--space-4);
-    box-shadow: var(--shadow-md);
-  }
-
-  .btn {
-    padding: var(--space-2) var(--space-4);
-    font-size: var(--text-sm);
-    min-height: 44px;
-  }
-
-  .form-group {
-    margin-bottom: var(--space-4);
-  }
-
-  .container {
-    padding: 0 var(--space-3);
-  }
+  min-width: 0;
+  max-width: 100%;
 }
 
 /* ==================== Cards ==================== */
@@ -448,6 +423,59 @@ main {
 .btn-close:focus {
   outline: 2px solid var(--accent-primary);
   outline-offset: 2px;
+}
+
+/* ==================== Standard modal / card headers ==================== */
+/* Use across Food Creator, Food Logger, Meal Creator, Voice Food Log, Water Log, metadata modals */
+/* Compact bar for every in-app modal / sheet (one layer per window) */
+.modal-app-header {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--border-primary);
+  flex-shrink: 0;
+  font-family: var(--font-primary), var(--font-fallback);
+  box-sizing: border-box;
+}
+
+.modal-app-header--compact {
+  padding: var(--space-2) var(--space-3);
+}
+
+.modal-app-header__title {
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  font-size: var(--text-base);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--leading-tight);
+  color: var(--text-primary);
+}
+
+.modal-app-header--compact .modal-app-header__title {
+  font-size: var(--text-base);
+}
+
+.modal-app-header__close {
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.modal-app-header .btn-close {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  min-height: 32px;
+  padding: var(--space-1);
+}
+
+.modal-app-header .btn-close .icon {
+  width: 1.125rem;
+  height: 1.125rem;
 }
 
 /* ==================== Forms ==================== */

@@ -212,7 +212,15 @@ const FoodCreator = ({ onFoodCreated, onClose }) => {
   };
 
   return (
-    <div className="food-creator card">
+    <div className="food-creator card food-creator-card-wrap">
+      <div className="food-creator-card-header modal-app-header modal-app-header--compact">
+        <h2 className="food-creator-card-title modal-app-header__title">Create Food</h2>
+        <button type="button" className="btn-close modal-app-header__close food-creator-close" onClick={onClose} aria-label="Close">
+          <svg className="icon icon-md" viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+          </svg>
+        </button>
+      </div>
       {error && (
         <div className="error-message">
           <svg className="icon icon-sm" viewBox="0 0 20 20" fill="currentColor">
@@ -241,6 +249,7 @@ const FoodCreator = ({ onFoodCreated, onClose }) => {
           </div>
 
         {/* Table Format */}
+        <div className="create-form-table-wrap">
         <table className="create-form-table">
           <thead>
             <tr>
@@ -533,6 +542,7 @@ const FoodCreator = ({ onFoodCreated, onClose }) => {
             )}
           </tbody>
         </table>
+        </div>
 
         {/* Bottom Options */}
         <div className="form-options-top">
@@ -582,8 +592,12 @@ const FoodCreator = ({ onFoodCreated, onClose }) => {
 
         .create-form-table {
           width: 100%;
+          max-width: 100%;
+          table-layout: fixed;
           border-collapse: collapse;
+          box-sizing: border-box;
           margin-bottom: var(--space-4);
+          box-sizing: border-box;
         }
 
         .create-form-table thead {
@@ -596,7 +610,7 @@ const FoodCreator = ({ onFoodCreated, onClose }) => {
           font-size: var(--text-sm);
           font-weight: var(--font-weight-bold);
           color: var(--text-primary);
-          border-bottom: 2px solid var(--border-primary);
+          border-bottom: none;
           text-transform: uppercase;
           letter-spacing: 0.05em;
         }
@@ -618,19 +632,19 @@ const FoodCreator = ({ onFoodCreated, onClose }) => {
         }
 
         .create-form-table td {
-          padding: var(--space-3) var(--space-4);
-          border-bottom: 1px solid var(--border-primary);
+          padding: var(--space-2) var(--space-4);
+          border-bottom: none;
         }
 
         .create-label-cell {
           font-weight: var(--font-weight-medium);
           color: var(--text-secondary);
           font-size: var(--text-sm);
-          width: 35%;
+          width: 22%;
         }
 
         .create-value-cell {
-          width: 40%;
+          width: 45%;
         }
 
         .create-value-cell input,
@@ -705,6 +719,38 @@ const FoodCreator = ({ onFoodCreated, onClose }) => {
           cursor: not-allowed;
         }
 
+        .food-creator-card-wrap {
+          max-width: 100%;
+          width: 100%;
+          overflow-x: hidden;
+          box-sizing: border-box;
+          min-width: 0;
+        }
+
+        .food-creator-card-header {
+          margin-bottom: var(--space-3);
+        }
+
+        .food-creator-card-title {
+          color: var(--text-primary);
+        }
+
+        .food-creator-close {
+          padding: var(--space-2);
+          color: var(--text-tertiary);
+        }
+
+        .food-creator-close:hover {
+          color: var(--text-primary);
+        }
+
+        .create-form-table-wrap {
+          overflow-x: hidden;
+          max-width: 100%;
+          width: 100%;
+          min-width: 0;
+        }
+
         .macros-grid {
           display: grid;
           grid-template-columns: repeat(4, 1fr);
@@ -741,7 +787,7 @@ const FoodCreator = ({ onFoodCreated, onClose }) => {
         .create-value-cell .input-with-external-steppers input {
           width: auto;
           flex: 1;
-          max-width: 150px;
+          max-width: 90px;
         }
 
         .stepper-btn {
@@ -784,18 +830,18 @@ const FoodCreator = ({ onFoodCreated, onClose }) => {
         }
 
         .input-with-external-steppers .form-input-uniform {
-          width: 100px;
-          max-width: 100px;
+          width: 72px;
+          max-width: 72px;
         }
 
         .input-with-external-steppers .form-input-serving-size {
-          width: 80px;
-          max-width: 80px;
+          width: 64px;
+          max-width: 64px;
         }
 
         .input-with-external-steppers .form-input-small {
-          width: 100px;
-          max-width: 100px;
+          width: 72px;
+          max-width: 72px;
         }
 
         .input-with-external-steppers .form-input-small:focus,
@@ -807,11 +853,11 @@ const FoodCreator = ({ onFoodCreated, onClose }) => {
         }
 
         .form-input-unit {
-          width: 140px;
-          max-width: 140px;
-          padding: var(--space-2) var(--space-3);
+          width: 100px;
+          max-width: 100px;
+          padding: var(--space-1) var(--space-2);
           font-family: var(--font-primary);
-          font-size: var(--text-base);
+          font-size: var(--text-sm);
           color: var(--text-primary);
           background: var(--bg-secondary);
           border: 1px solid var(--border-primary);
@@ -1052,6 +1098,75 @@ const FoodCreator = ({ onFoodCreated, onClose }) => {
         }
 
         @media (max-width: 768px) {
+          .food-creator.card {
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
+          }
+
+          .create-form-table {
+            display: block;
+          }
+
+          .create-form-table thead {
+            display: none;
+          }
+
+          .create-form-table tbody tr {
+            display: flex;
+            flex-wrap: nowrap;
+            align-items: center;
+            gap: 4px;
+            margin-bottom: var(--space-1);
+            padding: var(--space-1) var(--space-2);
+            background: var(--bg-tertiary);
+            border-radius: var(--radius-sm);
+          }
+
+          .create-form-table .create-label-cell {
+            flex: 0 0 auto;
+            min-width: 0;
+            font-size: var(--text-xs);
+            padding: 0;
+            margin-right: 2px;
+          }
+
+          .create-form-table .create-value-cell {
+            flex: 1 1 32%;
+            min-width: 0;
+            max-width: 45%;
+            padding: 0;
+          }
+
+          .create-form-table .create-unit-cell {
+            flex: 0 0 3.5em;
+            min-width: 3.5em;
+            max-width: 4em;
+            font-size: var(--text-xs);
+            padding: 0 2px;
+          }
+
+          .create-value-cell input,
+          .create-value-cell select,
+          .create-unit-cell select {
+            max-width: 100%;
+            width: 100%;
+            box-sizing: border-box;
+          }
+
+          .create-value-cell .input-with-external-steppers {
+            min-width: 0;
+          }
+
+          .create-value-cell .input-with-external-steppers input {
+            max-width: 100%;
+            min-width: 0;
+          }
+
+          .input-with-external-steppers {
+            max-width: 100%;
+          }
+
           .basic-info-grid {
             grid-template-columns: 1fr;
           }

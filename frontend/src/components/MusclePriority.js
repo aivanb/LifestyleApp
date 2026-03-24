@@ -178,7 +178,19 @@ const MusclePriority = ({ onPrioritiesUpdated, showHeader = true, enableTooltips
 
   return (
     <div className="container">
+      <div className="muscle-priority-reset-top-mobile">
+        <button
+          onClick={resetToDefault}
+          className="btn btn-secondary"
+        >
+          Reset to Default (80)
+        </button>
+      </div>
       <style>{`
+        .muscle-priority-reset-top-mobile {
+          display: none;
+        }
+
         .muscle-priority-header {
           display: flex;
           justify-content: space-between;
@@ -529,6 +541,75 @@ const MusclePriority = ({ onPrioritiesUpdated, showHeader = true, enableTooltips
         .mp-muscle-description-detail strong {
           color: var(--text-primary);
         }
+
+        @media (max-width: 768px) {
+          .muscle-priority-reset-top-mobile {
+            display: block;
+            margin-bottom: var(--space-4);
+          }
+
+          .muscle-priority-footer-reset-wrap {
+            display: none;
+          }
+
+          .muscle-group-header-content {
+            flex-wrap: wrap;
+          }
+
+          .muscle-group-priority-section {
+            width: 100%;
+            flex-wrap: wrap;
+            margin-top: var(--space-2);
+          }
+
+          .priority-label {
+            display: none;
+          }
+
+          .muscle-priority-controls {
+            flex-wrap: wrap;
+            width: 100%;
+          }
+
+          .muscle-priority-controls .priority-label {
+            display: none;
+          }
+
+          .priority-controls {
+            flex-wrap: wrap;
+            gap: var(--space-2);
+            width: 100%;
+          }
+
+          .priority-slider-wrapper {
+            width: 100%;
+            order: 10;
+          }
+
+          .priority-slider {
+            width: 100%;
+            max-width: 100%;
+          }
+
+          .individual-muscle-item {
+            flex-wrap: wrap;
+          }
+
+          .muscle-priority-controls .priority-controls {
+            width: 100%;
+          }
+
+          .muscle-priority-footer-actions {
+            flex-wrap: wrap;
+            gap: var(--space-3);
+          }
+
+          .muscle-priority-footer-actions .btn {
+            padding: var(--space-3) var(--space-4);
+            font-size: var(--text-base);
+            min-height: 44px;
+          }
+        }
       `}</style>
       
       {showHeader && (
@@ -738,14 +819,16 @@ const MusclePriority = ({ onPrioritiesUpdated, showHeader = true, enableTooltips
         })}
       </div>
 
-      <div className="mt-8 flex justify-between">
-        <button
-          onClick={resetToDefault}
-          className="btn btn-secondary"
-        >
-          Reset to Default (80)
-        </button>
-        
+      <div className="muscle-priority-footer-actions mt-8 flex justify-between">
+        <span className="muscle-priority-footer-reset-wrap">
+          <button
+            onClick={resetToDefault}
+            className="btn btn-secondary"
+          >
+            Reset to Default (80)
+          </button>
+        </span>
+
         <button
           onClick={handleUpdate}
           disabled={isUpdating}

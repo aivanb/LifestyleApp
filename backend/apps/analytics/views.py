@@ -18,7 +18,7 @@ from apps.logging.models import (
 )
 from apps.health.models import SleepLog, HealthMetricsLog
 from apps.workouts.models import (
-    Workout, WorkoutLog, Split, SplitDay, SplitDayTarget, Muscle
+    Workout, WorkoutLog, Split, SplitDay, SplitDayTarget,
 )
 from apps.foods.models import Food
 from apps.users.models import UserGoal
@@ -1437,4 +1437,203 @@ def health_metrics_radial(request):
             'illness': round(float(health_logs['avg_illness'] or 0), 2),
             'stress': round(float(health_logs['avg_stress'] or 0), 2)
         }
+    })
+
+
+def _latest_user_goal(user):
+    return UserGoal.objects.filter(user=user).order_by('-updated_at', '-created_at').first()
+
+
+def _weight_kg_latest(user):
+    """Most recent weight log in kilograms, or None."""
+    wl = WeightLog.objects.filter(user=user).order_by('-date_time', '-created_at').first()
+    if not wl or wl.weight is None:
+        return None
+    w = float(wl.weight)
+    unit = (wl.weight_unit or 'kg').lower()
+    if unit in ('lb', 'lbs', 'pound', 'pounds'):
+        return round(w * 0.45359237, 2)
+    return round(w, 2)
+
+
+def _steps_to_walking_kcal(steps, height_cm, weight_kg):
+    """
+    Approximate walking kcal from steps using stride length from height (m) and body mass.
+    stride ≈ 0.414 × height_m; energy ≈ 0.7 kcal/kg/km (walking).
+    """
+    if not steps or steps <= 0 or not height_cm or not weight_kg:
+        return 0.0
+    height_m = float(height_cm) / 100.0
+    stride_m = height_m * 0.414
+    distance_km = (steps * stride_m) / 1000.0
+    return round(distance_km * float(weight_kg) * 0.7, 1)
+
+
+def _activation_actual_by_muscle(user, target_date):
+    """Sum WorkoutMuscle activation_rating for all sets logged on target_date."""
+    logs = WorkoutLog.objects.filter(
+        user=user, date_time__date=target_date
+    ).select_related('workout').prefetch_related('workout__workoutmuscle_set__muscle')
+    actual = {}
+    for log in logs:
+        for wm in log.workout.workoutmuscle_set.all():
+            mid = wm.muscle.muscles_id
+            actual[mid] = actual.get(mid, 0) + int(wm.activation_rating or 0)
+    return actual
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def home_dashboard(request):
+    """
+    Single-day home summary: split day + activation targets vs done, macro goals vs logged,
+    calorie budget including cardio and estimated walking burn from steps (height + latest weight),
+    and which additional trackers have no entry today.
+    """
+    date_str = request.GET.get('date')
+    if date_str:
+        try:
+            target_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+        except ValueError:
+            return Response(
+                {'success': False, 'error': {'message': 'Invalid date; use YYYY-MM-DD'}},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+    else:
+        target_date = timezone.localdate()
+
+    user = request.user
+    goals = _latest_user_goal(user)
+
+    goal_macros = {
+        'calories': int(goals.calories_goal) if goals and goals.calories_goal is not None else None,
+        'protein': float(goals.protein_goal) if goals and goals.protein_goal is not None else None,
+        'carbohydrates': float(goals.carbohydrates_goal) if goals and goals.carbohydrates_goal is not None else None,
+        'fat': float(goals.fat_goal) if goals and goals.fat_goal is not None else None,
+    }
+
+    food_totals = FoodLog.objects.filter(user=user, date_time__date=target_date).aggregate(
+        calories=Sum(F('food__calories') * F('servings'), output_field=DecimalField(max_digits=14, decimal_places=4)),
+        protein=Sum(F('food__protein') * F('servings'), output_field=DecimalField(max_digits=14, decimal_places=4)),
+        carbohydrates=Sum(F('food__carbohydrates') * F('servings'), output_field=DecimalField(max_digits=14, decimal_places=4)),
+        fat=Sum(F('food__fat') * F('servings'), output_field=DecimalField(max_digits=14, decimal_places=4)),
+    )
+    consumed = {
+        'calories': round(float(food_totals['calories'] or 0), 1),
+        'protein': round(float(food_totals['protein'] or 0), 1),
+        'carbohydrates': round(float(food_totals['carbohydrates'] or 0), 1),
+        'fat': round(float(food_totals['fat'] or 0), 1),
+    }
+
+    macro_remaining = {}
+    for key in ('protein', 'carbohydrates', 'fat'):
+        g = goal_macros.get(key)
+        if g is not None:
+            macro_remaining[key] = round(g - consumed[key], 1)
+        else:
+            macro_remaining[key] = None
+
+    cardio_sum = CardioLog.objects.filter(user=user, date_time__date=target_date).aggregate(
+        total=Sum('calories_burned')
+    )
+    cardio_calories = int(cardio_sum['total'] or 0)
+
+    steps_sum = StepsLog.objects.filter(user=user, date_time__date=target_date).aggregate(
+        total=Sum('steps')
+    )
+    steps_today = int(steps_sum['total'] or 0)
+
+    height_cm = float(user.height) if user.height else None
+    weight_kg = _weight_kg_latest(user)
+    steps_calories = _steps_to_walking_kcal(steps_today, height_cm, weight_kg)
+
+    calorie_remaining = None
+    if goal_macros['calories'] is not None:
+        calorie_remaining = round(
+            goal_macros['calories']
+            - consumed['calories']
+            + cardio_calories
+            + steps_calories,
+            1,
+        )
+
+    split_section = {
+        'active_split': None,
+        'current_split_day': None,
+        'muscle_rows': [],
+    }
+    active_split = Split.objects.filter(user=user, start_date__lte=target_date).order_by('-start_date').first()
+    if active_split:
+        split_days = active_split.splitday_set.all().order_by('day_order')
+        if split_days.exists() and active_split.start_date:
+            days_since = (target_date - active_split.start_date).days
+            idx = days_since % split_days.count()
+            current_day = split_days[idx]
+            targets = SplitDayTarget.objects.filter(split_day=current_day).select_related('muscle')
+            actual_map = _activation_actual_by_muscle(user, target_date)
+            rows = []
+            for t in targets:
+                mid = t.muscle.muscles_id
+                tgt = int(t.target_activation or 0)
+                act = int(actual_map.get(mid, 0))
+                rows.append({
+                    'muscle_id': mid,
+                    'muscle_name': t.muscle.muscle_name,
+                    'target_activation': tgt,
+                    'done_activation': act,
+                    'remaining_activation': max(0, tgt - act),
+                })
+            split_section = {
+                'active_split': {
+                    'splits_id': active_split.splits_id,
+                    'split_name': active_split.split_name,
+                    'start_date': active_split.start_date.isoformat() if active_split.start_date else None,
+                },
+                'current_split_day': {
+                    'split_days_id': current_day.split_days_id,
+                    'day_name': current_day.day_name,
+                    'day_order': current_day.day_order,
+                },
+                'muscle_rows': rows,
+            }
+
+    tracker_logged = {
+        'weight': WeightLog.objects.filter(user=user, date_time__date=target_date).exists(),
+        'water': WaterLog.objects.filter(user=user, date_time__date=target_date).exists(),
+        'body_measurement': BodyMeasurementLog.objects.filter(user=user, date_time__date=target_date).exists(),
+        'steps': StepsLog.objects.filter(user=user, date_time__date=target_date).exists(),
+        'cardio': CardioLog.objects.filter(user=user, date_time__date=target_date).exists(),
+        'sleep': SleepLog.objects.filter(user=user, date_time=target_date).exists(),
+        'health_metrics': HealthMetricsLog.objects.filter(user=user, date_time=target_date).exists(),
+    }
+    tracker_labels = {
+        'weight': 'Weight',
+        'water': 'Water',
+        'body_measurement': 'Body measurements',
+        'steps': 'Steps',
+        'cardio': 'Cardio',
+        'sleep': 'Sleep',
+        'health_metrics': 'Health metrics',
+    }
+    trackers_not_logged = [
+        {'id': k, 'label': tracker_labels[k]}
+        for k, v in tracker_logged.items() if not v
+    ]
+
+    return Response({
+        'success': True,
+        'data': {
+            'date': target_date.isoformat(),
+            'goals': goal_macros,
+            'consumed': consumed,
+            'macro_remaining': macro_remaining,
+            'cardio_calories_burned': cardio_calories,
+            'steps_today': steps_today,
+            'steps_calories_estimate': steps_calories,
+            'calorie_remaining': calorie_remaining,
+            'split': split_section,
+            'trackers_not_logged': trackers_not_logged,
+            'weight_kg_used_for_steps': weight_kg,
+            'height_cm': height_cm,
+        },
     })

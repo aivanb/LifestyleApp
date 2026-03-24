@@ -105,7 +105,7 @@ const DataFilters = ({ schema, onFilterChange, onSearchChange, onApply, onClear 
         <div className="filter-section">
           <div className="form-label">Field Filters</div>
           
-          <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
+          <div className="filter-row" style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
             <select
               className="form-input"
               value={selectedField}
@@ -163,7 +163,7 @@ const DataFilters = ({ schema, onFilterChange, onSearchChange, onApply, onClear 
         </div>
 
         {/* Actions */}
-        <div className="flex gap-4 mt-6">
+        <div className="filter-actions flex gap-4 mt-6">
           <button
             className="btn btn-primary"
             onClick={handleApply}
@@ -230,45 +230,20 @@ const DataFilters = ({ schema, onFilterChange, onSearchChange, onApply, onClear 
         }
 
         @media (max-width: 768px) {
-          .data-filters {
-            margin-bottom: var(--space-4);
+          .filter-row {
+            flex-wrap: wrap !important;
           }
-
-          .card {
-            padding: var(--space-4);
+          .filter-row .form-input,
+          .filter-row select {
+            min-width: 0;
           }
-
-          .filter-section {
-            margin-bottom: var(--space-3);
+          .filter-actions {
+            flex-wrap: wrap !important;
+            gap: var(--space-2) !important;
           }
-
-          .flex.items-center.gap-3.mb-4 {
-            gap: var(--space-2);
-          }
-
-          .flex.gap-4.mt-6 {
-            flex-direction: column;
-            gap: var(--space-3);
-          }
-
-          .btn.btn-primary,
-          .btn.btn-secondary {
-            width: 100%;
-            min-height: 44px;
-            justify-content: center;
-          }
-
-          .form-group {
-            margin-bottom: var(--space-3);
-          }
-
-          .data-filters .form-input {
-            min-height: 44px;
-          }
-
-          .data-filters .btn.btn-secondary svg,
-          .data-filters .btn.btn-primary svg {
-            flex-shrink: 0;
+          .filter-actions button {
+            flex: 1 1 auto;
+            min-width: 0;
           }
         }
       `}</style>

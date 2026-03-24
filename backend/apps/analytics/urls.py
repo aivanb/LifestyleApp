@@ -6,6 +6,7 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
+    path('home/dashboard/', views.home_dashboard, name='home_dashboard'),
     path('date-bounds/', views.analytics_date_bounds, name='analytics_date_bounds'),
     # Workout Analytics
     path('workouts/body-measurement-progression/', views.body_measurement_progression, name='body_measurement_progression'),

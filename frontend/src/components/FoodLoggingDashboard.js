@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { XMarkIcon } from '@heroicons/react/24/outline';
 import api from '../services/api';
 import { ExpandedProgressView, ProgressGrid } from './ProgressBar';
 import FoodLogger from './FoodLogger';
@@ -409,18 +408,19 @@ const FoodLoggingDashboard = () => {
       {/* Header */}
       <div className="dashboard-header">
           <div className="header-content">
-            {/* Left side - Calendar */}
-            <div className="header-left">
-              <div className="controls-section">
-                <div className="custom-date-picker">
-                  <input
-                    type="text"
-                    value={selectedDate}
-                    readOnly
-                    className="form-input date-input"
-                    onClick={() => setShowCustomCalendar(!showCustomCalendar)}
-                    title="Click to open calendar"
-                  />
+            {/* Center - Date and Streak */}
+            <div className="header-center header-center--grouped">
+              <div className="header-date-streak-row">
+                <div className="controls-section">
+                  <div className="custom-date-picker">
+                    <input
+                      type="text"
+                      value={selectedDate}
+                      readOnly
+                      className="form-input date-input"
+                      onClick={() => setShowCustomCalendar(!showCustomCalendar)}
+                      title="Click to open calendar"
+                    />
                   {showCustomCalendar && (
                     <div className="custom-calendar-popup">
                       <div className="calendar-header">
@@ -455,15 +455,9 @@ const FoodLoggingDashboard = () => {
                   )}
                 </div>
               </div>
-            </div>
-
-            {/* Center - Title and Streak */}
-            <div className="header-center">
-              <div className="header-title">
-                <div className="streak-counter">
-                  <span className="streak-number">{logStreak}</span>
-                  <span className="streak-unit"> DAYS</span>
-                </div>
+              <div className="streak-counter">
+                <span className="streak-number">{logStreak}</span>
+                <span className="streak-unit"> DAYS</span>
               </div>
             </div>
             
@@ -521,11 +515,10 @@ const FoodLoggingDashboard = () => {
           </div>
       </div>
 
+      <>
       {/* Main Content */}
-      <div className="dashboard-content">
-        {/* PC Layout */}
-        {!isMobile && (
-          <div className="dashboard-layout-pc">
+        {/* PC Layout - hidden on mobile via CSS */}
+        <div className="dashboard-layout-pc">
             {/* Left Column - Progress & Food List */}
             <div className="dashboard-left">
               {/* Goal Progress */}
@@ -589,12 +582,13 @@ const FoodLoggingDashboard = () => {
                             )}
                             <div className="food-log-item">
                               <div className="food-info">
-                                <div className="food-icon">
-                                  {getFoodGroupIcon(log.food_details?.food_group)}
-                                </div>
                                 <div className="food-details">
-                                  <div className="food-name">{log.food_name}</div>
-                                  <div className="food-time">
+                                  <div className="food-name-time-row">
+                                    <span className="food-icon food-icon-inline">
+                                      {getFoodGroupIcon(log.food_details?.food_group)}
+                                    </span>
+                                    <span className="food-name">{log.food_name}</span>
+                                    <div className="food-time">
                                     {editingTime === log.macro_log_id ? (
                                       <div className="time-edit-container">
                                         <input
@@ -631,6 +625,7 @@ const FoodLoggingDashboard = () => {
                                         {time}
                                       </span>
                                     )}
+                                    </div>
                                   </div>
                                 </div>
                               </div>
@@ -697,11 +692,9 @@ const FoodLoggingDashboard = () => {
               
             </div>
           </div>
-        )}
 
-        {/* Mobile Layout */}
-        {isMobile && (
-          <div className="dashboard-layout-mobile">
+        {/* Mobile Layout - hidden on desktop via CSS */}
+        <div className="dashboard-layout-mobile">
             {/* Goal Progress */}
             <div 
               className="goal-progress-section card"
@@ -768,7 +761,7 @@ const FoodLoggingDashboard = () => {
               </button>
 
               <button
-                className="btn-icon-mobile"
+                className="btn-icon-mobile btn-icon-mobile--water"
                 onClick={() => {
                   // Initialize date_time with current date/time
                   const now = new Date();
@@ -778,7 +771,10 @@ const FoodLoggingDashboard = () => {
                 }}
                 title="Log Water"
               >
-                Log Water
+                <svg className="icon icon-lg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                  <path fillRule="evenodd" d="M10 2.5c-.2 0-.4.1-.5.3C8.2 5.5 4 9.5 4 12a6 6 0 1012 0c0-2.5-4.2-6.5-5.5-9.2-.1-.2-.3-.3-.5-.3z" clipRule="evenodd" />
+                </svg>
+                <span className="btn-icon-mobile-label">Water</span>
               </button>
             </div>
 
@@ -819,12 +815,21 @@ const FoodLoggingDashboard = () => {
                           )}
                           <div className="food-log-item mobile">
                             <div className="food-info">
-                              <div className="food-icon">
-                                {getFoodGroupIcon(log.food_details?.food_group)}
-                              </div>
                               <div className="food-details">
-                                <div className="food-name">{log.food_name}</div>
-                                <div className="food-time">
+                                <div className="food-name-time-row">
+                                  <span className="food-icon food-icon-inline">
+                                    {getFoodGroupIcon(log.food_details?.food_group)}
+                                  </span>
+                                  <span
+                                    className="food-name food-name--clickable"
+                                    role="button"
+                                    tabIndex={0}
+                                    onClick={() => setMetadataModalLog(log.food_details ? log : null)}
+                                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setMetadataModalLog(log.food_details ? log : null); }}
+                                  >
+                                    {log.food_name}
+                                  </span>
+                                  <div className="food-time">
                                   {editingTime === log.macro_log_id ? (
                                     <div className="time-edit-container">
                                       <input
@@ -861,6 +866,7 @@ const FoodLoggingDashboard = () => {
                                       {time}
                                     </span>
                                   )}
+                                  </div>
                                 </div>
                               </div>
                             </div>
@@ -886,7 +892,7 @@ const FoodLoggingDashboard = () => {
                                 <span className="macro-value">{log.servings}</span>
                               </div>
                             </div>
-                            <div className="food-actions">
+                            <div className="food-actions food-actions--mobile-hide">
                               <button
                                 className="btn-icon-info"
                                 onClick={() => setMetadataModalLog(log.food_details ? log : null)}
@@ -907,15 +913,14 @@ const FoodLoggingDashboard = () => {
               </div>
             </div>
           </div>
-        )}
-      </div>
+      </>
 
       {/* Modals for Mobile */}
       {isMobile && (
         <>
           {showFoodLogger && (
             <div className="modal-backdrop" onClick={() => setShowFoodLogger(false)}>
-              <div className="modal" onClick={(e) => e.stopPropagation()}>
+              <div className="modal modal--food-logger" onClick={(e) => e.stopPropagation()}>
                 <FoodLogger
                   onFoodLogged={handleFoodLogged}
                   onClose={() => setShowFoodLogger(false)}
@@ -927,7 +932,7 @@ const FoodLoggingDashboard = () => {
 
           {showFoodCreator && (
             <div className="modal-backdrop" onClick={() => setShowFoodCreator(false)}>
-              <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '800px' }}>
+              <div className="modal modal--food-creator" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '800px' }}>
                 <FoodCreator
                   onFoodCreated={handleFoodCreated}
                   onClose={() => setShowFoodCreator(false)}
@@ -937,8 +942,8 @@ const FoodLoggingDashboard = () => {
           )}
 
           {showMealCreator && (
-            <div className="modal-backdrop" onClick={() => setShowMealCreator(false)}>
-              <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-backdrop modal-backdrop--meal-creator" onClick={() => setShowMealCreator(false)}>
+              <div className="modal modal--meal-creator" onClick={(e) => e.stopPropagation()}>
                 <MealCreator
                   onMealCreated={handleMealCreated}
                   onClose={() => setShowMealCreator(false)}
@@ -949,7 +954,7 @@ const FoodLoggingDashboard = () => {
 
           {showFoodChatbot && (
             <div className="modal-backdrop" onClick={() => setShowFoodChatbot(false)}>
-              <div className="modal" onClick={(e) => e.stopPropagation()}>
+              <div className="modal modal--food-chatbot" onClick={(e) => e.stopPropagation()}>
                 <FoodChatbot
                   onFoodsLogged={handleFoodsLogged}
                   onClose={() => setShowFoodChatbot(false)}
@@ -959,22 +964,23 @@ const FoodLoggingDashboard = () => {
           )}
 
           {showWaterLogger && (
-            <div className="modal-backdrop" onClick={() => setShowWaterLogger(false)}>
-              <div className="modal" style={{ maxWidth: '400px' }} onClick={(e) => e.stopPropagation()}>
-                <div style={{ padding: 'var(--space-6)', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-lg)' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-6)' }}>
-                    <h2 style={{ fontSize: 'var(--text-xl)', fontWeight: 'var(--font-weight-bold)', color: 'var(--text-primary)', fontFamily: 'var(--font-primary)' }}>
-                      Log Water
-                    </h2>
+            <div className="modal-backdrop modal-backdrop--water-log" onClick={() => setShowWaterLogger(false)}>
+              <div className="modal modal--water-log" style={{ maxWidth: '400px' }} onClick={(e) => e.stopPropagation()}>
+                <div className="water-log-modal-inner">
+                  <div className="modal-app-header modal-app-header--compact water-log-modal-header">
+                    <h2 className="modal-app-header__title">Log Water</h2>
                     <button
-                      className="btn-close"
+                      type="button"
+                      className="btn-close modal-app-header__close"
                       onClick={() => setShowWaterLogger(false)}
                       aria-label="Close"
                     >
-                      <XMarkIcon style={{ width: '24px', height: '24px' }} />
+                      <svg className="icon icon-md" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                      </svg>
                     </button>
                   </div>
-                  
+
                   <form onSubmit={handleWaterSubmit}>
                     <div style={{ marginBottom: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
                       <label style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--font-weight-medium)', color: 'var(--text-primary)', fontFamily: 'var(--font-primary)' }}>
@@ -1132,7 +1138,7 @@ const FoodLoggingDashboard = () => {
         <>
           {showFoodCreator && (
             <div className="modal-backdrop" onClick={() => setShowFoodCreator(false)}>
-              <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '800px' }}>
+              <div className="modal modal--food-creator" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '800px' }}>
                 <FoodCreator
                   onFoodCreated={handleFoodCreated}
                   onClose={() => setShowFoodCreator(false)}
@@ -1142,8 +1148,8 @@ const FoodLoggingDashboard = () => {
           )}
 
           {showMealCreator && (
-            <div className="modal-backdrop" onClick={() => setShowMealCreator(false)}>
-              <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-backdrop modal-backdrop--meal-creator" onClick={() => setShowMealCreator(false)}>
+              <div className="modal modal--meal-creator" onClick={(e) => e.stopPropagation()}>
                 <MealCreator
                   onMealCreated={handleMealCreated}
                   onClose={() => setShowMealCreator(false)}
@@ -1154,7 +1160,7 @@ const FoodLoggingDashboard = () => {
 
           {showFoodChatbot && (
             <div className="modal-backdrop" onClick={() => setShowFoodChatbot(false)}>
-              <div className="modal" onClick={(e) => e.stopPropagation()}>
+              <div className="modal modal--food-chatbot" onClick={(e) => e.stopPropagation()}>
                 <FoodChatbot
                   onFoodsLogged={handleFoodsLogged}
                   onClose={() => setShowFoodChatbot(false)}
@@ -1164,22 +1170,23 @@ const FoodLoggingDashboard = () => {
           )}
 
           {showWaterLogger && (
-            <div className="modal-backdrop" onClick={() => setShowWaterLogger(false)}>
-              <div className="modal" style={{ maxWidth: '400px' }} onClick={(e) => e.stopPropagation()}>
-                <div style={{ padding: 'var(--space-6)', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-lg)' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-6)' }}>
-                    <h2 style={{ fontSize: 'var(--text-xl)', fontWeight: 'var(--font-weight-bold)', color: 'var(--text-primary)', fontFamily: 'var(--font-primary)' }}>
-                      Log Water
-                    </h2>
+            <div className="modal-backdrop modal-backdrop--water-log" onClick={() => setShowWaterLogger(false)}>
+              <div className="modal modal--water-log" style={{ maxWidth: '400px' }} onClick={(e) => e.stopPropagation()}>
+                <div className="water-log-modal-inner">
+                  <div className="modal-app-header modal-app-header--compact water-log-modal-header">
+                    <h2 className="modal-app-header__title">Log Water</h2>
                     <button
-                      className="btn-close"
+                      type="button"
+                      className="btn-close modal-app-header__close"
                       onClick={() => setShowWaterLogger(false)}
                       aria-label="Close"
                     >
-                      <XMarkIcon style={{ width: '24px', height: '24px' }} />
+                      <svg className="icon icon-md" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                      </svg>
                     </button>
                   </div>
-                  
+
                   <form onSubmit={handleWaterSubmit}>
                     <div style={{ marginBottom: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
                       <label style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--font-weight-medium)', color: 'var(--text-primary)', fontFamily: 'var(--font-primary)' }}>
@@ -1356,9 +1363,9 @@ const FoodLoggingDashboard = () => {
         .dashboard-header {
           background: transparent;
           border: none;
-          padding: 0 0 var(--space-6) 0;
+          padding: 0;
           width: 100%;
-          margin: 0 0 var(--space-6) 0;
+          margin: 0;
         }
 
         .header-content {
@@ -1367,8 +1374,8 @@ const FoodLoggingDashboard = () => {
           align-items: flex-start;
           width: 100%;
           margin: 0;
-          padding: var(--space-6) var(--space-6) 0 var(--space-6);
-          gap: var(--space-4);
+          padding: var(--space-1) var(--space-3) 0 var(--space-3);
+          gap: var(--space-2);
         }
 
         .header-left {
@@ -1382,11 +1389,29 @@ const FoodLoggingDashboard = () => {
           align-items: center;
         }
 
+        .header-center--grouped {
+          display: flex;
+          flex-direction: row;
+          justify-content: flex-end;
+          align-items: center;
+          gap: var(--space-2);
+          flex-wrap: nowrap;
+          margin-left: auto;
+        }
+
+        .header-date-streak-row {
+          display: flex;
+          align-items: center;
+          gap: var(--space-1);
+          flex-wrap: nowrap;
+          margin-top: var(--space-3);
+        }
+
         .header-actions {
           flex: 0 0 auto;
           display: flex;
           align-items: center;
-          gap: var(--space-3);
+          gap: var(--space-2);
           transition: opacity 0.4s var(--ease-out-cubic);
         }
 
@@ -1405,9 +1430,9 @@ const FoodLoggingDashboard = () => {
         .streak-counter {
           display: flex;
           align-items: center;
-          gap: var(--space-2);
+          gap: var(--space-1);
           background: var(--bg-tertiary);
-          padding: var(--space-2) var(--space-4);
+          padding: var(--space-1) var(--space-2);
           border-radius: var(--radius-lg);
           border: 1px solid var(--border-primary);
         }
@@ -1487,8 +1512,9 @@ const FoodLoggingDashboard = () => {
         }
 
         .date-input {
-          padding: var(--space-3) var(--space-4);
-          min-height: 56px;
+          padding: var(--space-2) var(--space-3);
+          min-height: 48px;
+          height: 48px;
           border: 1px solid transparent;
           border-radius: var(--radius-md);
           background: rgba(255, 255, 255, 0.08);
@@ -1580,7 +1606,10 @@ const FoodLoggingDashboard = () => {
         .custom-date-picker {
           position: relative;
           display: inline-block;
-          margin-left: 60px;
+        }
+
+        .header-center--grouped .custom-date-picker {
+          margin-left: 0;
         }
 
         /* Custom calendar popup */
@@ -1781,19 +1810,15 @@ const FoodLoggingDashboard = () => {
         }
 
 
-        .dashboard-content {
-          width: 100%;
-          margin: 0;
-          padding: 0 var(--space-4);
-        }
-
         /* PC Layout */
         .dashboard-layout-pc {
+          padding: 0 var(--space-4);
           display: grid;
           grid-template-columns: 60% 40%;
           gap: var(--space-6);
           align-items: start;
           width: 100%;
+          margin-top: 0;
         }
 
         .dashboard-left {
@@ -1813,6 +1838,7 @@ const FoodLoggingDashboard = () => {
 
         /* Mobile Layout */
         .dashboard-layout-mobile {
+          padding: 0 var(--space-4);
           display: flex;
           flex-direction: column;
           gap: var(--space-4);
@@ -1825,8 +1851,8 @@ const FoodLoggingDashboard = () => {
         }
 
         .btn-icon-mobile {
-          width: 60px;
-          height: 60px;
+          width: 72px;
+          height: 72px;
           padding: 0;
           border: 2px solid var(--border-primary);
           border-radius: var(--radius-lg);
@@ -1838,6 +1864,20 @@ const FoodLoggingDashboard = () => {
           align-items: center;
           justify-content: center;
           margin: 0 auto;
+        }
+
+        .btn-icon-mobile svg.icon,
+        .btn-icon-mobile .icon.icon-lg {
+          width: 2.125rem;
+          height: 2.125rem;
+        }
+
+        .btn-icon-mobile span.icon {
+          font-size: 2.125rem;
+          line-height: 1;
+          display: flex;
+          align-items: center;
+          justify-content: center;
         }
 
         .btn-icon-mobile:hover {
@@ -1856,7 +1896,10 @@ const FoodLoggingDashboard = () => {
 
         /* Goal Progress */
         .goal-progress-section {
-          background: transparent;
+          background: var(--bg-secondary);
+          padding-top: var(--space-6);
+          padding-bottom: var(--space-6);
+          margin-top: var(--space-6);
         }
 
         .goal-progress-section.card {
@@ -1865,9 +1908,14 @@ const FoodLoggingDashboard = () => {
         }
 
         .progress-summary {
-          padding: var(--space-4);
+          padding: var(--space-6) var(--space-4);
           border-radius: var(--radius-lg);
           transition: background 0.2s var(--ease-out-cubic);
+        }
+
+        .goal-progress-section .progress-summary {
+          padding-top: var(--space-8);
+          padding-bottom: var(--space-8);
         }
 
         .progress-summary:hover {
@@ -1896,8 +1944,8 @@ const FoodLoggingDashboard = () => {
         .goal-progress-section + .food-log-section,
         .goal-progress-section ~ .food-log-section {
           border-top: none;
-          padding-top: var(--space-4);
-          margin-top: var(--space-4);
+          padding-top: var(--space-2);
+          margin-top: var(--space-2);
         }
 
         .food-log-list {
@@ -1979,6 +2027,13 @@ const FoodLoggingDashboard = () => {
           border-radius: var(--radius-md);
         }
 
+        .food-icon-inline {
+          width: auto;
+          height: auto;
+          font-size: var(--text-xl);
+          flex-shrink: 0;
+        }
+
         .food-details {
           flex: 1 1 60%;
           min-width: 0;
@@ -1989,11 +2044,41 @@ const FoodLoggingDashboard = () => {
           justify-content: center;
         }
 
+        .food-name-time-row {
+          display: inline-flex;
+          flex-direction: row;
+          flex-wrap: nowrap;
+          align-items: center;
+          gap: var(--space-2);
+          min-width: 0;
+          max-width: 100%;
+        }
+
+        .food-name-time-row .food-name {
+          font-weight: var(--font-weight-medium);
+          color: var(--text-primary);
+          font-size: var(--text-lg);
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          flex: 0 1 auto;
+          min-width: 0;
+        }
+
+        .food-name-time-row .food-time {
+          font-size: var(--text-base);
+          color: var(--text-tertiary);
+          display: inline-flex;
+          align-items: center;
+          flex-shrink: 0;
+          line-height: 1;
+        }
+
         .food-name {
           font-weight: var(--font-weight-medium);
           color: var(--text-primary);
           margin-bottom: 0;
-          font-size: var(--text-base);
+          font-size: var(--text-lg);
           flex: 1 1 auto;
           min-width: 240px;
           white-space: nowrap;
@@ -2002,11 +2087,12 @@ const FoodLoggingDashboard = () => {
         }
 
         .food-time {
-          font-size: var(--text-sm);
+          font-size: var(--text-base);
           color: var(--text-tertiary);
           display: flex;
           align-items: center;
           flex-shrink: 0;
+          line-height: 1;
         }
 
         .food-macros {
@@ -2140,9 +2226,13 @@ const FoodLoggingDashboard = () => {
 
         .time-display {
           cursor: pointer;
-          padding: var(--space-1);
+          padding: var(--space-1) var(--space-2);
           border-radius: var(--radius-sm);
           transition: all 0.2s var(--ease-out-cubic);
+          font-size: var(--text-sm);
+          line-height: 1;
+          display: inline-flex;
+          align-items: center;
         }
 
         .time-display:hover {
@@ -2152,6 +2242,27 @@ const FoodLoggingDashboard = () => {
 
         .time-edit-container {
           display: inline-block;
+          max-width: 72px;
+        }
+
+        .time-edit-container .time-input {
+          width: 100%;
+          max-width: 72px;
+          min-width: 0;
+          box-sizing: border-box;
+        }
+
+        .food-logging-dashboard .time-edit-container input[type="time"]::-webkit-calendar-picker-indicator {
+          opacity: 0;
+          position: absolute;
+          width: 100%;
+          height: 100%;
+          cursor: pointer;
+          margin: 0;
+        }
+
+        .food-logging-dashboard .time-edit-container {
+          position: relative;
         }
 
         .time-input {
@@ -2159,7 +2270,7 @@ const FoodLoggingDashboard = () => {
           border: 1px solid var(--border-primary);
           border-radius: var(--radius-sm);
           color: var(--text-primary);
-          font-size: var(--text-sm);
+          font-size: var(--text-xs);
           padding: var(--space-1) var(--space-2);
           font-family: var(--font-primary);
           transition: all 0.2s var(--ease-out-cubic);
@@ -2186,20 +2297,318 @@ const FoodLoggingDashboard = () => {
           cursor: pointer;
         }
 
+        .modal--water-log {
+          padding: 0 !important;
+          overflow: hidden;
+        }
+
+        .water-log-modal-inner {
+          background: var(--bg-secondary);
+          border-radius: var(--radius-lg);
+          overflow: hidden;
+        }
+
+        .water-log-modal-inner form {
+          padding: var(--space-4);
+        }
+
         @media (max-width: 768px) {
           .dashboard-layout-pc {
             display: none;
           }
 
           .header-content {
-            flex-direction: column;
-            gap: var(--space-4);
-            align-items: flex-start;
-            padding: var(--space-6) 4px 0 4px;
+            flex-direction: row;
+            flex-wrap: nowrap;
+            gap: var(--space-3);
+            align-items: center;
+            justify-content: center;
+            padding: var(--space-2);
           }
 
-          .dashboard-content {
-            padding: 0;
+          .header-left {
+            flex: 0 1 auto;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: var(--space-2);
+          }
+
+          .header-left .controls-section,
+          .header-left .custom-date-picker {
+            width: auto;
+            max-width: 180px;
+          }
+
+          .header-left .date-input {
+            width: 100%;
+            text-align: center;
+          }
+
+          .header-center {
+            flex: 0 0 auto;
+            display: flex;
+            align-items: center;
+          }
+
+          .header-center .streak-counter {
+            padding: var(--space-1) var(--space-2);
+          }
+
+          .header-center .streak-unit {
+            display: none;
+          }
+
+          .btn-icon-mobile--water .btn-icon-mobile-label {
+            display: none;
+          }
+
+          .header-actions {
+            display: none;
+          }
+
+          .btn-primary-header {
+            min-width: 0;
+            padding: var(--space-2) var(--space-3);
+            font-size: var(--text-sm);
+            height: 44px;
+          }
+
+          .mobile-actions {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: var(--space-2);
+          }
+
+          .mobile-actions .btn-icon-mobile:first-child {
+            order: 2;
+            grid-column: 1 / -1;
+            width: 100%;
+            min-height: 58px;
+            background: var(--accent-primary);
+            color: white;
+            border-color: var(--accent-primary);
+          }
+
+          .mobile-actions .btn-icon-mobile:nth-child(2),
+          .mobile-actions .btn-icon-mobile:nth-child(3),
+          .mobile-actions .btn-icon-mobile:nth-child(4),
+          .mobile-actions .btn-icon-mobile:nth-child(5) {
+            order: 1;
+          }
+
+          .mobile-actions .btn-icon-mobile--water {
+            font-size: var(--text-xs);
+            padding: var(--space-2);
+            flex-direction: column;
+            gap: 2px;
+          }
+
+          .mobile-actions .btn-icon-mobile-label {
+            font-size: 10px;
+          }
+
+          .dashboard-layout-pc {
+            padding: var(--space-2);
+            overflow-y: auto;
+            padding-top: 2px;
+          }
+
+          .dashboard-layout-mobile {
+            padding: 0 var(--space-2);
+            min-height: 0;
+            padding-top: 2px;
+            gap: var(--space-2);
+          }
+
+          .dashboard-layout-mobile .goal-progress-section {
+            margin-top: var(--space-2);
+            margin-bottom: 0;
+            padding-top: var(--space-3);
+            padding-bottom: var(--space-3);
+          }
+
+          .dashboard-layout-mobile .mobile-actions {
+            margin-top: var(--space-1);
+          }
+
+          .dashboard-layout-mobile .food-log-section {
+            margin-top: var(--space-1);
+          }
+
+          .modal--food-logger {
+            min-height: 75vh;
+            max-height: 92vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+          }
+
+          .modal--food-logger > * {
+            flex: 1;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+          }
+
+          .modal--food-logger .food-logger-header,
+          .modal--food-logger .search-section {
+            flex-shrink: 0;
+          }
+
+          .modal--food-logger .food-list-section {
+            flex: 1;
+            min-height: 0;
+            overflow-y: auto;
+          }
+
+          .modal-backdrop {
+            padding: var(--space-2);
+            align-items: flex-start;
+            padding-top: var(--space-2);
+            overflow-y: auto;
+          }
+
+          .modal {
+            max-width: 100%;
+            width: 100%;
+            max-height: 88vh;
+            padding: var(--space-3);
+            font-size: var(--text-sm);
+            overflow-y: auto;
+            margin-top: 0;
+          }
+
+          .modal--food-logger {
+            align-self: flex-start;
+            margin-top: 0;
+            padding-top: 0;
+            padding-bottom: var(--space-2);
+            max-height: calc(100vh - var(--space-3));
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+          }
+
+          .modal-backdrop:has(.modal--food-logger) {
+            padding-top: max(var(--space-2), env(safe-area-inset-top, 0px));
+            align-items: flex-start;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+          }
+
+          .modal--food-logger .food-logger-header {
+            padding-top: 0;
+            padding-bottom: 0;
+            flex-shrink: 0;
+            position: relative;
+            top: 0;
+            background: var(--bg-primary);
+            z-index: 1;
+            box-shadow: 0 1px 0 var(--border-primary);
+          }
+
+          .modal-backdrop--water-log {
+            padding: max(var(--space-2), env(safe-area-inset-top, 0px)) var(--space-3) var(--space-3);
+            align-items: flex-start;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+          }
+
+          .modal--water-log {
+            margin-top: var(--space-1);
+            padding: 0 !important;
+            overflow: hidden;
+          }
+
+          .water-log-modal-inner {
+            background: var(--bg-secondary);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+          }
+
+          .water-log-modal-inner form {
+            padding: var(--space-4);
+          }
+
+          .water-log-modal-header.modal-app-header {
+            border-radius: 0;
+          }
+
+          .modal-backdrop:has(.modal--food-chatbot) {
+            padding-top: max(var(--space-2), env(safe-area-inset-top, 0px));
+            align-items: flex-start;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+          }
+
+          .modal--food-chatbot {
+            margin-top: var(--space-1);
+            max-height: min(90vh, 100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)) !important;
+          }
+
+          .modal--food-creator {
+            max-width: 100% !important;
+          }
+
+          .modal-backdrop--meal-creator {
+            padding: max(var(--space-2), env(safe-area-inset-top, 0px)) var(--space-2) var(--space-2);
+            align-items: flex-start;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+          }
+
+          .modal--meal-creator {
+            max-width: 100%;
+            width: 100%;
+            max-height: min(92vh, 100dvh);
+            overflow-y: auto;
+            margin-top: 0;
+            box-sizing: border-box;
+          }
+
+          .modal .card,
+          .food-logging-dashboard .modal [class*="card"] {
+            padding: var(--space-3);
+          }
+
+          .custom-calendar-popup {
+            max-width: 96vw;
+            padding: var(--space-2);
+            font-size: var(--text-sm);
+          }
+
+          .calendar-header {
+            padding: var(--space-2) 0;
+          }
+
+          .calendar-grid {
+            gap: 2px;
+          }
+
+          .food-actions--mobile-hide {
+            display: none;
+          }
+
+          .food-name--clickable {
+            cursor: pointer;
+          }
+
+          .food-log-item.mobile .food-macros {
+            flex-wrap: nowrap;
+            gap: var(--space-2);
+            justify-content: flex-start;
+            width: 100%;
+          }
+
+          .food-log-item.mobile .macro-item {
+            gap: 2px;
+          }
+
+          .food-log-item.mobile .macro-label,
+          .food-log-item.mobile .macro-value {
+            font-size: var(--text-xs);
           }
         }
 
@@ -2222,6 +2631,7 @@ const FoodLoggingDashboard = () => {
           justify-content: center;
           z-index: 1000;
           padding: var(--space-4);
+          overflow: hidden;
         }
 
         .modal {
@@ -2235,13 +2645,76 @@ const FoodLoggingDashboard = () => {
           border: 1px solid var(--border-primary);
         }
 
+        .modal--food-chatbot {
+          max-width: min(380px, 92vw);
+          width: 100%;
+          height: 100%;
+          max-height: 90vh;
+          box-sizing: border-box;
+          overflow-x: hidden;
+          display: flex;
+          flex-direction: column;
+        }
+
+        .modal--food-chatbot .food-chatbot {
+          display: flex;
+          flex-direction: column;
+          flex: 1;
+          min-height: 0;
+          width: 100%;
+          background: var(--bg-secondary);
+          border-radius: var(--radius-lg);
+          border: 1px solid var(--border-primary);
+          overflow-y: auto;
+          overflow-x: hidden;
+          -webkit-overflow-scrolling: touch;
+        }
+
+        .modal--food-chatbot .chatbot-layout {
+          grid-template-columns: 1fr;
+          max-width: 100%;
+          width: 100%;
+          flex: 1;
+          min-width: 0;
+          box-sizing: border-box;
+          background: var(--bg-secondary);
+        }
+
+        .modal--food-chatbot .form-input,
+        .modal--food-chatbot .chatbot-textarea,
+        .modal--food-chatbot .input-with-voice {
+          width: 100%;
+          max-width: 100%;
+          box-sizing: border-box;
+        }
+
+        .modal--food-chatbot .btn-voice-logger,
+        .modal--food-chatbot .btn-primary,
+        .modal--food-chatbot .btn-secondary {
+          width: 100%;
+          max-width: 100%;
+          box-sizing: border-box;
+        }
+
+        .modal--food-chatbot .chatbot-layout,
+        .modal--food-chatbot .preview-section,
+        .modal--food-chatbot .preview-foods-list {
+          width: 100%;
+          max-width: 100%;
+          box-sizing: border-box;
+        }
+
         @media (min-width: 768px) {
           .modal {
             max-width: 90vw;
             max-height: 90vh;
           }
+          .modal--food-chatbot {
+            max-width: min(380px, 92vw);
+          }
         }
       `}</style>
+    </div>
     </div>
   );
 };

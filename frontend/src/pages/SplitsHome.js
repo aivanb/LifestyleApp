@@ -81,12 +81,59 @@ const SplitsHome = () => {
         }
 
         @media (max-width: 768px) {
+          .splits-home-page {
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            padding-left: var(--space-2);
+            padding-right: var(--space-2);
+            box-sizing: border-box;
+          }
+
+          .splits-home-page .split-creator .split-creator-section,
+          .splits-home-page .split-creator .split-creator-split-list {
+            padding-left: var(--space-2);
+            padding-right: var(--space-2);
+            margin-left: 0;
+            margin-right: 0;
+          }
+
           .splits-home-actions {
             justify-content: stretch;
+            width: 100%;
           }
 
           .splits-home-new-btn {
             width: 100%;
+          }
+
+          .splits-home-page .split-creator {
+            width: 100%;
+            max-width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+          }
+
+          .splits-home-page .split-creator .split-creator-days-list,
+          .splits-home-page .split-creator [class*="split-creator"] {
+            width: 100%;
+            max-width: 100%;
+          }
+
+          .splits-home-page .split-creator .split-creator-days {
+            width: 100%;
+            max-width: 100%;
+          }
+
+          .splits-home-page .split-creator .split-creator-split-list {
+            width: 100%;
+            padding: 0;
+          }
+
+          .splits-home-page .split-creator .split-creator-split-card {
+            max-width: 100%;
+            box-sizing: border-box;
           }
         }
       `}</style>

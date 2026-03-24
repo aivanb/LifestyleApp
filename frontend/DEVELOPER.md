@@ -46,7 +46,10 @@ App
 - **Register.js** - User registration form
 
 ### Protected Pages
-- **Profile.js** - User profile management (tabs: Personal Info, Goals, Body Metrics, History)
+- **Home.js** - `/home` dashboard: `GET /analytics/home/dashboard/` (split day + activation vs targets, macro/calorie remaining including cardio + step burn estimate, trackers missing today). Separate stacked (mobile) vs grid (desktop) layouts.
+- **Navbar.js** - Bottom **half-circle** FAB opens a horizontal fan of `NavLink`s (staggered RTL animation). Mobile: icon-only strip with horizontal scroll (~3 items visible width); desktop: labels + wrap. Adds `has-bottom-nav` on `body` for main padding.
+- **Profile.js** - `/profile`: grid-tinted page shell vs lighter `profile-info-surface` cards; rank badge **outside** info card (solid fill). Info/edit use shared **profile-row** grid (paired + single rows). Units dropdown only **metric/imperial**. Theme: **Appearance** section with Dark/Light buttons.
+- **Profile API** - `GET/PUT /users/profile/` — `first_name`, `last_name`, `username`, `email`, `height`, `birthday`, `gender`, `unit_preference`, `activity_level`. `GET` includes `units: [{ unit_id, unit_name }]`. Overall rank = mean of per-metric tiers (`calculateOverallRank`).
 - **FoodLog.js** - Food logging interface (uses FoodLoggingDashboard)
 - **WorkoutTracker.js** - Workout tracking interface (uses WorkoutLoggingDashboard)
 - **AdditionalTrackers.js** - Health metrics tracking menu
@@ -63,6 +66,21 @@ App
 - **FoodLogger.js** - Food logging form
 - **FoodChatbot.js** - AI-powered food logging interface
 - **VoiceRecorder.js** - Voice input for food logging
+
+**Food chatbot parse flow** (`FoodChatbot.js` + `src/utils/foodParsePreview.js`):
+
+1. User enters text (and optional “Create as meal”) and taps **Parse** → `handlePreview` runs with `preview_only=true`.
+2. `api.parseFoodInput(text, createMeal, true)` returns `foods_parsed[]` (each item: `name`, `servings`, optional `food` metadata object from DB / parser).
+3. For each row, `mergeApiFoodWithPrevious(apiFood, previousFood, metadataFields)` builds the preview `food` object:
+   - If the API sends a **valid** value for a field, it is **coerced** (numbers via `toValidNumber`, selects must match allowed options) and **wins**.
+   - If the API omits or invalidates a field (`null`, `''`, invalid select), the **previous preview row** value is kept (when re-parsing with preview open).
+   - Otherwise **defaults** apply (e.g. `cost` → `0`, `serving_size` → `1`).
+4. `servings` on each row = API `servings` if present, else previous row’s servings, else `1`.
+5. State: `previewData` = raw API result, `editedFoods` = merged rows, `showPreview` = true. User edits update `editedFoods` via `handleFoodEdit`.
+6. **Re-parse** (from preview): same as step 2–4; merge **preserves** user-edited fields when the new API payload does not supply a value for that field.
+7. **Log Foods** → optional `updateFood` per row if metadata changed vs `previewData.foods_parsed`, then `parseFoodInput` with `preview_only=false` to create logs.
+
+Exports: `mergeApiFoodWithPrevious`, `normalizeParsedFoodForPreview` (alias for merge with empty previous). Tests: `src/utils/foodParsePreview.test.js`.
 
 ### Workout Components
 - **WorkoutLoggingDashboard.js** - Main workout logging interface
@@ -191,7 +209,8 @@ if (error.response?.status === 401) {
 ### Route Structure
 - `/login` - Public
 - `/register` - Public
-- `/` - Redirects to `/profile`
+- `/` - Redirects to `/home`
+- `/home` - Protected dashboard
 - `/profile` - Protected
 - `/food-log` - Protected
 - `/workout-tracker` - Protected
@@ -321,7 +340,7 @@ try {
 ### Routing
 - Protected routes use `ProtectedRoute` component
 - Public routes: `/login`, `/register`
-- Default route redirects to `/profile`
+- Default route redirects to `/home` after login/register
 
 ### Styling
 - Use CSS variables for theming
@@ -375,6 +394,10 @@ npm run build
 ```bash
 npm test
 ```
+
+## Voice / parse-food preview
+
+The parse-food API may return `foods_parsed[]` entries with both `food` and optional `metadata` (e.g. user-mentioned `brand`, `cost`). `FoodChatbot` builds the preview row with `buildFoodLayerFromParse()` in `utils/foodParsePreview.js` (metadata overlaid on `food`), then `mergeApiFoodWithPrevious()` so user edits persist when the API omits fields.
 
 ## What Must NOT Be Changed
 

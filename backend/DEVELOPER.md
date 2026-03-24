@@ -201,6 +201,7 @@ backend/
 - Similar endpoints for: `health-metrics/`
 
 ### Analytics (`/api/analytics/`)
+- `GET /api/analytics/home/dashboard/?date=YYYY-MM-DD` — authenticated home summary: active split day, per-muscle activation target vs logged today, macro goals vs food logged today, calorie remaining (goal − food + cardio kcal + estimated walking kcal from steps using user height + latest weight log), list of additional trackers with no entry today (`weight`, `water`, `body_measurement`, `steps`, `cardio`, `sleep`, `health_metrics`).
 - `GET /api/analytics/workouts/body-measurement-progression/`
 - `GET /api/analytics/workouts/progression/`
 - `GET /api/analytics/workouts/rest-time-analysis/`

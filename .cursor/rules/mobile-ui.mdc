@@ -1,0 +1,49 @@
+---
+description: Mobile-optimized UI layout — responsive styling only, no logic/API changes
+alwaysApply: false
+---
+
+# Mobile UI Implementation Rules
+
+Use this rule when adding or updating mobile-optimized UI in the web application.
+
+## Scope and Constraints
+
+- Changes must **ONLY** affect mobile screen sizes. Use responsive breakpoints such as **≤768px** or the mobile breakpoint already used in the project.
+- **DO NOT** modify any desktop UI layouts.
+- **DO NOT** modify application logic, data flow, APIs, or component behavior.
+- Changes must be **purely visual** and limited to responsive styling adjustments.
+
+## Mobile UI Goals
+
+### 1. Reduce visual density
+- Decrease padding and margins within sections and containers.
+- Make cards, panels, and sections thinner and more compact.
+
+### 2. Resize UI elements for mobile
+- Reduce the size of fonts, icons, buttons, calendar/date inputs, time inputs, and sliders.
+- Ensure elements remain readable and accessible.
+
+### 3. Improve vertical layout
+- Convert multi-column layouts into single-column stacked layouts on mobile.
+- Allow components to expand to full width where appropriate.
+
+### 4. Add collapsible sections
+- Allow sections, cards, or grouped controls to be collapsible/expandable to reduce scrolling.
+- Default large or secondary sections to collapsed where appropriate.
+
+### 5. Maintain touch usability
+- Ensure interactive elements maintain adequate touch targets (**~44px** recommended).
+
+## Implementation Guidelines
+
+- Use responsive CSS or framework breakpoints (media queries, Tailwind responsive classes, etc.).
+- Prefer responsive styling adjustments instead of duplicating components.
+- Preserve the existing component structure and application logic.
+- Maintain visual consistency with the current design system.
+
+## Validation Requirements
+
+- Desktop views must remain **visually identical** to the current version.
+- Verify usability on common mobile widths (**320px–430px**).
+- Confirm that **no functionality or JavaScript logic** has changed.
