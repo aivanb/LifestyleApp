@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import WorkoutLogger from './WorkoutLogger';
 import WorkoutAdder from './WorkoutAdder';
@@ -17,6 +18,8 @@ import { ChartBarIcon } from '@heroicons/react/24/outline';
  * - Real-time data from database
  */
 const WorkoutLoggingDashboard = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
   const [workoutLogs, setWorkoutLogs] = useState([]);
   const [workoutStats, setWorkoutStats] = useState({});
   const [selectedDate, setSelectedDate] = useState(() => {
@@ -57,6 +60,7 @@ const WorkoutLoggingDashboard = () => {
   const floatingActionsTimeoutRef = useRef(null);
   const [collapsedWorkouts, setCollapsedWorkouts] = useState({});
   const [mobileMuscleSidebarOpen, setMobileMuscleSidebarOpen] = useState(false);
+  const [initialMuscleFilter, setInitialMuscleFilter] = useState('');
 
   const toggleWorkoutCollapse = useCallback((workoutId) => {
     setCollapsedWorkouts((prev) => ({
@@ -121,6 +125,17 @@ const WorkoutLoggingDashboard = () => {
       handleFloatingActionsInteraction();
     }
   }, [showWorkoutCreator, showWorkoutSelectionModal, handleFloatingActionsInteraction]);
+
+  useEffect(() => {
+    const openWorkoutSelection = Boolean(location.state?.openWorkoutSelection);
+    const muscleFilter = location.state?.muscleFilter || '';
+    if (!openWorkoutSelection) return;
+
+    setPreSelectedWorkout(null);
+    setInitialMuscleFilter(typeof muscleFilter === 'string' ? muscleFilter : '');
+    setShowWorkoutSelectionModal(true);
+    navigate(location.pathname, { replace: true, state: {} });
+  }, [location.pathname, location.state, navigate]);
 
   const loadWorkoutLogs = useCallback(async () => {
     try {
@@ -1463,8 +1478,10 @@ const WorkoutLoggingDashboard = () => {
               onClose={() => {
                 setShowWorkoutSelectionModal(false);
                 setPreSelectedWorkout(null);
+                setInitialMuscleFilter('');
               }}
               preSelectedWorkout={preSelectedWorkout}
+              initialMuscleFilter={initialMuscleFilter}
             />
           )}
 
@@ -1513,8 +1530,10 @@ const WorkoutLoggingDashboard = () => {
               onClose={() => {
                 setShowWorkoutSelectionModal(false);
                 setPreSelectedWorkout(null);
+                setInitialMuscleFilter('');
               }}
               preSelectedWorkout={preSelectedWorkout}
+              initialMuscleFilter={initialMuscleFilter}
             />
           )}
 

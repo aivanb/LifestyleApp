@@ -99,21 +99,20 @@ describe('FoodLoggingDashboard', () => {
       expect(screen.getByText('Create Food')).toBeInTheDocument();
     });
 
-    // Default is condensed progress
-    expect(screen.getByTestId('progress-grid')).toBeInTheDocument();
+    // Default is condensed progress (PC + mobile DOM both mount; CSS hides one)
+    expect(screen.getAllByTestId('progress-grid').length).toBeGreaterThanOrEqual(1);
 
     // Clicking the progress section expands it
-    const progressGrid = screen.getByTestId('progress-grid');
+    const progressGrid = screen.getAllByTestId('progress-grid')[0];
     progressGrid.parentElement.click();
-    expect(await screen.findByTestId('expanded-progress')).toBeInTheDocument();
+    expect((await screen.findAllByTestId('expanded-progress')).length).toBeGreaterThanOrEqual(1);
   });
 
   test('shows food log section', async () => {
     render(<FoodLoggingDashboard />);
     
     await waitFor(() => {
-      // Empty state renders time separators
-      expect(screen.getByText('12am')).toBeInTheDocument();
+      expect(screen.getAllByText('12am').length).toBeGreaterThanOrEqual(1);
     });
   });
 
@@ -139,11 +138,11 @@ describe('FoodLoggingDashboard', () => {
 
     render(<FoodLoggingDashboard />);
     
-    // Should still render the main components
     await waitFor(() => {
-      expect(screen.getByText('Create Food')).toBeInTheDocument();
+      expect(screen.getAllByTestId('progress-grid').length).toBeGreaterThanOrEqual(1);
     });
 
-    expect(screen.getByTestId('progress-grid')).toBeInTheDocument();
+    // PC header actions are not mounted on mobile; icon row uses title attributes
+    expect(screen.getByTitle('Create Food')).toBeInTheDocument();
   });
 });

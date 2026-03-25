@@ -42,7 +42,7 @@ class Command(BaseCommand):
         parser.add_argument(
             '--comprehensive-dummy',
             action='store_true',
-            help='Populate comprehensive dummy data (1 user: dummyUser, 4/15/2025-3/8/2026)',
+            help='Populate comprehensive dummy data (1 user: dummyUser, 4/15/2025-3/31/2026)',
         )
         parser.add_argument(
             '--full',
@@ -89,9 +89,9 @@ class Command(BaseCommand):
                 return
             
             if clear_dummy_data():
-                self.stdout.write(self.style.SUCCESS('\n✓ Dummy data cleared successfully'))
+                self.stdout.write(self.style.SUCCESS('\n[OK] Dummy data cleared successfully'))
             else:
-                self.stdout.write(self.style.ERROR('\n✗ Failed to clear dummy data'))
+                self.stdout.write(self.style.ERROR('\n[ERROR] Failed to clear dummy data'))
             return
         
         # Handle reset operation
@@ -109,9 +109,9 @@ class Command(BaseCommand):
                 return
             
             if reset_database():
-                self.stdout.write(self.style.SUCCESS('\n✓ Database reset successfully'))
+                self.stdout.write(self.style.SUCCESS('\n[OK] Database reset successfully'))
             else:
-                self.stdout.write(self.style.ERROR('\n✗ Failed to reset database'))
+                self.stdout.write(self.style.ERROR('\n[ERROR] Failed to reset database'))
             return
         
         # Handle full reset and populate
@@ -129,10 +129,10 @@ class Command(BaseCommand):
                 return
             
             if full_reset_and_populate():
-                self.stdout.write(self.style.SUCCESS('\n✓ Full reset and populate completed'))
+                self.stdout.write(self.style.SUCCESS('\n[OK] Full reset and populate completed'))
                 self._print_credentials()
             else:
-                self.stdout.write(self.style.ERROR('\n✗ Failed to reset and populate'))
+                self.stdout.write(self.style.ERROR('\n[ERROR] Failed to reset and populate'))
             return
         
         # Handle populate operations
@@ -142,13 +142,13 @@ class Command(BaseCommand):
             self.stdout.write('\nPopulating required reference data...')
             if not populate_required_data():
                 success = False
-                self.stdout.write(self.style.ERROR('✗ Failed to populate required data'))
+                self.stdout.write(self.style.ERROR('[ERROR] Failed to populate required data'))
         
         if options['comprehensive_dummy']:
             self.stdout.write('\nPopulating comprehensive dummy data...')
             if not populate_comprehensive_dummy_data():
                 success = False
-                self.stdout.write(self.style.ERROR('✗ Failed to populate comprehensive dummy data'))
+                self.stdout.write(self.style.ERROR('[ERROR] Failed to populate comprehensive dummy data'))
             else:
                 self.stdout.write(self.style.SUCCESS('\nDummy User Credentials:'))
                 self.stdout.write('-' * 40)
@@ -161,14 +161,14 @@ class Command(BaseCommand):
             self.stdout.write('\nPopulating dummy test data...')
             if not populate_dummy_data():
                 success = False
-                self.stdout.write(self.style.ERROR('✗ Failed to populate dummy data'))
+                self.stdout.write(self.style.ERROR('[ERROR] Failed to populate dummy data'))
             else:
                 self._print_credentials()
         
         if success:
-            self.stdout.write(self.style.SUCCESS('\n✓ Database setup completed successfully'))
+            self.stdout.write(self.style.SUCCESS('\n[OK] Database setup completed successfully'))
         else:
-            self.stdout.write(self.style.ERROR('\n✗ Database setup completed with errors'))
+            self.stdout.write(self.style.ERROR('\n[ERROR] Database setup completed with errors'))
     
     def _print_credentials(self):
         """Print dummy user credentials."""

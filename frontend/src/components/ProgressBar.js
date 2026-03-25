@@ -24,19 +24,19 @@ export const CircularProgressBar = ({
   const circumference = radius * 2 * Math.PI;
   const strokeDasharray = circumference;
   const strokeDashoffset = circumference - (percentage / 100) * circumference;
-
-  // Color based on progress - red-pink (0-20%, 170%-n%), yellow (21-80%, 120-169%), green (81-119%)
+  // Color based on progress percentage (not macro type).
+  // Red-pink (0-20%, 170%-n%), yellow (21-80%, 120-169%), green (81-119%)
   const getProgressColor = () => {
     if ((percentage >= 0 && percentage <= 20) || percentage >= 170) {
-      return '#ff6b9d'; // red-pink
+      return '#ff6b9d';
     }
     if ((percentage >= 21 && percentage <= 80) || (percentage >= 120 && percentage <= 169)) {
-      return '#ffd93d'; // yellow
+      return '#ffd93d';
     }
     if (percentage >= 81 && percentage <= 119) {
-      return '#6bcf7f'; // green
+      return '#6bcf7f';
     }
-    return 'var(--accent-primary)'; // fallback
+    return color;
   };
 
   return (
@@ -169,19 +169,19 @@ export const LinearProgressBar = ({
 }) => {
   const percentage = target > 0 ? (current / target) * 100 : 0;
   const remaining = Math.max(target - current, 0);
-
-  // Color based on progress - red-pink (0-20%, 170%-n%), yellow (21-80%, 120-169%), green (81-119%)
+  // Color based on progress percentage (not macro type).
+  // Red-pink (0-20%, 170%-n%), yellow (21-80%, 120-169%), green (81-119%)
   const getProgressColor = () => {
     if ((percentage >= 0 && percentage <= 20) || percentage >= 170) {
-      return '#ff6b9d'; // red-pink
+      return '#ff6b9d';
     }
     if ((percentage >= 21 && percentage <= 80) || (percentage >= 120 && percentage <= 169)) {
-      return '#ffd93d'; // yellow
+      return '#ffd93d';
     }
     if (percentage >= 81 && percentage <= 119) {
-      return '#6bcf7f'; // green
+      return '#6bcf7f';
     }
-    return 'var(--accent-primary)'; // fallback
+    return color;
   };
 
   return (
@@ -309,10 +309,10 @@ export const LinearProgressBar = ({
  */
 export const ProgressGrid = ({ goals, consumed, className = '' }) => {
   const mainMacros = [
-    { key: 'calories', goalKey: 'calories_goal', label: 'Calories', color: 'var(--accent-primary)' },
-    { key: 'protein', goalKey: 'protein_goal', label: 'Protein', color: 'var(--accent-secondary)' },
-    { key: 'fat', goalKey: 'fat_goal', label: 'Fat', color: 'var(--accent-warning)' },
-    { key: 'carbohydrates', goalKey: 'carbohydrates_goal', label: 'Carbs', color: 'var(--accent-info)' }
+    { key: 'calories', goalKey: 'calories_goal', label: 'Calories', color: '#fb923c' }, // eaten (orange)
+    { key: 'protein', goalKey: 'protein_goal', label: 'Protein', color: '#ffe433' }, // protein (yellow)
+    { key: 'fat', goalKey: 'fat_goal', label: 'Fat', color: '#5cff9d' }, // fat (green)
+    { key: 'carbohydrates', goalKey: 'carbohydrates_goal', label: 'Carbs', color: '#3d8bff' } // carbs (blue)
   ];
 
   return (
@@ -357,10 +357,10 @@ export const ProgressGrid = ({ goals, consumed, className = '' }) => {
  */
 export const ExpandedProgressView = ({ goals, consumed, onClose }) => {
   const allMacros = [
-    { key: 'calories', goalKey: 'calories_goal', label: 'Calories', unit: ' cal', color: 'var(--accent-primary)' },
-    { key: 'protein', goalKey: 'protein_goal', label: 'Protein', unit: 'g', color: 'var(--accent-secondary)' },
-    { key: 'fat', goalKey: 'fat_goal', label: 'Fat', unit: 'g', color: 'var(--accent-warning)' },
-    { key: 'carbohydrates', goalKey: 'carbohydrates_goal', label: 'Carbohydrates', unit: 'g', color: 'var(--accent-info)' },
+    { key: 'calories', goalKey: 'calories_goal', label: 'Calories', unit: ' cal', color: '#fb923c' },
+    { key: 'protein', goalKey: 'protein_goal', label: 'Protein', unit: 'g', color: '#ffe433' },
+    { key: 'fat', goalKey: 'fat_goal', label: 'Fat', unit: 'g', color: '#5cff9d' },
+    { key: 'carbohydrates', goalKey: 'carbohydrates_goal', label: 'Carbohydrates', unit: 'g', color: '#3d8bff' },
     { key: 'fiber', goalKey: 'fiber_goal', label: 'Fiber', unit: 'g', color: 'var(--accent-purple)' },
     { key: 'sodium', goalKey: 'sodium_goal', label: 'Sodium', unit: 'mg', color: 'var(--accent-success)' },
     { key: 'sugar', goalKey: 'sugar_goal', label: 'Sugar', unit: 'g', color: 'var(--accent-danger)' },
@@ -424,8 +424,8 @@ export const ExpandedProgressView = ({ goals, consumed, onClose }) => {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          margin-bottom: var(--space-6);
-          padding-bottom: var(--space-4);
+          margin-bottom: var(--space-3);
+          padding-bottom: var(--space-2);
           border-bottom: 1px solid var(--border-primary);
         }
 
@@ -435,7 +435,7 @@ export const ExpandedProgressView = ({ goals, consumed, onClose }) => {
         }
 
         .expanded-progress-title {
-          font-size: var(--text-xl);
+          font-size: var(--text-lg);
           font-weight: var(--font-weight-medium);
           margin: 0;
           color: var(--text-primary);
@@ -454,6 +454,8 @@ export const ExpandedProgressView = ({ goals, consumed, onClose }) => {
         .expanded-progress-grid {
           display: grid;
           gap: var(--space-5);
+          padding-right: var(--space-2);
+          scrollbar-gutter: stable;
         }
 
         @media (max-width: 768px) {

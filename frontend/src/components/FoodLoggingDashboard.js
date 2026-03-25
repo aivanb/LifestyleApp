@@ -42,8 +42,11 @@ const FoodLoggingDashboard = () => {
   const [waterFormData, setWaterFormData] = useState({ amount: '', unit: 'oz', date_time: '' });
   const [submittingWater, setSubmittingWater] = useState(false);
   const [showExpandedProgress, setShowExpandedProgress] = useState(false); // Default to condensed view
-  const [areHeaderActionsActive, setAreHeaderActionsActive] = useState(true);
+  /** PC only: full header action buttons visible; false shows chevron to expand */
+  const [showPcHeaderActions, setShowPcHeaderActions] = useState(true);
   const headerActionsTimeoutRef = useRef(null);
+  const headerRegionRef = useRef(null);
+  const [showMobileQuickActions, setShowMobileQuickActions] = useState(false);
   const [loading, setLoading] = useState(true);
   const [, setError] = useState('');
   const [logStreak, setLogStreak] = useState(0);
@@ -59,22 +62,51 @@ const FoodLoggingDashboard = () => {
     }
   }, []);
 
-  const startHeaderActionsFade = useCallback(() => {
+  const startPcHeaderActionsHideTimer = useCallback(() => {
     clearHeaderActionsFadeTimeout();
+    if (typeof window === 'undefined' || window.innerWidth <= 768) return;
     headerActionsTimeoutRef.current = setTimeout(() => {
-      setAreHeaderActionsActive(false);
+      setShowPcHeaderActions(false);
     }, 3000);
   }, [clearHeaderActionsFadeTimeout]);
 
-  const handleHeaderActionsInteraction = useCallback(() => {
-    setAreHeaderActionsActive(true);
-    startHeaderActionsFade();
-  }, [startHeaderActionsFade]);
+  const handlePcHeaderActionsInteraction = useCallback(() => {
+    if (typeof window === 'undefined' || window.innerWidth <= 768) return;
+    setShowPcHeaderActions(true);
+    startPcHeaderActionsHideTimer();
+  }, [startPcHeaderActionsHideTimer]);
 
   useEffect(() => {
-    startHeaderActionsFade();
+    startPcHeaderActionsHideTimer();
     return () => clearHeaderActionsFadeTimeout();
-  }, [startHeaderActionsFade, clearHeaderActionsFadeTimeout]);
+  }, [startPcHeaderActionsHideTimer, clearHeaderActionsFadeTimeout]);
+
+  useEffect(() => {
+    const onMove = (e) => {
+      if (typeof window === 'undefined' || window.innerWidth <= 768) return;
+      const el = headerRegionRef.current;
+      if (!el || !showPcHeaderActions) return;
+      const pad = 72;
+      const r = el.getBoundingClientRect();
+      const inside =
+        e.clientX >= r.left - pad &&
+        e.clientX <= r.right + pad &&
+        e.clientY >= r.top - pad &&
+        e.clientY <= r.bottom + pad;
+      if (!inside) {
+        setShowPcHeaderActions(false);
+        clearHeaderActionsFadeTimeout();
+      }
+    };
+    document.addEventListener('mousemove', onMove);
+    return () => document.removeEventListener('mousemove', onMove);
+  }, [showPcHeaderActions, clearHeaderActionsFadeTimeout]);
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return undefined;
+    document.body.classList.add('route-food-log');
+    return () => document.body.classList.remove('route-food-log');
+  }, []);
 
   const loadUserGoals = useCallback(async () => {
     try {
@@ -406,29 +438,27 @@ const FoodLoggingDashboard = () => {
   return (
     <div className="food-logging-dashboard">
       {/* Header */}
-      <div className="dashboard-header">
-          <div className="header-content">
-            {/* Center - Date and Streak */}
-            <div className="header-center header-center--grouped">
-              <div className="header-date-streak-row">
-                <div className="controls-section">
-                  <div className="custom-date-picker">
-                    <input
-                      type="text"
-                      value={selectedDate}
-                      readOnly
-                      className="form-input date-input"
-                      onClick={() => setShowCustomCalendar(!showCustomCalendar)}
-                      title="Click to open calendar"
-                    />
+      <div className="dashboard-header" ref={headerRegionRef}>
+          <div className="header-content header-content--food-log">
+            <div className="header-date-wrap">
+              <div className="controls-section">
+                <div className="custom-date-picker">
+                  <input
+                    type="text"
+                    value={selectedDate}
+                    readOnly
+                    className="form-input date-input"
+                    onClick={() => setShowCustomCalendar(!showCustomCalendar)}
+                    title="Click to open calendar"
+                  />
                   {showCustomCalendar && (
                     <div className="custom-calendar-popup">
                       <div className="calendar-header">
-                        <button onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1))}>
+                        <button type="button" onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1))}>
                           ←
                         </button>
                         <span>{currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</span>
-                        <button onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1))}>
+                        <button type="button" onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1))}>
                           →
                         </button>
                       </div>
@@ -442,6 +472,7 @@ const FoodLoggingDashboard = () => {
                         <div className="calendar-day-header">Sat</div>
                         {getCalendarDays().map((day, index) => (
                           <button
+                            type="button"
                             key={index}
                             className={`calendar-day ${day.isCurrentMonth ? 'current-month' : 'other-month'} ${day.date === selectedDate ? 'selected' : ''}`}
                             onClick={() => handleCustomDateSelect(day.date)}
@@ -455,62 +486,91 @@ const FoodLoggingDashboard = () => {
                   )}
                 </div>
               </div>
-              <div className="streak-counter">
-                <span className="streak-number">{logStreak}</span>
-                <span className="streak-unit"> DAYS</span>
-              </div>
             </div>
-            
-            {/* Right side - Action Buttons */}
-            <div
-              className="header-actions"
-              style={{ opacity: areHeaderActionsActive ? 1 : 0.1 }}
-              onMouseEnter={handleHeaderActionsInteraction}
-            >
-              <button
-                className="btn-primary-header"
-                onMouseEnter={handleHeaderActionsInteraction}
-                onFocus={handleHeaderActionsInteraction}
-                onClick={() => setShowFoodCreator(true)}
-                title="Create Food"
-              >
-                Create Food
-              </button>
-              
-              <button
-                className="btn-primary-header"
-                onMouseEnter={handleHeaderActionsInteraction}
-                onFocus={handleHeaderActionsInteraction}
-                onClick={() => setShowMealCreator(true)}
-                title="Create Meal"
-              >
-                Create Meal
-              </button>
-              
-              <button
-                className="btn-primary-header"
-                onMouseEnter={handleHeaderActionsInteraction}
-                onFocus={handleHeaderActionsInteraction}
-                onClick={() => setShowFoodChatbot(true)}
-                title="Voice Logger"
-              >
-                Voice Logger
-              </button>
 
-              <button
-                className="btn-primary-header"
-                onMouseEnter={handleHeaderActionsInteraction}
-                onFocus={handleHeaderActionsInteraction}
-                onClick={() => {
-                  const now = new Date();
-                  const localDateTime = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
-                  setWaterFormData({ amount: '', unit: 'oz', date_time: localDateTime });
-                  setShowWaterLogger(true);
-                }}
-                title="Log Water"
-              >
-                Log Water
-              </button>
+            <div className="header-actions-center">
+              {!isMobile && !showPcHeaderActions && (
+                <button
+                  type="button"
+                  className="header-actions-reveal"
+                  aria-label="Show header actions"
+                  onClick={() => {
+                    setShowPcHeaderActions(true);
+                    startPcHeaderActionsHideTimer();
+                  }}
+                >
+                  <span className="header-actions-reveal__glyph" aria-hidden>⌄</span>
+                </button>
+              )}
+              {(!isMobile && showPcHeaderActions) && (
+                <div
+                  className="header-actions"
+                  onMouseEnter={handlePcHeaderActionsInteraction}
+                >
+                  <button
+                    type="button"
+                    className="btn-primary-header"
+                    onFocus={handlePcHeaderActionsInteraction}
+                    onClick={() => {
+                      handlePcHeaderActionsInteraction();
+                      setShowFoodCreator(true);
+                    }}
+                    title="Create Food"
+                  >
+                    <span className="header-action-label">Create Food</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-primary-header"
+                    onFocus={handlePcHeaderActionsInteraction}
+                    onClick={() => {
+                      handlePcHeaderActionsInteraction();
+                      setShowMealCreator(true);
+                    }}
+                    title="Create Meal"
+                  >
+                    <span className="header-action-label">Create Meal</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-primary-header"
+                    onFocus={handlePcHeaderActionsInteraction}
+                    onClick={() => {
+                      handlePcHeaderActionsInteraction();
+                      setShowFoodChatbot(true);
+                    }}
+                    title="Voice Logger"
+                  >
+                    <span className="header-action-label">Voice Logger</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-primary-header"
+                    onFocus={handlePcHeaderActionsInteraction}
+                    onClick={() => {
+                      handlePcHeaderActionsInteraction();
+                      const now = new Date();
+                      const localDateTime = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+                      setWaterFormData({ amount: '', unit: 'oz', date_time: localDateTime });
+                      setShowWaterLogger(true);
+                    }}
+                    title="Log Water"
+                  >
+                    <span className="header-action-label">Log Water</span>
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <div className="header-streak-wrap">
+              <div className="streak-counter">
+                <span className="streak-icon" aria-hidden>
+                  <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 22c4 0 8-2.5 8-7.5 0-3.2-1.8-5.7-4.5-8.2.2 3.3-2 4.2-3.5 6-.9-1.8-.7-3.9.1-6.3-3.1 2.4-6.1 5.2-6.1 9.1C6 19.5 8 22 12 22Z" />
+                  </svg>
+                </span>
+                <span className="streak-number">{logStreak}</span>
+              </div>
             </div>
           </div>
       </div>
@@ -523,7 +583,7 @@ const FoodLoggingDashboard = () => {
             <div className="dashboard-left">
               {/* Goal Progress */}
               <div 
-                className="goal-progress-section card"
+                className={`goal-progress-section card${showExpandedProgress ? ' goal-progress-section--expanded' : ''}`}
                 onClick={(e) => {
                   if (!showExpandedProgress && !e.target.closest('button')) {
                     setShowExpandedProgress(true);
@@ -580,93 +640,76 @@ const FoodLoggingDashboard = () => {
                                 <div className="separator-line"></div>
                               </div>
                             )}
-                            <div className="food-log-item">
-                              <div className="food-info">
-                                <div className="food-details">
-                                  <div className="food-name-time-row">
-                                    <span className="food-icon food-icon-inline">
-                                      {getFoodGroupIcon(log.food_details?.food_group)}
-                                    </span>
-                                    <span className="food-name">{log.food_name}</span>
-                                    <div className="food-time">
-                                    {editingTime === log.macro_log_id ? (
-                                      <div className="time-edit-container">
-                                        <input
-                                          type="time"
-                                          defaultValue={getTimeForInput(log.date_time)}
-                                          className="time-input"
-                                          onBlur={(e) => {
-                                            if (e.target.value) {
-                                              updateFoodLogTime(log.macro_log_id, e.target.value);
-                                            } else {
-                                              setEditingTime(null);
-                                            }
-                                          }}
-                                          onKeyDown={(e) => {
-                                            if (e.key === 'Enter') {
-                                              if (e.target.value) {
-                                                updateFoodLogTime(log.macro_log_id, e.target.value);
-                                              } else {
-                                                setEditingTime(null);
-                                              }
-                                            } else if (e.key === 'Escape') {
-                                              setEditingTime(null);
-                                            }
-                                          }}
-                                          autoFocus
-                                        />
-                                      </div>
-                                    ) : (
-                                      <span 
-                                        className="time-display"
-                                        onClick={() => setEditingTime(log.macro_log_id)}
-                                        title="Click to edit time"
-                                      >
-                                        {time}
-                                      </span>
-                                    )}
-                                    </div>
+                            <div className="food-log-item food-log-item--desktop">
+                              <div className="food-log-cell food-log-cell--identity">
+                                <span className="food-icon food-icon-inline">
+                                  {getFoodGroupIcon(log.food_details?.food_group)}
+                                </span>
+                                <span className="food-name food-name--truncate">{log.food_name}</span>
+                              </div>
+                              <div className="food-log-cell food-log-cell--time">
+                                {editingTime === log.macro_log_id ? (
+                                  <div className="time-edit-container">
+                                    <input
+                                      type="time"
+                                      defaultValue={getTimeForInput(log.date_time)}
+                                      className="time-input"
+                                      onBlur={(e) => {
+                                        if (e.target.value) {
+                                          updateFoodLogTime(log.macro_log_id, e.target.value);
+                                        } else {
+                                          setEditingTime(null);
+                                        }
+                                      }}
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                          if (e.target.value) {
+                                            updateFoodLogTime(log.macro_log_id, e.target.value);
+                                          } else {
+                                            setEditingTime(null);
+                                          }
+                                        } else if (e.key === 'Escape') {
+                                          setEditingTime(null);
+                                        }
+                                      }}
+                                      autoFocus
+                                    />
                                   </div>
-                                </div>
+                                ) : (
+                                  <span
+                                    className="time-display"
+                                    onClick={() => setEditingTime(log.macro_log_id)}
+                                    title="Click to edit time"
+                                  >
+                                    {time}
+                                  </span>
+                                )}
                               </div>
-                              <div className="food-macros">
-                                <div className="macro-item">
-                                  <span className="macro-label">CAL:</span>
-                                  <span className="macro-value">{Math.round(log.consumed_macros?.calories || 0)}</span>
-                                </div>
-                                <div className="macro-item">
-                                  <span className="macro-label">PRO:</span>
-                                  <span className="macro-value">{Math.round(log.consumed_macros?.protein || 0)}</span>
-                                </div>
-                                <div className="macro-item">
-                                  <span className="macro-label">CAR:</span>
-                                  <span className="macro-value">{Math.round(log.consumed_macros?.carbohydrates || 0)}</span>
-                                </div>
-                                <div className="macro-item">
-                                  <span className="macro-label">FAT:</span>
-                                  <span className="macro-value">{Math.round(log.consumed_macros?.fat || 0)}</span>
-                                </div>
-                                <div className="macro-item">
-                                  <span className="macro-label">SER:</span>
-                                  <span className="macro-value">{log.servings}</span>
-                                </div>
+                              <div className="food-log-cell food-log-cell--macros">
+                                <span className="macro-pill macro-pill--plain">Cal: {Math.round(log.consumed_macros?.calories || 0)}</span>
+                                <span className="macro-pill macro-pill--plain">Pro: {Math.round(log.consumed_macros?.protein || 0)}</span>
+                                <span className="macro-pill macro-pill--plain">Car: {Math.round(log.consumed_macros?.carbohydrates || 0)}</span>
+                                <span className="macro-pill macro-pill--plain">Fat: {Math.round(log.consumed_macros?.fat || 0)}</span>
+                                <span className="macro-pill macro-pill--plain">Ser: {log.servings}</span>
                               </div>
-                              <div className="food-actions">
+                              <div className="food-log-cell food-log-cell--actions">
                                 <button
+                                  type="button"
                                   className="btn-icon-info"
                                   onClick={() => setMetadataModalLog(log.food_details ? log : null)}
                                   title="View metadata"
                                 >
-                                  <svg className="icon icon-sm" viewBox="0 0 20 20" fill="currentColor">
+                                  <svg className="icon icon-md" viewBox="0 0 20 20" fill="currentColor">
                                     <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
                                   </svg>
                                 </button>
                                 <button
+                                  type="button"
                                   className="btn-icon-delete"
                                   onClick={() => deleteFoodLog(log.macro_log_id)}
                                   title="Remove from log"
                                 >
-                                  <svg className="icon icon-sm" viewBox="0 0 20 20" fill="currentColor">
+                                  <svg className="icon icon-md" viewBox="0 0 20 20" fill="currentColor">
                                     <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
                                   </svg>
                                 </button>
@@ -697,7 +740,7 @@ const FoodLoggingDashboard = () => {
         <div className="dashboard-layout-mobile">
             {/* Goal Progress */}
             <div 
-              className="goal-progress-section card"
+              className={`goal-progress-section card${showExpandedProgress ? ' goal-progress-section--expanded' : ''}`}
               onClick={(e) => {
                 if (!showExpandedProgress && !e.target.closest('button')) {
                   setShowExpandedProgress(true);
@@ -723,7 +766,21 @@ const FoodLoggingDashboard = () => {
             </div>
 
             {/* Action Buttons */}
+            {(
+              <div className="mobile-actions-reveal-wrap">
+                <button
+                  type="button"
+                  className="mobile-quick-actions-reveal"
+                  onClick={() => setShowMobileQuickActions((v) => !v)}
+                  aria-label="Show quick actions"
+                  title={showMobileQuickActions ? 'Hide quick actions' : 'Show quick actions'}
+                >
+                  {showMobileQuickActions ? '⌃' : '⌄'}
+                </button>
+              </div>
+            )}
             <div className="mobile-actions">
+              {/* Hidden quick actions: toggled by arrow (mobile-only) */}
               <button
                 className="btn-icon-mobile"
                 onClick={() => setShowFoodLogger(true)}
@@ -735,23 +792,30 @@ const FoodLoggingDashboard = () => {
               </button>
               
               <button
-                className="btn-icon-mobile"
+                className="btn-icon-mobile btn-icon-mobile--quick-secondary"
+                style={{ display: showMobileQuickActions ? 'flex' : 'none' }}
                 onClick={() => setShowFoodCreator(true)}
                 title="Create Food"
               >
-                <span className="icon icon-lg">🍽️</span>
+                <svg className="icon icon-lg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                  <path d="M4 4a2 2 0 012-2h2a2 2 0 012 2v6h2V4a2 2 0 012-2h2a2 2 0 012 2v18h-2v-6H8v6H6V4a2 2 0 01-2-2z" />
+                </svg>
               </button>
               
               <button
-                className="btn-icon-mobile"
+                className="btn-icon-mobile btn-icon-mobile--quick-secondary"
+                style={{ display: showMobileQuickActions ? 'flex' : 'none' }}
                 onClick={() => setShowMealCreator(true)}
                 title="Create Meal"
               >
-                <span className="icon icon-lg">🍴</span>
+                <svg className="icon icon-lg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                  <path d="M7 2v10a4 4 0 004 4v6h2v-6a4 4 0 004-4V2h-2v10a2 2 0 01-2 2V2h-2v12a2 2 0 01-2-2V2H7z" />
+                </svg>
               </button>
               
               <button
-                className="btn-icon-mobile"
+                className="btn-icon-mobile btn-icon-mobile--quick-secondary"
+                style={{ display: showMobileQuickActions ? 'flex' : 'none' }}
                 onClick={() => setShowFoodChatbot(true)}
                 title="AI Logger"
               >
@@ -814,83 +878,67 @@ const FoodLoggingDashboard = () => {
                             </div>
                           )}
                           <div className="food-log-item mobile">
-                            <div className="food-info">
-                              <div className="food-details">
-                                <div className="food-name-time-row">
-                                  <span className="food-icon food-icon-inline">
-                                    {getFoodGroupIcon(log.food_details?.food_group)}
-                                  </span>
-                                  <span
-                                    className="food-name food-name--clickable"
-                                    role="button"
-                                    tabIndex={0}
-                                    onClick={() => setMetadataModalLog(log.food_details ? log : null)}
-                                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setMetadataModalLog(log.food_details ? log : null); }}
-                                  >
-                                    {log.food_name}
-                                  </span>
-                                  <div className="food-time">
-                                  {editingTime === log.macro_log_id ? (
-                                    <div className="time-edit-container">
-                                      <input
-                                        type="time"
-                                        defaultValue={getTimeForInput(log.date_time)}
-                                        className="time-input"
-                                        onBlur={(e) => {
+                            <div className="food-mobile-stack">
+                              <span className="food-serving-inline">
+                                {log.servings}
+                              </span>
+                              <span
+                                className="food-name food-name--clickable"
+                                role="button"
+                                tabIndex={0}
+                                onClick={() => setMetadataModalLog(log.food_details ? log : null)}
+                                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setMetadataModalLog(log.food_details ? log : null); }}
+                              >
+                                {log.food_name}
+                              </span>
+                              <div className="food-time">
+                                {editingTime === log.macro_log_id ? (
+                                  <div className="time-edit-container">
+                                    <input
+                                      type="time"
+                                      defaultValue={getTimeForInput(log.date_time)}
+                                      className="time-input"
+                                      onBlur={(e) => {
+                                        if (e.target.value) {
+                                          updateFoodLogTime(log.macro_log_id, e.target.value);
+                                        } else {
+                                          setEditingTime(null);
+                                        }
+                                      }}
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
                                           if (e.target.value) {
                                             updateFoodLogTime(log.macro_log_id, e.target.value);
                                           } else {
                                             setEditingTime(null);
                                           }
-                                        }}
-                                        onKeyDown={(e) => {
-                                          if (e.key === 'Enter') {
-                                            if (e.target.value) {
-                                              updateFoodLogTime(log.macro_log_id, e.target.value);
-                                            } else {
-                                              setEditingTime(null);
-                                            }
-                                          } else if (e.key === 'Escape') {
-                                            setEditingTime(null);
-                                          }
-                                        }}
-                                        autoFocus
-                                      />
-                                    </div>
-                                  ) : (
-                                    <span 
-                                      className="time-display"
-                                      onClick={() => setEditingTime(log.macro_log_id)}
-                                      title="Click to edit time"
-                                    >
-                                      {time}
-                                    </span>
-                                  )}
+                                        } else if (e.key === 'Escape') {
+                                          setEditingTime(null);
+                                        }
+                                      }}
+                                      autoFocus
+                                    />
                                   </div>
-                                </div>
+                                ) : (
+                                  <span
+                                    className="time-display"
+                                    onClick={() => setEditingTime(log.macro_log_id)}
+                                    title="Click to edit time"
+                                  >
+                                    {time}
+                                  </span>
+                                )}
                               </div>
+                              <span className="food-icon food-icon-inline">
+                                {getFoodGroupIcon(log.food_details?.food_group)}
+                              </span>
                             </div>
-                            <div className="food-macros">
-                              <div className="macro-item">
-                                <span className="macro-label">CAL:</span>
-                                <span className="macro-value">{Math.round(log.consumed_macros?.calories || 0)}</span>
-                              </div>
-                              <div className="macro-item">
-                                <span className="macro-label">PRO:</span>
-                                <span className="macro-value">{Math.round(log.consumed_macros?.protein || 0)}</span>
-                              </div>
-                              <div className="macro-item">
-                                <span className="macro-label">CAR:</span>
-                                <span className="macro-value">{Math.round(log.consumed_macros?.carbohydrates || 0)}</span>
-                              </div>
-                              <div className="macro-item">
-                                <span className="macro-label">FAT:</span>
-                                <span className="macro-value">{Math.round(log.consumed_macros?.fat || 0)}</span>
-                              </div>
-                              <div className="macro-item">
-                                <span className="macro-label">SER:</span>
-                                <span className="macro-value">{log.servings}</span>
-                              </div>
+                            <div className="food-macros food-macros--mobile-plain">
+                              <span className="macro-pill macro-pill--plain">Cal: {Math.round(log.consumed_macros?.calories || 0)}</span>
+                              <span className="macro-pill macro-pill--plain">Pro: {Math.round(log.consumed_macros?.protein || 0)}</span>
+                              <span className="macro-pill macro-pill--plain">Car: {Math.round(log.consumed_macros?.carbohydrates || 0)}</span>
+                              <span className="macro-pill macro-pill--plain">Fat: {Math.round(log.consumed_macros?.fat || 0)}</span>
+                              <span className="macro-pill macro-pill--plain">Ser: {log.servings}</span>
                             </div>
                             <div className="food-actions food-actions--mobile-hide">
                               <button
@@ -1107,20 +1155,6 @@ const FoodLoggingDashboard = () => {
                           boxShadow: 'var(--shadow-sm)',
                           opacity: submittingWater ? '0.5' : '1'
                         }}
-                        onMouseEnter={(e) => {
-                          if (!submittingWater) {
-                            e.target.style.filter = 'brightness(1.1)';
-                            e.target.style.transform = 'translateY(-1px)';
-                            e.target.style.boxShadow = 'var(--shadow-md)';
-                          }
-                        }}
-                        onMouseLeave={(e) => {
-                          if (!submittingWater) {
-                            e.target.style.filter = 'none';
-                            e.target.style.transform = 'none';
-                            e.target.style.boxShadow = 'var(--shadow-sm)';
-                          }
-                        }}
                       >
                         {submittingWater ? 'Saving...' : 'Save Entry'}
                       </button>
@@ -1313,20 +1347,6 @@ const FoodLoggingDashboard = () => {
                           boxShadow: 'var(--shadow-sm)',
                           opacity: submittingWater ? '0.5' : '1'
                         }}
-                        onMouseEnter={(e) => {
-                          if (!submittingWater) {
-                            e.target.style.filter = 'brightness(1.1)';
-                            e.target.style.transform = 'translateY(-1px)';
-                            e.target.style.boxShadow = 'var(--shadow-md)';
-                          }
-                        }}
-                        onMouseLeave={(e) => {
-                          if (!submittingWater) {
-                            e.target.style.filter = 'none';
-                            e.target.style.transform = 'none';
-                            e.target.style.boxShadow = 'var(--shadow-sm)';
-                          }
-                        }}
                       >
                         {submittingWater ? 'Saving...' : 'Save Entry'}
                       </button>
@@ -1348,16 +1368,49 @@ const FoodLoggingDashboard = () => {
       )}
 
       <style>{`
+        .route-food-log .main-content {
+          justify-content: flex-start;
+          align-items: stretch;
+        }
+
         .food-logging-dashboard {
           min-height: 100vh;
-          background: var(--bg-primary);
+          background-color: var(--bg-primary);
+          background-image: none;
           width: 100vw;
           margin: 0;
-          padding: 0;
+          padding: 0 0 var(--space-4);
           position: absolute;
           left: 0;
           right: 0;
           top: 0;
+          font-size: var(--text-lg);
+          font-family: var(--font-primary);
+          box-sizing: border-box;
+        }
+
+        [data-theme="dark"] .food-logging-dashboard {
+          --foodlog-shell-tint: rgba(255, 255, 255, 0.045);
+          --foodlog-shell-strong: rgba(255, 255, 255, 0.11);
+          background-image:
+            linear-gradient(var(--foodlog-shell-tint) 1px, transparent 1px),
+            linear-gradient(90deg, var(--foodlog-shell-tint) 1px, transparent 1px),
+            linear-gradient(var(--foodlog-shell-strong) 1px, transparent 1px),
+            linear-gradient(90deg, var(--foodlog-shell-strong) 1px, transparent 1px);
+          background-size: 20px 20px, 20px 20px, 80px 80px, 80px 80px;
+          background-attachment: fixed;
+        }
+
+        [data-theme="light"] .food-logging-dashboard {
+          --foodlog-shell-tint: rgba(0, 0, 0, 0.04);
+          --foodlog-shell-strong: rgba(0, 0, 0, 0.1);
+          background-image:
+            linear-gradient(var(--foodlog-shell-tint) 1px, transparent 1px),
+            linear-gradient(90deg, var(--foodlog-shell-tint) 1px, transparent 1px),
+            linear-gradient(var(--foodlog-shell-strong) 1px, transparent 1px),
+            linear-gradient(90deg, var(--foodlog-shell-strong) 1px, transparent 1px);
+          background-size: 20px 20px, 20px 20px, 80px 80px, 80px 80px;
+          background-attachment: fixed;
         }
 
         .dashboard-header {
@@ -1368,128 +1421,144 @@ const FoodLoggingDashboard = () => {
           margin: 0;
         }
 
-        .header-content {
-          display: flex;
-          justify-content: space-between;
-          align-items: flex-start;
+        .header-content--food-log {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) minmax(0, 2.2fr) minmax(0, 1fr);
+          align-items: center;
           width: 100%;
           margin: 0;
-          padding: var(--space-1) var(--space-3) 0 var(--space-3);
-          gap: var(--space-2);
+          padding: var(--space-2) var(--space-4) var(--space-2);
+          gap: var(--space-3);
+          box-sizing: border-box;
         }
 
-        .header-left {
-          flex: 0 0 auto;
+        .header-date-wrap {
+          display: flex;
+          justify-content: flex-start;
+          align-items: center;
+          min-width: 0;
         }
 
-        .header-center {
-          flex: 1;
+        .header-actions-center {
+          position: relative;
           display: flex;
           justify-content: center;
           align-items: center;
+          min-width: 0;
+          height: 56px;
         }
 
-        .header-center--grouped {
+        .header-actions-reveal {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          min-width: 180px;
+          height: 72px;
+          padding: 0;
+          border: none;
+          border-radius: var(--radius-md);
+          background: transparent;
+          color: #ffffff;
+          font-family: var(--font-primary);
+          font-size: var(--text-4xl);
+          font-weight: var(--font-weight-bold);
+          cursor: pointer;
+          box-shadow: none;
+        }
+
+        .header-actions-reveal:focus {
+          outline: 2px solid var(--accent-primary);
+          outline-offset: 2px;
+        }
+
+        .header-actions-reveal__glyph {
+          letter-spacing: 0.02em;
+          line-height: 1;
+        }
+
+        .header-streak-wrap {
           display: flex;
-          flex-direction: row;
           justify-content: flex-end;
           align-items: center;
-          gap: var(--space-2);
-          flex-wrap: nowrap;
-          margin-left: auto;
-        }
-
-        .header-date-streak-row {
-          display: flex;
-          align-items: center;
-          gap: var(--space-1);
-          flex-wrap: nowrap;
-          margin-top: var(--space-3);
+          min-width: 0;
         }
 
         .header-actions {
-          flex: 0 0 auto;
+          position: absolute;
+          top: 0;
+          left: 50%;
+          transform: translateX(-50%);
           display: flex;
+          flex-wrap: nowrap;
           align-items: center;
-          gap: var(--space-2);
-          transition: opacity 0.4s var(--ease-out-cubic);
-        }
-
-        .header-title {
-          display: flex;
-          align-items: center;
+          justify-content: center;
           gap: var(--space-3);
-        }
-
-        .header-title h1 {
-          margin: 0;
-          font-size: var(--text-3xl);
-          font-weight: var(--font-weight-bold);
+          white-space: nowrap;
         }
 
         .streak-counter {
+          display: inline-flex;
+          align-items: center;
+          gap: var(--space-2);
+          background: transparent;
+          padding: 0;
+          border-radius: 0;
+          border: none;
+          box-shadow: none;
+          backdrop-filter: none;
+          opacity: 1;
+        }
+
+        .streak-icon {
           display: flex;
           align-items: center;
-          gap: var(--space-1);
-          background: var(--bg-tertiary);
-          padding: var(--space-1) var(--space-2);
-          border-radius: var(--radius-lg);
-          border: 1px solid var(--border-primary);
+          justify-content: center;
+          color: #b8860b; /* dark yellow */
+        }
+
+        .streak-icon svg {
+          display: block;
+          position: relative;
+          top: 1px;
+          line-height: 1;
         }
 
         .streak-number {
           font-size: var(--text-2xl);
           font-weight: var(--font-weight-bold);
-          color: #ff9f1c;
-        }
-
-        .streak-unit {
-          font-size: var(--text-lg);
-          color: #2d6acb;
-          margin-left: var(--space-1);
-        }
-
-        .streak-label {
-          font-size: var(--text-sm);
-          color: orange;
-          text-transform: uppercase;
-          letter-spacing: 0.05em;
-        }
-
-        .header-actions {
-          display: flex;
-          gap: var(--space-2);
+          color: #b8860b; /* dark yellow */
+          line-height: 1;
         }
 
         .btn-primary-header {
           padding: 0 var(--space-6);
-          border: none;
+          border: 2px solid rgba(255, 255, 255, 0.9);
           border-radius: var(--radius-md);
-          font-size: var(--text-base);
+          font-size: var(--text-lg);
           font-weight: var(--font-weight-bold);
           text-transform: uppercase;
           letter-spacing: 0.12em;
-          color: #ffffff;
+          color: var(--bg-primary);
           cursor: pointer;
           display: inline-flex;
           align-items: center;
           justify-content: center;
           gap: var(--space-2);
-          min-width: 220px;
-          height: 56px;
-          box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
-          transition: transform 0.25s var(--ease-out-cubic), box-shadow 0.25s var(--ease-out-cubic);
-          backdrop-filter: blur(6px);
+          min-width: 210px;
+          height: 60px;
+          box-shadow: 0 24px 55px rgba(0, 0, 0, 0.35);
           font-family: var(--font-primary);
           z-index: calc(var(--z-fixed) + 5);
-          background: var(--accent-primary);
+          background: rgba(255, 255, 255, 0.92);
         }
 
-        .btn-primary-header:hover,
         .btn-primary-header:focus {
-          transform: translateY(-3px);
-          box-shadow: 0 24px 45px rgba(0, 0, 0, 0.4);
-          outline: none;
+          outline: 2px solid rgba(255, 255, 255, 0.35);
+          outline-offset: 2px;
+        }
+
+        .btn-primary-header .header-action-label {
+          color: var(--bg-primary);
         }
 
         .btn-close {
@@ -1501,7 +1570,7 @@ const FoodLoggingDashboard = () => {
         }
 
         .btn-close:hover {
-          color: var(--text-primary);
+          color: var(--text-tertiary);
         }
 
         .controls-section {
@@ -1515,29 +1584,26 @@ const FoodLoggingDashboard = () => {
           padding: var(--space-2) var(--space-3);
           min-height: 48px;
           height: 48px;
-          border: 1px solid transparent;
+          border: none;
           border-radius: var(--radius-md);
-          background: rgba(255, 255, 255, 0.08);
+          background: var(--bg-secondary);
           font-size: var(--text-base);
           color: var(--text-primary);
-          transition: opacity 0.25s var(--ease-out-cubic), background 0.25s var(--ease-out-cubic);
           font-family: var(--font-primary);
           min-width: 182px;
-          font-weight: 500;
+          font-weight: var(--font-weight-medium);
           cursor: pointer;
           text-align: center;
           display: flex;
           align-items: center;
           justify-content: center;
-          opacity: 0.5;
+          box-sizing: border-box;
         }
 
-        .date-input:hover,
         .date-input:focus {
-          opacity: 1;
-          background: rgba(255, 255, 255, 0.12);
           outline: none;
-          border-color: var(--border-primary);
+          border-color: transparent;
+          box-shadow: none;
         }
 
         .date-input::-webkit-calendar-picker-indicator {
@@ -1660,8 +1726,8 @@ const FoodLoggingDashboard = () => {
         }
 
         .calendar-header button:hover {
-          background: var(--accent-primary);
-          color: white;
+          background: var(--bg-tertiary);
+          color: var(--text-primary);
         }
 
         .calendar-header span {
@@ -1700,8 +1766,8 @@ const FoodLoggingDashboard = () => {
         }
 
         .calendar-day:hover {
-          background: var(--accent-primary);
-          color: white;
+          background: var(--bg-secondary);
+          color: var(--text-primary);
         }
 
         .calendar-day.selected {
@@ -1833,7 +1899,7 @@ const FoodLoggingDashboard = () => {
           gap: var(--space-4);
           position: sticky;
           top: var(--space-6);
-          padding-right: var(--space-8);
+          padding-right: var(--space-2);
         }
 
         /* Mobile Layout */
@@ -1856,14 +1922,21 @@ const FoodLoggingDashboard = () => {
           padding: 0;
           border: 2px solid var(--border-primary);
           border-radius: var(--radius-lg);
-          background: var(--bg-tertiary);
+          background: var(--bg-secondary);
           color: var(--text-primary);
           cursor: pointer;
-          transition: all 0.2s var(--ease-out-cubic);
           display: flex;
           align-items: center;
           justify-content: center;
           margin: 0 auto;
+          box-shadow: 0 24px 55px rgba(0, 0, 0, 0.35);
+        }
+
+        .btn-icon-mobile--quick-secondary {
+          background: #E5E7EB;
+          border: 2px solid #D1D5DB;
+          color: #000000;
+          box-shadow: none;
         }
 
         .btn-icon-mobile svg.icon,
@@ -1880,78 +1953,86 @@ const FoodLoggingDashboard = () => {
           justify-content: center;
         }
 
-        .btn-icon-mobile:hover {
-          background: var(--accent-primary);
-          color: white;
-          border-color: var(--accent-primary);
-          transform: translateY(-2px);
-          box-shadow: var(--shadow-md);
-        }
-
         .btn-icon-mobile:focus {
           outline: 2px solid var(--accent-primary);
           outline-offset: 2px;
         }
 
 
-        /* Goal Progress */
-        .goal-progress-section {
-          background: var(--bg-secondary);
-          padding-top: var(--space-6);
-          padding-bottom: var(--space-6);
-          margin-top: var(--space-6);
-        }
-
+        /* Goal progress + food log cards — align with personalization goals-section */
         .goal-progress-section.card {
+          background: var(--bg-secondary);
           border: none;
-          box-shadow: none;
-        }
-
-        .progress-summary {
-          padding: var(--space-6) var(--space-4);
           border-radius: var(--radius-lg);
-          transition: background 0.2s var(--ease-out-cubic);
+          padding: var(--space-6);
+          margin-top: 0;
+          box-shadow: 0 24px 55px rgba(0, 0, 0, 0.4);
+          backdrop-filter: blur(8px);
+          box-sizing: border-box;
+          min-height: 288px;
         }
 
-        .goal-progress-section .progress-summary {
-          padding-top: var(--space-8);
-          padding-bottom: var(--space-8);
+        .goal-progress-section.card:hover {
+          transform: none !important;
+          box-shadow: 0 24px 55px rgba(0, 0, 0, 0.4) !important;
         }
 
-        .progress-summary:hover {
+        .goal-progress-section--expanded .expanded-progress.card {
+          padding: 0;
+          margin: 0;
           background: transparent;
+          border: none;
+          border-radius: 0;
+          box-shadow: none;
+          transition: none;
         }
 
-        /* Food Log */
-        .food-log-section {
-          background: transparent;
-          padding: var(--space-2);
+        .goal-progress-section--expanded .expanded-progress.card:hover {
+          transform: none !important;
+          box-shadow: none !important;
+        }
+
+        .goal-progress-section--expanded .expanded-progress .expanded-progress-grid {
+          max-height: 240px;
+          overflow-y: auto;
+          -webkit-overflow-scrolling: touch;
+          padding-right: var(--space-2);
+          scrollbar-gutter: stable;
+        }
+
+        .goal-progress-section .progress-grid {
+          height: 100%;
+          align-content: center;
+          padding-top: var(--space-2);
+          padding-bottom: var(--space-2);
         }
 
         .food-log-section.card {
+          background: var(--bg-secondary);
           border: none;
-          box-shadow: none;
+          border-radius: var(--radius-lg);
+          padding: var(--space-6);
+          margin-top: var(--space-4);
+          margin-bottom: var(--space-4);
+          box-shadow: 0 24px 55px rgba(0, 0, 0, 0.4);
+          backdrop-filter: blur(8px);
           outline: none;
+          box-sizing: border-box;
+        }
+
+        .food-log-section.card:hover {
+          transform: none !important;
+          box-shadow: 0 24px 55px rgba(0, 0, 0, 0.4) !important;
         }
 
         .food-log-section.card:focus,
         .food-log-section.card:focus-within {
           outline: none;
-          box-shadow: none;
-        }
-
-        /* Separator between progress and food log - no border */
-        .goal-progress-section + .food-log-section,
-        .goal-progress-section ~ .food-log-section {
-          border-top: none;
-          padding-top: var(--space-2);
-          margin-top: var(--space-2);
         }
 
         .food-log-list {
-          max-height: 500px;
-          overflow-y: auto;
-          overflow-x: visible;
+          max-height: none;
+          overflow: visible;
           position: relative;
         }
 
@@ -1985,35 +2066,143 @@ const FoodLoggingDashboard = () => {
           padding: var(--space-2);
         }
 
-        .food-log-item {
-          display: flex;
+        .food-log-item--desktop {
+          display: grid;
+          grid-template-columns: 3fr 1fr 6fr 1fr;
           align-items: center;
-          justify-content: space-between;
-          padding: var(--space-2) var(--space-3);
+          column-gap: var(--space-1);
+          padding: var(--space-3) var(--space-2);
           background: var(--bg-tertiary);
           border-radius: var(--radius-md);
-          margin-bottom: 6px;
-          transition: all 0.2s var(--ease-out-cubic);
-          min-height: 50px;
-          gap: var(--space-3);
+          margin-bottom: var(--space-2);
+          min-height: 52px;
+          box-sizing: border-box;
         }
 
-        .food-log-item:hover {
-          transform: translateY(-1px);
-          box-shadow: var(--shadow-md);
+        .food-log-cell--identity {
+          display: flex;
+          flex-direction: row;
+          align-items: center;
+          gap: var(--space-2);
+          min-width: 0;
+          max-width: 100%;
+        }
+
+        .food-name--truncate {
+          flex: 1;
+          min-width: 0;
+          font-weight: var(--font-weight-medium);
+          color: var(--text-primary);
+          font-size: var(--text-lg);
+          white-space: nowrap;
+          overflow: hidden;
+          mask-image: linear-gradient(90deg, #000 75%, transparent 100%);
+          -webkit-mask-image: linear-gradient(90deg, #000 75%, transparent 100%);
+        }
+
+        .food-log-cell--time {
+          font-size: var(--text-sm);
+          color: var(--text-tertiary);
+          display: flex;
+          align-items: center;
+          justify-content: flex-start;
+          min-width: 0;
+        }
+
+        .food-log-cell--macros {
+          display: flex;
+          flex-wrap: nowrap;
+          align-items: center;
+          gap: 0;
+          justify-content: flex-start;
+          min-width: 0;
+        }
+
+        .macro-pill--plain {
+          font-size: var(--text-base);
+          color: var(--text-primary);
+          font-weight: var(--font-weight-medium);
+          background: none;
+          border: none;
+          padding: 0 var(--space-3);
+          line-height: 1.2;
+          white-space: nowrap;
+        }
+
+        .macro-pill--plain:not(:first-child) {
+          border-left: 1px solid var(--input-border);
+        }
+
+        .food-log-cell--actions {
+          display: flex;
+          align-items: center;
+          justify-content: flex-end;
+          gap: var(--space-3);
+          min-width: 0;
         }
 
         .food-log-item.mobile {
           flex-direction: column;
-          align-items: flex-start;
+          align-items: stretch;
           gap: var(--space-3);
+          padding: var(--space-4) var(--space-3);
+          background: var(--bg-tertiary);
+          border-radius: var(--radius-md);
+          margin-bottom: var(--space-2);
         }
 
-        .food-info {
+        .food-mobile-stack {
           display: flex;
+          flex-direction: row;
           align-items: center;
-          gap: var(--space-3);
+          gap: var(--space-2);
+          width: 100%;
+        }
+
+        .food-serving-inline {
+          font-size: var(--text-lg);
+          font-weight: var(--font-weight-medium);
+          color: var(--text-secondary);
+          white-space: nowrap;
+          flex-shrink: 0;
+        }
+
+        .food-log-item.mobile .food-icon-inline {
+          font-size: var(--text-3xl);
+        }
+
+        .food-log-item.mobile .food-name {
+          font-size: var(--text-2xl);
+          font-weight: var(--font-weight-semibold);
+          color: var(--text-primary);
+          text-align: left;
           flex: 1;
+          min-width: 0;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .food-log-item.mobile .food-time {
+          font-size: var(--text-lg);
+          color: var(--text-secondary);
+          flex-shrink: 0;
+          white-space: nowrap;
+        }
+
+        .food-macros--mobile-plain {
+          display: flex;
+          flex-direction: row;
+          align-items: flex-start;
+          gap: 0;
+          flex-wrap: nowrap;
+          width: 100%;
+          overflow: hidden;
+        }
+
+        .food-macros--mobile-plain .macro-pill--plain {
+          font-size: var(--text-base);
+          padding: 0 var(--space-2);
         }
 
         .food-icon {
@@ -2023,7 +2212,7 @@ const FoodLoggingDashboard = () => {
           display: flex;
           align-items: center;
           justify-content: center;
-          background: var(--bg-secondary);
+          background: transparent;
           border-radius: var(--radius-md);
         }
 
@@ -2032,58 +2221,7 @@ const FoodLoggingDashboard = () => {
           height: auto;
           font-size: var(--text-xl);
           flex-shrink: 0;
-        }
-
-        .food-details {
-          flex: 1 1 60%;
-          min-width: 0;
-          display: flex;
-          flex-direction: row;
-          align-items: center;
-          gap: var(--space-3);
-          justify-content: center;
-        }
-
-        .food-name-time-row {
-          display: inline-flex;
-          flex-direction: row;
-          flex-wrap: nowrap;
-          align-items: center;
-          gap: var(--space-2);
-          min-width: 0;
-          max-width: 100%;
-        }
-
-        .food-name-time-row .food-name {
-          font-weight: var(--font-weight-medium);
-          color: var(--text-primary);
-          font-size: var(--text-lg);
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          flex: 0 1 auto;
-          min-width: 0;
-        }
-
-        .food-name-time-row .food-time {
-          font-size: var(--text-base);
-          color: var(--text-tertiary);
-          display: inline-flex;
-          align-items: center;
-          flex-shrink: 0;
-          line-height: 1;
-        }
-
-        .food-name {
-          font-weight: var(--font-weight-medium);
-          color: var(--text-primary);
-          margin-bottom: 0;
-          font-size: var(--text-lg);
-          flex: 1 1 auto;
-          min-width: 240px;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
+          background: transparent;
         }
 
         .food-time {
@@ -2095,90 +2233,32 @@ const FoodLoggingDashboard = () => {
           line-height: 1;
         }
 
-        .food-macros {
-          display: flex;
-          gap: var(--space-3);
-          align-items: center;
-          justify-content: center;
-          flex-wrap: wrap;
-          flex: 1 1 50%;
-          min-width: 0;
-          padding: 0;
-          margin: 0 auto;
-        }
-
-        .macro-item {
-          display: flex;
-          flex-direction: row;
-          align-items: center;
-          gap: var(--space-1);
-          text-align: left;
-        }
-
-        .macro-value {
-          font-weight: var(--font-weight-bold);
-          color: var(--text-primary);
-          font-size: var(--text-sm);
-        }
-
-        .macro-label {
-          font-size: var(--text-sm);
-          color: var(--text-tertiary);
-          text-transform: uppercase;
-          letter-spacing: 0.05em;
-          font-weight: var(--font-weight-medium);
-        }
-
-        .food-actions {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: var(--space-2);
-          flex-shrink: 0;
-        }
-
         .btn-icon-info {
-          width: 32px;
-          height: 32px;
+          width: 64px;
+          height: 56px;
           padding: 0;
           border: 1px solid var(--accent-primary);
-          border-radius: var(--radius-sm);
+          border-radius: var(--radius-md);
           background: var(--bg-secondary);
           color: var(--accent-primary);
           cursor: pointer;
-          transition: all 0.2s var(--ease-out-cubic);
           display: flex;
           align-items: center;
           justify-content: center;
-        }
-
-        .btn-icon-info:hover {
-          background: var(--accent-primary);
-          color: white;
-          border-color: var(--accent-primary);
-          transform: translateY(-1px);
         }
 
         .btn-icon-delete {
-          width: 32px;
-          height: 32px;
+          width: 64px;
+          height: 56px;
           padding: 0;
           border: 1px solid var(--accent-danger);
-          border-radius: var(--radius-sm);
+          border-radius: var(--radius-md);
           background: var(--accent-danger);
           color: white;
           cursor: pointer;
-          transition: all 0.2s var(--ease-out-cubic);
           display: flex;
           align-items: center;
           justify-content: center;
-        }
-
-        .btn-icon-delete:hover {
-          background: #dc2626;
-          color: white;
-          border-color: #dc2626;
-          transform: translateY(-1px);
         }
 
         .food-metadata-expanded {
@@ -2236,8 +2316,7 @@ const FoodLoggingDashboard = () => {
         }
 
         .time-display:hover {
-          background: var(--bg-secondary);
-          color: var(--accent-primary);
+          color: var(--text-tertiary);
         }
 
         .time-edit-container {
@@ -2317,89 +2396,133 @@ const FoodLoggingDashboard = () => {
             display: none;
           }
 
-          .header-content {
-            flex-direction: row;
-            flex-wrap: nowrap;
-            gap: var(--space-3);
-            align-items: center;
-            justify-content: center;
-            padding: var(--space-2);
+          .food-logging-dashboard {
+            padding-left: var(--space-2);
+            padding-right: var(--space-2);
           }
 
-          .header-left {
-            flex: 0 1 auto;
-            display: flex;
-            justify-content: center;
+          .header-content--food-log {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
             align-items: center;
+            padding: var(--space-2);
             gap: var(--space-2);
           }
 
-          .header-left .controls-section,
-          .header-left .custom-date-picker {
-            width: auto;
-            max-width: 180px;
+          .header-actions-center {
+            display: none;
           }
 
-          .header-left .date-input {
+          .header-date-wrap .date-input {
+            max-width: 100%;
+            min-width: 0;
+          }
+
+          .header-streak-wrap .streak-unit {
+            display: none;
+          }
+
+          .mobile-actions-reveal-wrap {
             width: 100%;
-            text-align: center;
+            display: flex;
+            justify-content: center;
+            padding: 0;
+            margin: 0 0 var(--space-2);
           }
 
-          .header-center {
-            flex: 0 0 auto;
+          .mobile-quick-actions-reveal {
+            background: transparent;
+            border: none;
+            color: #ffffff;
+            cursor: pointer;
+            font-size: var(--text-4xl);
+            font-weight: var(--font-weight-bold);
+            padding: 0;
+            line-height: 1;
+            height: 40px;
             display: flex;
             align-items: center;
-          }
-
-          .header-center .streak-counter {
-            padding: var(--space-1) var(--space-2);
-          }
-
-          .header-center .streak-unit {
-            display: none;
+            justify-content: center;
           }
 
           .btn-icon-mobile--water .btn-icon-mobile-label {
             display: none;
           }
 
-          .header-actions {
-            display: none;
-          }
-
-          .btn-primary-header {
-            min-width: 0;
-            padding: var(--space-2) var(--space-3);
-            font-size: var(--text-sm);
-            height: 44px;
-          }
-
           .mobile-actions {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: var(--space-2);
+            grid-template-columns: repeat(10, 1fr);
+            column-gap: var(--space-2);
+            row-gap: var(--space-4);
+            align-items: center;
           }
 
           .mobile-actions .btn-icon-mobile:first-child {
-            order: 2;
-            grid-column: 1 / -1;
+            order: 1;
+            grid-column: 1 / 8; /* ~70% */
+            grid-row: 1;
             width: 100%;
             min-height: 58px;
-            background: var(--accent-primary);
-            color: white;
-            border-color: var(--accent-primary);
+            border-radius: var(--radius-md);
+            background: rgba(255, 255, 255, 0.95);
+            color: var(--bg-primary);
+            border: 2px solid rgba(255, 255, 255, 0.95);
+            margin: 0;
+          }
+
+          .mobile-actions .btn-icon-mobile:nth-child(5) {
+            order: 1;
+            grid-column: 8 / 11; /* ~30% */
+            grid-row: 1;
+            width: 100%;
+            min-height: 58px;
+            border-radius: var(--radius-md);
+            background: rgba(255, 255, 255, 0.95);
+            color: var(--bg-primary);
+            border: 2px solid rgba(255, 255, 255, 0.95);
+            margin: 0;
           }
 
           .mobile-actions .btn-icon-mobile:nth-child(2),
           .mobile-actions .btn-icon-mobile:nth-child(3),
-          .mobile-actions .btn-icon-mobile:nth-child(4),
-          .mobile-actions .btn-icon-mobile:nth-child(5) {
-            order: 1;
+          .mobile-actions .btn-icon-mobile:nth-child(4) {
+            order: 2;
+            width: 84px;
+            height: 84px;
+            min-width: 84px;
+            border-radius: 50%;
+            margin: 0 auto;
+          }
+
+          .mobile-actions .btn-icon-mobile:nth-child(2) {
+            grid-column: 1 / 4;
+            grid-row: 2;
+          }
+
+          .mobile-actions .btn-icon-mobile:nth-child(3) {
+            grid-column: 4 / 7;
+            grid-row: 2;
+          }
+
+          .mobile-actions .btn-icon-mobile:nth-child(4) {
+            grid-column: 7 / 10;
+            grid-row: 2;
+          }
+
+          .mobile-actions .btn-icon-mobile:nth-child(2) svg.icon,
+          .mobile-actions .btn-icon-mobile:nth-child(3) .icon,
+          .mobile-actions .btn-icon-mobile:nth-child(4) svg.icon {
+            width: 1.75rem;
+            height: 1.75rem;
+          }
+
+          .mobile-actions .btn-icon-mobile:nth-child(3) span.icon {
+            font-size: 1.5rem;
           }
 
           .mobile-actions .btn-icon-mobile--water {
             font-size: var(--text-xs);
-            padding: var(--space-2);
+            padding: 0;
             flex-direction: column;
             gap: 2px;
           }
@@ -2595,21 +2718,6 @@ const FoodLoggingDashboard = () => {
             cursor: pointer;
           }
 
-          .food-log-item.mobile .food-macros {
-            flex-wrap: nowrap;
-            gap: var(--space-2);
-            justify-content: flex-start;
-            width: 100%;
-          }
-
-          .food-log-item.mobile .macro-item {
-            gap: 2px;
-          }
-
-          .food-log-item.mobile .macro-label,
-          .food-log-item.mobile .macro-value {
-            font-size: var(--text-xs);
-          }
         }
 
         @media (min-width: 769px) {
@@ -2714,7 +2822,6 @@ const FoodLoggingDashboard = () => {
           }
         }
       `}</style>
-    </div>
     </div>
   );
 };

@@ -540,7 +540,7 @@ const Profile = () => {
           flex: 1;
           padding: var(--space-3) var(--space-4);
           border-radius: var(--radius-md);
-          border: 1px solid var(--border-primary);
+          border: 1px solid var(--input-border);
           background: var(--bg-tertiary);
           color: var(--text-primary);
           font-weight: var(--font-weight-semibold);
@@ -549,7 +549,7 @@ const Profile = () => {
         }
 
         .profile-theme-btn:hover {
-          border-color: var(--border-secondary);
+          border-color: var(--accent-primary);
         }
 
         .profile-theme-btn--active {
@@ -569,7 +569,7 @@ const Profile = () => {
         .loading-spinner {
           width: 40px;
           height: 40px;
-          border: 4px solid var(--border-primary);
+          border: 4px solid var(--surface-overlay);
           border-top: 4px solid var(--accent-primary);
           border-radius: 50%;
           animation: spin 1s linear infinite;
@@ -653,7 +653,7 @@ const Profile = () => {
         .nav-back-btn {
           padding: var(--space-2);
           background: var(--bg-tertiary);
-          border: 1px solid var(--border-primary);
+          border: 1px solid var(--input-border);
           color: var(--text-primary);
           border-radius: var(--radius-md);
           cursor: pointer;
@@ -1167,7 +1167,7 @@ const PersonalInfoSection = ({
 
         .profile-info-surface {
           background: var(--profile-card-bg, var(--bg-secondary));
-          border: 1px solid var(--profile-card-border, var(--border-primary));
+          border: none;
           border-radius: var(--radius-lg);
           box-shadow: var(--shadow-md);
         }
@@ -1187,7 +1187,7 @@ const PersonalInfoSection = ({
           left: 0;
           right: auto;
           background: var(--bg-secondary);
-          border: 1px solid var(--border-primary);
+          border: 1px solid var(--input-border);
           border-radius: var(--radius-md);
           box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
           z-index: 1000;
@@ -1203,12 +1203,12 @@ const PersonalInfoSection = ({
           align-items: center;
           margin-bottom: var(--space-3);
           padding-bottom: var(--space-2);
-          border-bottom: 1px solid var(--border-primary);
+          border-bottom: 1px solid var(--input-border);
         }
 
         .profile-birthday-picker .calendar-header button {
           background: var(--bg-tertiary);
-          border: 1px solid var(--border-primary);
+          border: 1px solid var(--input-border);
           border-radius: var(--radius-sm);
           color: var(--text-primary);
           padding: var(--space-1) var(--space-2);
@@ -1249,7 +1249,7 @@ const PersonalInfoSection = ({
 
         .profile-birthday-picker .calendar-day {
           background: var(--bg-tertiary);
-          border: 1px solid var(--border-primary);
+          border: 1px solid var(--input-border);
           border-radius: var(--radius-sm);
           color: var(--text-primary);
           padding: var(--space-3);
@@ -1363,7 +1363,7 @@ const PersonalInfoSection = ({
           box-sizing: border-box;
           min-height: 52px;
           padding: var(--space-3) var(--space-4);
-          border: 1px solid var(--border-primary);
+          border: 1px solid var(--input-border);
           border-radius: var(--radius-md);
           background: var(--bg-tertiary);
           color: var(--text-primary);
@@ -1563,7 +1563,7 @@ const RankingsSection = ({ className = '', metrics, selectedMetricType, setSelec
                   onClick={() => setSelectedMetricType(metric.type)}
                   style={{
                     background: `linear-gradient(135deg, ${hexToRgba(getFitnessRankColor(metric.rank), 0.18)}, rgba(0,0,0,0) 55%), var(--bg-secondary)`,
-                    borderColor: isSelected ? 'rgba(80, 200, 120, 0.65)' : 'var(--border-primary)',
+                    borderColor: isSelected ? 'rgba(80, 200, 120, 0.65)' : 'transparent',
                   }}
                 >
                   <div className="metric-card-top">

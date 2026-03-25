@@ -245,7 +245,18 @@ const Navbar = () => {
           display: flex;
           align-items: flex-end;
           justify-content: center;
+          outline: none;
+          -webkit-tap-highlight-color: transparent;
+          -webkit-touch-callout: none;
+          user-select: none;
           transition: transform 0.2s var(--ease-out-cubic), filter 0.2s;
+        }
+        .nav-hub-trigger:focus,
+        .nav-hub-trigger:focus-visible {
+          outline: none;
+          box-shadow:
+            0 0 0 3px #ffffff,
+            0 -10px 32px rgba(0, 0, 0, 0.35);
         }
         .nav-hub-trigger:hover {
           filter: brightness(1.05);

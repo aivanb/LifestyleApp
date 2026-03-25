@@ -1,7 +1,6 @@
 """Tests for GET /api/analytics/home/dashboard/."""
 from decimal import Decimal
-from datetime import datetime
-from django.utils import timezone
+from datetime import datetime, date, timedelta
 
 from django.contrib.auth import get_user_model
 from rest_framework.test import APITestCase
@@ -11,8 +10,13 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from apps.users.models import AccessLevel, UserGoal
 from apps.logging.models import FoodLog, WeightLog, StepsLog, WaterLog
 from apps.foods.models import Food, Meal
+from apps.analytics.views import _eastern_day_datetime_bounds
 
 User = get_user_model()
+
+# Fixed calendar day so tests match home dashboard Eastern-day windowing.
+DASH_DATE = date(2030, 6, 15)
+DASH_DATE_QUERY = DASH_DATE.isoformat()
 
 
 class HomeDashboardTests(APITestCase):
@@ -51,20 +55,21 @@ class HomeDashboardTests(APITestCase):
             food_group='other',
         )
         self.meal = Meal.objects.create(meal_name='Dash Meal', user=self.user)
-        today = timezone.localdate()
+        day_start, _ = _eastern_day_datetime_bounds(DASH_DATE)
+        sample_dt = day_start + timedelta(hours=12)
         FoodLog.objects.create(
             user=self.user,
             food=self.food,
             meal=self.meal,
             servings=Decimal('2'),
             measurement='g',
-            date_time=timezone.make_aware(datetime.combine(today, datetime.min.time())),
+            date_time=sample_dt,
         )
         WeightLog.objects.create(
             user=self.user,
             weight=Decimal('80'),
             weight_unit='kg',
-            date_time=timezone.make_aware(datetime.combine(today, datetime.min.time())),
+            date_time=sample_dt,
         )
         UserGoal.objects.create(
             user=self.user,
@@ -77,7 +82,7 @@ class HomeDashboardTests(APITestCase):
 
     def test_dashboard_macros_and_calorie_remaining(self):
         url = '/api/analytics/home/dashboard/'
-        r = self.client.get(url)
+        r = self.client.get(url, {'date': DASH_DATE_QUERY})
         self.assertEqual(r.status_code, status.HTTP_200_OK)
         body = r.json()
         self.assertTrue(body['success'])
@@ -89,13 +94,13 @@ class HomeDashboardTests(APITestCase):
         self.assertGreater(d['calorie_remaining'], 1500)
 
     def test_steps_calories_uses_height_and_weight(self):
-        today = timezone.localdate()
+        day_start, _ = _eastern_day_datetime_bounds(DASH_DATE)
         StepsLog.objects.create(
             user=self.user,
             steps=10000,
-            date_time=timezone.make_aware(datetime.combine(today, datetime.min.time())),
+            date_time=day_start + timedelta(hours=14),
         )
-        r = self.client.get('/api/analytics/home/dashboard/')
+        r = self.client.get('/api/analytics/home/dashboard/', {'date': DASH_DATE_QUERY})
         self.assertEqual(r.status_code, status.HTTP_200_OK)
         d = r.json()['data']
         self.assertEqual(d['steps_today'], 10000)
@@ -103,18 +108,18 @@ class HomeDashboardTests(APITestCase):
         self.assertEqual(d['weight_kg_used_for_steps'], 80.0)
 
     def test_trackers_not_logged_includes_water(self):
-        r = self.client.get('/api/analytics/home/dashboard/')
+        r = self.client.get('/api/analytics/home/dashboard/', {'date': DASH_DATE_QUERY})
         ids = {t['id'] for t in r.json()['data']['trackers_not_logged']}
         self.assertIn('water', ids)
 
     def test_water_logged_not_in_missing_list(self):
-        today = timezone.localdate()
+        day_start, _ = _eastern_day_datetime_bounds(DASH_DATE)
         WaterLog.objects.create(
             user=self.user,
             amount=Decimal('1'),
             unit='L',
-            date_time=timezone.make_aware(datetime.combine(today, datetime.min.time())),
+            date_time=day_start + timedelta(hours=10),
         )
-        r = self.client.get('/api/analytics/home/dashboard/')
+        r = self.client.get('/api/analytics/home/dashboard/', {'date': DASH_DATE_QUERY})
         ids = {t['id'] for t in r.json()['data']['trackers_not_logged']}
         self.assertNotIn('water', ids)

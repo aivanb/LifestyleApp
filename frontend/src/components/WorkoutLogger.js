@@ -9,7 +9,14 @@ import {
 import api from '../services/api';
 import WorkoutAnalytics from './WorkoutAnalytics';
 
-const WorkoutLogger = ({ onOpenWorkoutSelection, onWorkoutLogged, selectedDate, onClose, preSelectedWorkout }) => {
+const WorkoutLogger = ({
+  onOpenWorkoutSelection,
+  onWorkoutLogged,
+  selectedDate,
+  onClose,
+  preSelectedWorkout,
+  initialMuscleFilter = '',
+}) => {
   const [workouts, setWorkouts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -150,6 +157,12 @@ const WorkoutLogger = ({ onOpenWorkoutSelection, onWorkoutLogged, selectedDate, 
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [preSelectedWorkout]);
+
+  useEffect(() => {
+    if (!initialMuscleFilter) return;
+    setSelectedMuscles([initialMuscleFilter]);
+    setMuscleActivationRatings((prev) => ({ ...prev, [initialMuscleFilter]: prev[initialMuscleFilter] ?? '' }));
+  }, [initialMuscleFilter]);
 
   const getUniqueMuscles = () => {
     const muscles = new Set();

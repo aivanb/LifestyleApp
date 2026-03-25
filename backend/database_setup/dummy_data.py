@@ -109,6 +109,18 @@ def create_user_goals(users):
             'fiber_goal': Decimal('30.00'),
             'sodium_goal': Decimal('2300.00'),
             'sugar_goal': Decimal('50.00'),
+            'lean_mass_goal': Decimal('165.00'),
+            'fat_mass_goal': Decimal('20.00'),
+            'saturated_fat_goal': Decimal('20.00'),
+            'trans_fat_goal': Decimal('0.00'),
+            'calcium_goal': Decimal('1000.00'),
+            'iron_goal': Decimal('12.00'),
+            'magnesium_goal': Decimal('420.00'),
+            'cholesterol_goal': Decimal('300.00'),
+            'vitamin_a_goal': Decimal('900.00'),
+            'vitamin_c_goal': Decimal('90.00'),
+            'vitamin_d_goal': Decimal('20.00'),
+            'caffeine_goal': Decimal('300.00'),
         },
         {  # Jane's goals (maintenance)
             'user': users[1],
@@ -122,6 +134,18 @@ def create_user_goals(users):
             'fiber_goal': Decimal('25.00'),
             'sodium_goal': Decimal('2000.00'),
             'sugar_goal': Decimal('40.00'),
+            'lean_mass_goal': Decimal('48.00'),
+            'fat_mass_goal': Decimal('14.00'),
+            'saturated_fat_goal': Decimal('16.00'),
+            'trans_fat_goal': Decimal('0.00'),
+            'calcium_goal': Decimal('1000.00'),
+            'iron_goal': Decimal('18.00'),
+            'magnesium_goal': Decimal('320.00'),
+            'cholesterol_goal': Decimal('280.00'),
+            'vitamin_a_goal': Decimal('700.00'),
+            'vitamin_c_goal': Decimal('75.00'),
+            'vitamin_d_goal': Decimal('15.00'),
+            'caffeine_goal': Decimal('250.00'),
         },
     ]
     
@@ -183,6 +207,7 @@ def create_foods():
         food.setdefault('vitamin_c', Decimal(str(random.uniform(0, 20))))
         food.setdefault('vitamin_d', Decimal(str(random.uniform(0, 5))))
         food.setdefault('caffeine', Decimal('0'))
+        food.setdefault('cost', Decimal(str(random.uniform(0.5, 12.0))))
     
     created_foods = []
     for food_data in foods_data:
@@ -208,19 +233,19 @@ def create_workouts(users):
     
     workouts_data = [
         # John's workouts (more advanced)
-        {'user': users[0], 'workout_name': 'Barbell Bench Press', 'type': 'barbell', 'location': 'Gold\'s Gym', 'muscles': chest_muscles[:3], 'make_public': True},
-        {'user': users[0], 'workout_name': 'Barbell Squat', 'type': 'barbell', 'location': 'Gold\'s Gym', 'muscles': leg_muscles[:5], 'make_public': True},
-        {'user': users[0], 'workout_name': 'Deadlift', 'type': 'barbell', 'location': 'Gold\'s Gym', 'muscles': back_muscles + leg_muscles[:3], 'make_public': True},
-        {'user': users[0], 'workout_name': 'Pull-ups', 'type': 'bodyweight', 'location': 'Gold\'s Gym', 'muscles': back_muscles[:3], 'make_public': True},
-        {'user': users[0], 'workout_name': 'Overhead Press', 'type': 'barbell', 'location': 'Gold\'s Gym', 'muscles': arm_muscles[:3], 'make_public': True},
-        {'user': users[0], 'workout_name': 'Barbell Row', 'type': 'barbell', 'location': 'Gold\'s Gym', 'muscles': back_muscles, 'make_public': True},
+        {'user': users[0], 'workout_name': 'Barbell Bench Press', 'type': 'barbell', 'location': 'Gold\'s Gym', 'equipment_brand': 'Rogue', 'notes': 'Primary chest strength lift.', 'muscles': chest_muscles[:3], 'make_public': True},
+        {'user': users[0], 'workout_name': 'Barbell Squat', 'type': 'barbell', 'location': 'Gold\'s Gym', 'equipment_brand': 'Eleiko', 'notes': 'Low-bar squat emphasis.', 'muscles': leg_muscles[:5], 'make_public': True},
+        {'user': users[0], 'workout_name': 'Deadlift', 'type': 'barbell', 'location': 'Gold\'s Gym', 'equipment_brand': 'Texas Power Bar', 'notes': 'Conventional deadlift setup.', 'muscles': back_muscles + leg_muscles[:3], 'make_public': True},
+        {'user': users[0], 'workout_name': 'Pull-ups', 'type': 'bodyweight', 'location': 'Gold\'s Gym', 'equipment_brand': None, 'notes': 'Strict, full range of motion.', 'muscles': back_muscles[:3], 'make_public': True},
+        {'user': users[0], 'workout_name': 'Overhead Press', 'type': 'barbell', 'location': 'Gold\'s Gym', 'equipment_brand': 'Rogue', 'notes': 'Standing strict press.', 'muscles': arm_muscles[:3], 'make_public': True},
+        {'user': users[0], 'workout_name': 'Barbell Row', 'type': 'barbell', 'location': 'Gold\'s Gym', 'equipment_brand': 'Rogue', 'notes': 'Controlled eccentric focus.', 'muscles': back_muscles, 'make_public': True},
         
         # Jane's workouts
-        {'user': users[1], 'workout_name': 'Dumbbell Bench Press', 'type': 'dumbbell', 'location': 'Planet Fitness', 'muscles': chest_muscles[:2], 'make_public': True},
-        {'user': users[1], 'workout_name': 'Leg Press', 'type': 'plate_machine', 'location': 'Planet Fitness', 'muscles': leg_muscles[:4], 'make_public': True},
-        {'user': users[1], 'workout_name': 'Lat Pulldown', 'type': 'cable_machine', 'location': 'Planet Fitness', 'muscles': back_muscles[:2], 'make_public': True},
-        {'user': users[1], 'workout_name': 'Dumbbell Shoulder Press', 'type': 'dumbbell', 'location': 'Planet Fitness', 'muscles': arm_muscles[:2], 'make_public': True},
-        {'user': users[1], 'workout_name': 'Romanian Deadlift', 'type': 'dumbbell', 'location': 'Planet Fitness', 'muscles': leg_muscles[4:7], 'make_public': True},
+        {'user': users[1], 'workout_name': 'Dumbbell Bench Press', 'type': 'dumbbell', 'location': 'Planet Fitness', 'equipment_brand': 'Life Fitness', 'notes': 'Hypertrophy-focused pressing.', 'muscles': chest_muscles[:2], 'make_public': True},
+        {'user': users[1], 'workout_name': 'Leg Press', 'type': 'plate_machine', 'location': 'Planet Fitness', 'equipment_brand': 'Hammer Strength', 'notes': 'Controlled tempo leg press.', 'muscles': leg_muscles[:4], 'make_public': True},
+        {'user': users[1], 'workout_name': 'Lat Pulldown', 'type': 'cable_machine', 'location': 'Planet Fitness', 'equipment_brand': 'Life Fitness', 'notes': 'Wide grip variation.', 'muscles': back_muscles[:2], 'make_public': True},
+        {'user': users[1], 'workout_name': 'Dumbbell Shoulder Press', 'type': 'dumbbell', 'location': 'Planet Fitness', 'equipment_brand': 'Life Fitness', 'notes': 'Seated shoulder press.', 'muscles': arm_muscles[:2], 'make_public': True},
+        {'user': users[1], 'workout_name': 'Romanian Deadlift', 'type': 'dumbbell', 'location': 'Planet Fitness', 'equipment_brand': 'Life Fitness', 'notes': 'Hamstring-focused hinge pattern.', 'muscles': leg_muscles[4:7], 'make_public': True},
     ]
     
     created_workouts = []
@@ -379,6 +404,20 @@ def create_splits(users):
         day_name='Lower Body',
         defaults={'day_order': 2}
     )[0]
+
+    for muscle in list(chest) + list(back):
+        SplitDayTarget.objects.get_or_create(
+            split_day=upper_day,
+            muscle=muscle,
+            defaults={'target_activation': 80}
+        )
+
+    for muscle in legs[:8]:
+        SplitDayTarget.objects.get_or_create(
+            split_day=lower_day,
+            muscle=muscle,
+            defaults={'target_activation': 80}
+        )
     
     print(f"[OK] Created 2 splits with days")
 
@@ -425,7 +464,7 @@ def generate_time_series_data(users, workouts, foods):
                     user=user,
                     created_at=datetime.combine(current_date, time(7, 0)),
                     defaults={
-                        'weight': base_weight + weight_change,
+                        'weight': max(Decimal('45.00'), base_weight + weight_change),
                         'weight_unit': weight_unit,
                     }
                 )
@@ -492,7 +531,13 @@ def generate_time_series_data(users, workouts, foods):
                                 'weight': Decimal(str(random.uniform(50, 200))),
                                 'reps': random.randint(6, 12),
                                 'rir': random.randint(1, 3),
-                                'rest_time': Decimal(str(random.uniform(60, 180))),
+                                'rest_time': random.randint(60, 180),
+                                'attributes': ['tempo', 'intensity', 'focus'],
+                                'attribute_inputs': {
+                                    'tempo': random.choice(['2-0-2', '3-1-1']),
+                                    'intensity': random.choice(['moderate', 'hard']),
+                                    'focus': random.choice(['strength', 'hypertrophy']),
+                                },
                             }
                         )
                 
@@ -575,6 +620,7 @@ def generate_api_usage_logs(users):
     for user in users:
         for _ in range(random.randint(20, 50)):
             days_ago = random.randint(0, 180)
+            is_success = random.random() < 0.9
             ApiUsageLog.objects.create(
                 user=user,
                 request_type='meal_parsing',
@@ -583,12 +629,52 @@ def generate_api_usage_logs(users):
                 cost=Decimal(str(random.uniform(0.01, 0.05))),
                 response_time=Decimal(str(random.uniform(0.5, 3.0))),
                 request='Parse my meal',
-                response='Meal parsed successfully',
-                success=True,
+                response='Meal parsed successfully' if is_success else 'Parsing failed due to malformed input',
+                success=is_success,
+                error_message=None if is_success else 'ValidationError: could not identify required meal fields',
                 created_at=datetime.now() - timedelta(days=days_ago),
             )
     
     print("[OK] Generated API usage logs")
+
+
+def generate_error_logs(users):
+    """Generate lightweight system errors linked to failed API usage."""
+    print("Generating error logs...")
+
+    error_types = ['ValidationError', 'UpstreamAPIError', 'RateLimitError', 'ParseError']
+    for user in users:
+        for _ in range(random.randint(6, 18)):
+            days_ago = random.randint(0, 180)
+            ErrorLog.objects.create(
+                user=user,
+                error_type=random.choice(error_types),
+                error_message='Synthetic development error for monitoring dashboards.',
+                user_input=random.choice([
+                    '2 eggs and toast',
+                    '1 cup rice and chicken',
+                    '45 minute upper body workout',
+                ]),
+                created_at=datetime.now() - timedelta(days=days_ago),
+            )
+
+    print("[OK] Generated error logs")
+
+
+def create_muscle_logs(users):
+    """Create baseline muscle priorities for each user."""
+    print("Creating muscle logs...")
+    all_muscles = list(Muscle.objects.all())
+
+    for user in users:
+        for muscle in all_muscles:
+            base_priority = 85 if muscle.muscle_group in ['legs', 'back', 'chest'] else 75
+            MuscleLog.objects.get_or_create(
+                user=user,
+                muscle_name=muscle,
+                defaults={'priority': base_priority}
+            )
+    print("[OK] Created muscle logs")
 
 
 def populate_dummy_data():
@@ -608,10 +694,12 @@ def populate_dummy_data():
         workouts = create_workouts(users)
         meals = create_meals(users, foods)
         create_splits(users)
+        create_muscle_logs(users)
         
         # Generate time-series data
         generate_time_series_data(users, workouts, foods)
         generate_api_usage_logs(users)
+        generate_error_logs(users)
         
         print("\n" + "="*60)
         print("[SUCCESS] ALL DUMMY DATA POPULATED SUCCESSFULLY")

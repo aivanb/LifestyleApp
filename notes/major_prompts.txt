@@ -469,10 +469,4 @@ add 0-2 rows per day
 7/26/2025 should have a value of 162 and slowly trend to 193 till 10/31/2025.
 Values can go up or down each day
 workouts, workout_muscle:
-workout_muscle relate muscles to workouts
-create 50 unique workouts
-workout_log:
-log 2-7 unique workouts per day with 1-4 sets
-rows should only include workouts with a majority of muscles that are related to the active split.
-workouts with muscles not related to the split day are allowed but should be minimized
-rest days should not include any workouts
+workout_muscle relate muscles

@@ -20,8 +20,10 @@
   --text-secondary: #C8CBD6;
   --text-tertiary: #949AAE;
 
-  --border-primary: rgba(255, 255, 255, 0.08);
-  --border-secondary: rgba(255, 255, 255, 0.04);
+  /* Panel/section strokes removed app-wide; use --input-border for fields */
+  --border-primary: transparent;
+  --border-secondary: transparent;
+  --input-border: rgba(255, 255, 255, 0.14);
 
   --accent-primary: #5AA6FF;
   --accent-secondary: #4ADE80;
@@ -113,8 +115,9 @@
   --text-secondary: #3B4259;
   --text-tertiary: #6B7280;
 
-  --border-primary: rgba(15, 23, 42, 0.1);
-  --border-secondary: rgba(15, 23, 42, 0.06);
+  --border-primary: transparent;
+  --border-secondary: transparent;
+  --input-border: rgba(15, 23, 42, 0.14);
 
   --accent-primary: #1D4FFF;
   --accent-secondary: #1ED292;
@@ -354,7 +357,7 @@ main {
 .btn-secondary {
   background: var(--bg-tertiary);
   color: var(--text-primary);
-  border: 1px solid var(--border-primary);
+  border: 1px solid var(--input-border);
   font-weight: var(--font-weight-medium);
 }
 
@@ -435,7 +438,7 @@ main {
   justify-content: space-between;
   gap: var(--space-2);
   padding: var(--space-2) var(--space-3);
-  border-bottom: 1px solid var(--border-primary);
+  border-bottom: none;
   flex-shrink: 0;
   font-family: var(--font-primary), var(--font-fallback);
   box-sizing: border-box;
@@ -1317,7 +1320,7 @@ input[type="number"] {
 .date-input,
 .servings-input {
   background: var(--bg-secondary) !important;
-  border: 1px solid var(--border-primary) !important;
+  border: 1px solid var(--input-border) !important;
   color: var(--text-primary) !important;
 }
 

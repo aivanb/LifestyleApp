@@ -4,7 +4,7 @@ This document provides an overview of the comprehensive dummy data generation sy
 
 ## Overview
 
-The dummy data system generates realistic test data for a single user (username: `dummyUser`, password: `dummypass123`) spanning from **April 15, 2025** to **November 30, 2025**. This ~7.5 months of data is designed to simulate a healthy adult male with realistic fluctuations and patterns across all tracking categories.
+The dummy data system generates realistic test data for a single user (username: `dummyUser`, password: `dummypass123`) spanning from **April 15, 2025** to **March 31, 2026**. This ~11.5 months of data is designed to simulate a healthy adult male with realistic fluctuations and patterns across all tracking categories.
 
 ## User Profile
 
@@ -20,8 +20,8 @@ The dummy data system generates realistic test data for a single user (username:
 ## Date Range
 
 - **Start Date**: April 15, 2025
-- **End Date**: November 30, 2025
-- **Total Days**: 230 days
+- **End Date**: March 31, 2026
+- **Total Days**: 351 days
 
 ## Data Generation Specifications
 
@@ -220,8 +220,11 @@ python database_setup/reset_database.py clear
 # Or use the Django management command
 python manage.py setup_database --clear
 
-# Full reset and populate with comprehensive dummy data
-python manage.py setup_database --full
+# Full reset and repopulate standard dummy data
+python manage.py setup_database --reset-full
+
+# Populate comprehensive dummy data only
+python manage.py setup_database --comprehensive-dummy
 ```
 
 The reset process:

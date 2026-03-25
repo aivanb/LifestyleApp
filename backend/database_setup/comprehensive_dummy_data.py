@@ -2,12 +2,12 @@
 Comprehensive Dummy Data Generation
 
 This module generates realistic test data for one user (dummyUser) spanning
-from 4/15/2025 to 3/8/2026. This data is useful for development, testing,
+from 4/15/2025 to 3/31/2026. This data is useful for development, testing,
 and demonstration purposes.
 
 Generated Data Specifications:
 - 1 user (username: dummyUser, password: dummypass123)
-- Date range: 4/15/2025 - 3/8/2026
+- Date range: 4/15/2025 - 3/31/2026
 - All required tables filled with realistic, believable data for a healthy adult male
 - Data includes realistic fluctuations and patterns
 """
@@ -43,7 +43,7 @@ from apps.analytics.models import ApiUsageLog, ErrorLog
 
 # Date range
 START_DATE = date(2025, 4, 15)
-END_DATE = date(2026, 3, 8)
+END_DATE = date(2026, 3, 31)
 
 # Fixed dates from specifications
 WEIGHT_GOAL_CHANGE_DATE = date(2025, 7, 26)
@@ -223,6 +223,7 @@ def create_foods():
                 'caffeine': Decimal('0'),
                 'food_group': food_data['food_group'],
                 'brand': food_data['brand'],
+                'cost': Decimal(str(round(random.uniform(0.75, 14.50), 2))),
                 'make_public': True
             }
         )
@@ -301,7 +302,13 @@ def create_workouts(user):
             workout_name=workout_name,
             defaults={
                 'type': random.choice(workout_types),
+                'equipment_brand': random.choice(['Rogue', 'Life Fitness', 'Hammer Strength', 'Eleiko', 'Generic']),
                 'location': random.choice(locations),
+                'notes': random.choice([
+                    'Primary movement in rotation.',
+                    'Focus on controlled eccentric.',
+                    'Progressive overload week.',
+                ]),
                 'make_public': True
             }
         )
@@ -1056,6 +1063,12 @@ def generate_workout_logs(user, workouts, splits):
                     weight=Decimal(str(random.uniform(50, 300))),
                     reps=random.randint(6, 15),
                     rir=random.randint(1, 3),
+                    attributes=['tempo', 'intent', 'intensity'],
+                    attribute_inputs={
+                        'tempo': random.choice(['2-0-2', '3-1-1']),
+                        'intent': random.choice(['strength', 'hypertrophy']),
+                        'intensity': random.choice(['moderate', 'hard']),
+                    },
                     rest_time=random.randint(60, 180),
                     date_time=datetime.combine(
                         current_date,
@@ -1071,7 +1084,7 @@ def generate_workout_logs(user, workouts, splits):
 def populate_comprehensive_dummy_data():
     """
     Master function to populate all comprehensive dummy data.
-    Creates 1 user with data from 4/15/2025 to 3/8/2026.
+    Creates 1 user with data from 4/15/2025 to 3/31/2026.
     """
     print("\n" + "="*60)
     print("POPULATING COMPREHENSIVE DUMMY DATA")

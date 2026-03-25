@@ -6,11 +6,12 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
-from django.db.models import Q, Count, Sum, Avg, Max, Min, F, DecimalField
-from django.db.models.functions import TruncDate, ExtractHour, Extract
+from django.db.models import Q, Count, Sum, Avg, Max, Min, F, DecimalField, Value
+from django.db.models.functions import TruncDate, ExtractHour, Extract, Coalesce
 from django.utils import timezone
-from datetime import datetime, timedelta, date
+from datetime import datetime, timedelta, date, time
 from decimal import Decimal
+from zoneinfo import ZoneInfo
 import json
 
 from apps.logging.models import (
@@ -1469,10 +1470,43 @@ def _steps_to_walking_kcal(steps, height_cm, weight_kg):
     return round(distance_km * float(weight_kg) * 0.7, 1)
 
 
-def _activation_actual_by_muscle(user, target_date):
-    """Sum WorkoutMuscle activation_rating for all sets logged on target_date."""
+# Food-log field → UserGoal attribute → display label, unit (home extended nutrients).
+_HOME_EXTENDED_NUTRIENT_SPECS = (
+    ('fiber', 'fiber_goal', 'Fiber', 'g'),
+    ('sodium', 'sodium_goal', 'Sodium', 'mg'),
+    ('sugar', 'sugar_goal', 'Sugar', 'g'),
+    ('saturated_fat', 'saturated_fat_goal', 'Sat. fat', 'g'),
+    ('trans_fat', 'trans_fat_goal', 'Trans fat', 'g'),
+    ('calcium', 'calcium_goal', 'Calcium', 'mg'),
+    ('iron', 'iron_goal', 'Iron', 'mg'),
+    ('magnesium', 'magnesium_goal', 'Magnesium', 'mg'),
+    ('cholesterol', 'cholesterol_goal', 'Cholesterol', 'mg'),
+    ('vitamin_a', 'vitamin_a_goal', 'Vitamin A', 'µg'),
+    ('vitamin_c', 'vitamin_c_goal', 'Vitamin C', 'mg'),
+    ('vitamin_d', 'vitamin_d_goal', 'Vitamin D', 'µg'),
+    ('caffeine', 'caffeine_goal', 'Caffeine', 'mg'),
+)
+
+# Home dashboard "today" and day windows use US Eastern so the calendar matches EST/EDT
+# regardless of Django TIME_ZONE (often UTC on servers).
+HOME_DASHBOARD_TZ = ZoneInfo('America/New_York')
+
+
+def _home_dashboard_today_date():
+    return timezone.now().astimezone(HOME_DASHBOARD_TZ).date()
+
+
+def _eastern_day_datetime_bounds(target_date: date):
+    """Inclusive start and exclusive end (aware) for one calendar day in Eastern time."""
+    start = datetime.combine(target_date, time.min, tzinfo=HOME_DASHBOARD_TZ)
+    end = start + timedelta(days=1)
+    return start, end
+
+
+def _activation_actual_by_muscle(user, window_start, window_end):
+    """Sum WorkoutMuscle activation_rating for workout logs in [window_start, window_end)."""
     logs = WorkoutLog.objects.filter(
-        user=user, date_time__date=target_date
+        user=user, date_time__gte=window_start, date_time__lt=window_end
     ).select_related('workout').prefetch_related('workout__workoutmuscle_set__muscle')
     actual = {}
     for log in logs:
@@ -1489,6 +1523,9 @@ def home_dashboard(request):
     Single-day home summary: split day + activation targets vs done, macro goals vs logged,
     calorie budget including cardio and estimated walking burn from steps (height + latest weight),
     and which additional trackers have no entry today.
+
+    Default calendar day is US Eastern (America/New_York, EST/EDT). Optional ?date=YYYY-MM-DD
+    selects that Eastern calendar day; datetime logs are filtered by the Eastern midnight-to-midnight window.
     """
     date_str = request.GET.get('date')
     if date_str:
@@ -1500,7 +1537,9 @@ def home_dashboard(request):
                 status=status.HTTP_400_BAD_REQUEST,
             )
     else:
-        target_date = timezone.localdate()
+        target_date = _home_dashboard_today_date()
+
+    day_start, day_end = _eastern_day_datetime_bounds(target_date)
 
     user = request.user
     goals = _latest_user_goal(user)
@@ -1512,7 +1551,9 @@ def home_dashboard(request):
         'fat': float(goals.fat_goal) if goals and goals.fat_goal is not None else None,
     }
 
-    food_totals = FoodLog.objects.filter(user=user, date_time__date=target_date).aggregate(
+    food_totals = FoodLog.objects.filter(
+        user=user, date_time__gte=day_start, date_time__lt=day_end
+    ).aggregate(
         calories=Sum(F('food__calories') * F('servings'), output_field=DecimalField(max_digits=14, decimal_places=4)),
         protein=Sum(F('food__protein') * F('servings'), output_field=DecimalField(max_digits=14, decimal_places=4)),
         carbohydrates=Sum(F('food__carbohydrates') * F('servings'), output_field=DecimalField(max_digits=14, decimal_places=4)),
@@ -1525,6 +1566,68 @@ def home_dashboard(request):
         'fat': round(float(food_totals['fat'] or 0), 1),
     }
 
+    ext_totals = FoodLog.objects.filter(
+        user=user, date_time__gte=day_start, date_time__lt=day_end
+    ).aggregate(
+        fiber=Sum(F('food__fiber') * F('servings'), output_field=DecimalField(max_digits=14, decimal_places=4)),
+        sodium=Sum(F('food__sodium') * F('servings'), output_field=DecimalField(max_digits=14, decimal_places=4)),
+        sugar=Sum(F('food__sugar') * F('servings'), output_field=DecimalField(max_digits=14, decimal_places=4)),
+        saturated_fat=Sum(F('food__saturated_fat') * F('servings'), output_field=DecimalField(max_digits=14, decimal_places=4)),
+        trans_fat=Sum(F('food__trans_fat') * F('servings'), output_field=DecimalField(max_digits=14, decimal_places=4)),
+        calcium=Sum(F('food__calcium') * F('servings'), output_field=DecimalField(max_digits=14, decimal_places=4)),
+        iron=Sum(F('food__iron') * F('servings'), output_field=DecimalField(max_digits=14, decimal_places=4)),
+        magnesium=Sum(F('food__magnesium') * F('servings'), output_field=DecimalField(max_digits=14, decimal_places=4)),
+        cholesterol=Sum(F('food__cholesterol') * F('servings'), output_field=DecimalField(max_digits=14, decimal_places=4)),
+        vitamin_a=Sum(F('food__vitamin_a') * F('servings'), output_field=DecimalField(max_digits=14, decimal_places=4)),
+        vitamin_c=Sum(F('food__vitamin_c') * F('servings'), output_field=DecimalField(max_digits=14, decimal_places=4)),
+        vitamin_d=Sum(F('food__vitamin_d') * F('servings'), output_field=DecimalField(max_digits=14, decimal_places=4)),
+        caffeine=Sum(F('food__caffeine') * F('servings'), output_field=DecimalField(max_digits=14, decimal_places=4)),
+        tokens_used=Sum('tokens_used'),
+        cost_sum=Sum(
+            F('servings') * Coalesce(F('food__cost'), Value(Decimal('0'))),
+            output_field=DecimalField(max_digits=14, decimal_places=4),
+        ),
+    )
+
+    extended_nutrients = []
+    if goals:
+        for field_key, attr_goal, label, unit in _HOME_EXTENDED_NUTRIENT_SPECS:
+            gv = getattr(goals, attr_goal, None)
+            if gv is None:
+                continue
+            goal_f = float(gv)
+            consumed_f = round(float(ext_totals.get(field_key) or 0), 1)
+            extended_nutrients.append({
+                'key': field_key,
+                'label': label,
+                'goal': round(goal_f, 1),
+                'consumed': consumed_f,
+                'remaining': round(goal_f - consumed_f, 1),
+                'unit': unit,
+            })
+        if goals.cost_goal is not None:
+            cg = float(goals.cost_goal)
+            cc = round(float(ext_totals.get('cost_sum') or 0), 1)
+            extended_nutrients.append({
+                'key': 'cost',
+                'label': 'Cost',
+                'goal': round(cg, 1),
+                'consumed': cc,
+                'remaining': round(cg - cc, 1),
+                'unit': '$',
+            })
+        if goals.tokens_goal is not None:
+            tg = int(goals.tokens_goal)
+            tu = int(ext_totals.get('tokens_used') or 0)
+            extended_nutrients.append({
+                'key': 'tokens',
+                'label': 'Tokens',
+                'goal': float(tg),
+                'consumed': float(tu),
+                'remaining': float(tg - tu),
+                'unit': '',
+            })
+
     macro_remaining = {}
     for key in ('protein', 'carbohydrates', 'fat'):
         g = goal_macros.get(key)
@@ -1533,12 +1636,16 @@ def home_dashboard(request):
         else:
             macro_remaining[key] = None
 
-    cardio_sum = CardioLog.objects.filter(user=user, date_time__date=target_date).aggregate(
+    cardio_sum = CardioLog.objects.filter(
+        user=user, date_time__gte=day_start, date_time__lt=day_end
+    ).aggregate(
         total=Sum('calories_burned')
     )
     cardio_calories = int(cardio_sum['total'] or 0)
 
-    steps_sum = StepsLog.objects.filter(user=user, date_time__date=target_date).aggregate(
+    steps_sum = StepsLog.objects.filter(
+        user=user, date_time__gte=day_start, date_time__lt=day_end
+    ).aggregate(
         total=Sum('steps')
     )
     steps_today = int(steps_sum['total'] or 0)
@@ -1570,7 +1677,7 @@ def home_dashboard(request):
             idx = days_since % split_days.count()
             current_day = split_days[idx]
             targets = SplitDayTarget.objects.filter(split_day=current_day).select_related('muscle')
-            actual_map = _activation_actual_by_muscle(user, target_date)
+            actual_map = _activation_actual_by_muscle(user, day_start, day_end)
             rows = []
             for t in targets:
                 mid = t.muscle.muscles_id
@@ -1598,11 +1705,21 @@ def home_dashboard(request):
             }
 
     tracker_logged = {
-        'weight': WeightLog.objects.filter(user=user, date_time__date=target_date).exists(),
-        'water': WaterLog.objects.filter(user=user, date_time__date=target_date).exists(),
-        'body_measurement': BodyMeasurementLog.objects.filter(user=user, date_time__date=target_date).exists(),
-        'steps': StepsLog.objects.filter(user=user, date_time__date=target_date).exists(),
-        'cardio': CardioLog.objects.filter(user=user, date_time__date=target_date).exists(),
+        'weight': WeightLog.objects.filter(
+            user=user, date_time__gte=day_start, date_time__lt=day_end
+        ).exists(),
+        'water': WaterLog.objects.filter(
+            user=user, date_time__gte=day_start, date_time__lt=day_end
+        ).exists(),
+        'body_measurement': BodyMeasurementLog.objects.filter(
+            user=user, date_time__gte=day_start, date_time__lt=day_end
+        ).exists(),
+        'steps': StepsLog.objects.filter(
+            user=user, date_time__gte=day_start, date_time__lt=day_end
+        ).exists(),
+        'cardio': CardioLog.objects.filter(
+            user=user, date_time__gte=day_start, date_time__lt=day_end
+        ).exists(),
         'sleep': SleepLog.objects.filter(user=user, date_time=target_date).exists(),
         'health_metrics': HealthMetricsLog.objects.filter(user=user, date_time=target_date).exists(),
     }
@@ -1635,5 +1752,6 @@ def home_dashboard(request):
             'trackers_not_logged': trackers_not_logged,
             'weight_kg_used_for_steps': weight_kg,
             'height_cm': height_cm,
+            'extended_nutrients': extended_nutrients,
         },
     })

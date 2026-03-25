@@ -1,8 +1,7 @@
 const { test, expect } = require('@playwright/test');
 
-test.describe('Food log header actions fade', () => {
-  test('header actions fade after inactivity and restore on hover', async ({ page }) => {
-    // Login
+test.describe('Food log PC header actions', () => {
+  test('header actions hide after inactivity; double-arrow reveals them again', async ({ page }) => {
     await page.goto('http://localhost:3000/login');
     await page.waitForSelector('form', { timeout: 10000 });
     await page.fill('input[name="username"]', 'testuser');
@@ -10,18 +9,18 @@ test.describe('Food log header actions fade', () => {
     await page.click('button[type="submit"]');
     await page.waitForURL('**/profile', { timeout: 10000 });
 
-    // Navigate to food log
     await page.goto('http://localhost:3000/food-log');
     const headerActions = page.locator('.food-logging-dashboard .header-actions');
+    const reveal = page.locator('.food-logging-dashboard .header-actions-reveal');
+
     await expect(headerActions).toBeVisible();
 
-    // Allow initial fade timer to run
     await page.waitForTimeout(3200);
-    await expect(headerActions).toHaveCSS('opacity', '0.1');
+    await expect(headerActions).toHaveCount(0);
+    await expect(reveal).toBeVisible();
 
-    // Hover should restore opacity
-    await headerActions.hover();
-    await expect(headerActions).toHaveCSS('opacity', '1');
+    await reveal.click();
+    await expect(headerActions).toBeVisible();
+    await expect(reveal).toHaveCount(0);
   });
 });
-
