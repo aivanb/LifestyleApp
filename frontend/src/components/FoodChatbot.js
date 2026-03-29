@@ -835,6 +835,11 @@ const FoodChatbot = ({ onFoodsLogged, onClose }) => {
           margin-top: var(--space-2);
           padding-top: var(--space-2);
           border-top: 1px solid var(--border-primary);
+          min-width: 0;
+          max-width: 100%;
+          width: 100%;
+          box-sizing: border-box;
+          overflow-x: hidden;
         }
 
         .preview-header {
@@ -966,13 +971,15 @@ const FoodChatbot = ({ onFoodsLogged, onClose }) => {
           color: var(--accent-danger);
         }
 
-        .modal--food-chatbot .food-chatbot {
+        .modal--food-chatbot .food-chatbot,
+        .food-log-feature-dialog--chatbot .food-chatbot {
           margin: 0 !important;
           max-width: 100% !important;
           padding: 0 !important;
         }
 
-        .modal--food-chatbot .chatbot-layout {
+        .modal--food-chatbot .chatbot-layout,
+        .food-log-feature-dialog--chatbot .chatbot-layout {
           padding: var(--space-2) !important;
         }
 

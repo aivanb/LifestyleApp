@@ -123,6 +123,47 @@ class FoodLogSerializerTest(TestCase):
         # But should have date_time
         self.assertIn('date_time', first_log)
     
+    def test_food_list_search_matches_brand(self):
+        """GET /api/foods/?search= finds foods by brand as well as name."""
+        brand_food = Food.objects.create(
+            food_name='BrandSearchUniqueFoodName',
+            brand='AcmeTestBrand',
+            serving_size=100,
+            unit='g',
+            calories=100,
+            protein=10,
+            fat=5,
+            carbohydrates=10,
+            fiber=2,
+            sodium=50,
+            sugar=1,
+            saturated_fat=1,
+            trans_fat=0,
+            calcium=20,
+            iron=1,
+            magnesium=10,
+            cholesterol=0,
+            vitamin_a=50,
+            vitamin_c=5,
+            vitamin_d=2,
+            caffeine=0,
+            food_group='other',
+            make_public=True,
+        )
+        url = '/api/foods/?search=AcmeTestBrand'
+        response = self.client.get(
+            url,
+            HTTP_AUTHORIZATION=f'Bearer {self.access_token}',
+            HTTP_HOST='localhost',
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response_data = response.json()
+        foods = response_data['data']['foods']
+        self.assertTrue(
+            any(f.get('food_id') == brand_food.food_id for f in foods),
+            'Expected search to match brand field',
+        )
+    
     def test_recent_food_logs_query(self):
         """Test querying recent food logs with recent_days parameter"""
         # Create a log entry

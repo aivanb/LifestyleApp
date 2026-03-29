@@ -226,8 +226,9 @@ const Navbar = () => {
 
         /* Semicircles: outer & inner share the same width:height ratio (2:1) and corner radii = half inner width */
         .nav-hub-trigger {
-          --nav-outer: #1a4a7a;
-          --nav-inner: #3d8bc4;
+          /* Solid blue hub trigger (applies to all pages) */
+          --nav-outer: #2563eb;
+          --nav-inner: #2563eb;
           --hub-w: 120px;
           --hub-h: 60px;
           --inner-scale: 0.7;
@@ -237,9 +238,7 @@ const Navbar = () => {
           border: none;
           border-radius: calc(var(--hub-w) / 2) calc(var(--hub-w) / 2) 0 0;
           background: var(--nav-outer);
-          box-shadow:
-            0 0 0 3px #ffffff,
-            0 -10px 32px rgba(0, 0, 0, 0.35);
+          box-shadow: 0 -10px 28px rgba(0, 0, 0, 0.28);
           cursor: pointer;
           position: relative;
           display: flex;
@@ -254,9 +253,7 @@ const Navbar = () => {
         .nav-hub-trigger:focus,
         .nav-hub-trigger:focus-visible {
           outline: none;
-          box-shadow:
-            0 0 0 3px #ffffff,
-            0 -10px 32px rgba(0, 0, 0, 0.35);
+          box-shadow: 0 -10px 28px rgba(0, 0, 0, 0.28);
         }
         .nav-hub-trigger:hover {
           filter: brightness(1.05);
@@ -273,6 +270,27 @@ const Navbar = () => {
           box-shadow: 0 0 0 4px #000000;
           display: block;
           flex-shrink: 0;
+        }
+
+        /* Bottom line icon */
+        .nav-hub-trigger::after {
+          content: '';
+          position: absolute;
+          left: 50%;
+          bottom: 10px;
+          transform: translateX(-50%);
+          width: 40px;
+          height: 4px;
+          border-radius: 999px;
+          background: #ffffff;
+          opacity: 0.95;
+          pointer-events: none;
+        }
+
+        /* No inner circle/glow */
+        .nav-hub-trigger-inner-ring {
+          display: none;
+          box-shadow: none;
         }
 
         .nav-hub-fan {
@@ -447,7 +465,19 @@ const Navbar = () => {
           .nav-hub-fan-mobile {
             display: none !important;
           }
+
+          /* Larger hub trigger on desktop */
+          .nav-hub-trigger {
+            --hub-w: 152px;
+            --hub-h: 76px;
+          }
+          .nav-hub-trigger::after {
+            width: 48px;
+            bottom: 12px;
+            height: 5px;
+          }
         }
+
       `}</style>
     </>
   );

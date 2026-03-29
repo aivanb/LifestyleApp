@@ -230,26 +230,26 @@ const MealCreator = ({ onMealCreated, onClose }) => {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            {/* Sorting Controls */}
-            <div className="form-group sorting-controls-group">
-                  <label className="form-label">Sort by</label>
+
+            <div className="form-group sorting-controls-group meal-creator-sort-rail">
+              <label className="form-label">Sort by</label>
               <div className="sort-by-container">
-                  <select
+                <select
                   className="form-input form-input-dropdown"
-                    value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value)}
-                  >
-                    <option value="frequency">Frequency</option>
-                    <option value="calories">Calories</option>
-                    <option value="protein">Protein</option>
-                    <option value="carbohydrates">Carbs</option>
-                    <option value="fat">Fat</option>
-                  </select>
-                  <div className="sort-order-container">
-                    <button
-                      type="button"
-                      className="sort-order-btn"
-                      onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                >
+                  <option value="frequency">Frequency</option>
+                  <option value="calories">Calories</option>
+                  <option value="protein">Protein</option>
+                  <option value="carbohydrates">Carbs</option>
+                  <option value="fat">Fat</option>
+                </select>
+                <div className="sort-order-container">
+                  <button
+                    type="button"
+                    className="sort-order-btn"
+                    onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
                     title={sortOrder === 'asc' ? 'Switch to Descending' : 'Switch to Ascending'}
                   >
                     <svg className="icon icon-sm" viewBox="0 0 20 20" fill="currentColor">
@@ -259,7 +259,7 @@ const MealCreator = ({ onMealCreated, onClose }) => {
                         <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
                       )}
                     </svg>
-                    </button>
+                  </button>
                 </div>
               </div>
             </div>
@@ -964,6 +964,22 @@ const MealCreator = ({ onMealCreated, onClose }) => {
           max-width: 100%;
           box-sizing: border-box;
           overflow-x: hidden;
+        }
+
+        @media (min-width: 769px) {
+          .meal-creator-layout {
+            grid-template-columns: minmax(260px, 1fr) minmax(320px, 1.15fr);
+            gap: var(--space-6);
+            align-items: start;
+          }
+
+          .meal-creator-left .meal-creator-sort-rail {
+            margin-bottom: 0;
+          }
+
+          .meal-creator-right .food-list.card {
+            max-height: min(480px, 52vh);
+          }
         }
 
         @media (max-width: 768px) {

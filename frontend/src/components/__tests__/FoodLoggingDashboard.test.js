@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import FoodLoggingDashboard from '../FoodLoggingDashboard';
 import api from '../../services/api';
 
@@ -8,7 +8,9 @@ jest.mock('../../services/api', () => ({
   getUserGoals: jest.fn(),
   getFoodLogs: jest.fn(),
   getRecentlyLoggedFoods: jest.fn(),
-  createFoodLog: jest.fn()
+  createFoodLog: jest.fn(),
+  deleteFoodLog: jest.fn(),
+  updateFoodLog: jest.fn()
 }));
 
 // Mock the other components
@@ -83,6 +85,8 @@ describe('FoodLoggingDashboard', () => {
         }
       }
     });
+    api.deleteFoodLog.mockResolvedValue({ data: { success: true } });
+    api.updateFoodLog.mockResolvedValue({ data: { success: true } });
 
     // Mock window.innerWidth for responsive testing
     Object.defineProperty(window, 'innerWidth', {
@@ -94,6 +98,14 @@ describe('FoodLoggingDashboard', () => {
 
   test('renders dashboard with goal progress', async () => {
     render(<FoodLoggingDashboard />);
+
+    // Wait for loading to finish before interacting.
+    await waitFor(() => {
+      expect(screen.queryByText('Loading food logging dashboard...')).not.toBeInTheDocument();
+    });
+
+    // PC header actions are hidden by default; reveal them.
+    fireEvent.click(screen.getByLabelText('Show header actions'));
     
     await waitFor(() => {
       expect(screen.getByText('Create Food')).toBeInTheDocument();
@@ -118,6 +130,12 @@ describe('FoodLoggingDashboard', () => {
 
   test('renders action buttons for PC layout', async () => {
     render(<FoodLoggingDashboard />);
+
+    await waitFor(() => {
+      expect(screen.queryByText('Loading food logging dashboard...')).not.toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByLabelText('Show header actions'));
     
     await waitFor(() => {
       expect(screen.getByText('Create Food')).toBeInTheDocument();
@@ -142,7 +160,44 @@ describe('FoodLoggingDashboard', () => {
       expect(screen.getAllByTestId('progress-grid').length).toBeGreaterThanOrEqual(1);
     });
 
-    // PC header actions are not mounted on mobile; icon row uses title attributes
+    // Quick actions live in a flyout opened from the header chevron
+    fireEvent.click(screen.getByTitle('Show quick actions'));
     expect(screen.getByTitle('Create Food')).toBeInTheDocument();
+  });
+
+  test('deletes a mobile food log item when swiped left', async () => {
+    Object.defineProperty(window, 'innerWidth', {
+      writable: true,
+      configurable: true,
+      value: 600,
+    });
+
+    api.getFoodLogs.mockResolvedValue({
+      data: {
+        data: {
+          logs: [
+            {
+              macro_log_id: 101,
+              food_name: 'Greek Yogurt',
+              servings: 2,
+              date_time: '2026-03-26T08:00:00Z',
+              consumed_macros: { calories: 180, protein: 20, carbohydrates: 8, fat: 4 },
+              food_details: { food_group: 'dairy' }
+            }
+          ]
+        }
+      }
+    });
+
+    render(<FoodLoggingDashboard />);
+
+    const mobileLogItem = await screen.findByTestId('mobile-food-log-item-101');
+    fireEvent.touchStart(mobileLogItem, { touches: [{ clientX: 260 }] });
+    fireEvent.touchMove(mobileLogItem, { touches: [{ clientX: 120 }] });
+    fireEvent.touchEnd(mobileLogItem, { changedTouches: [{ clientX: 120 }] });
+
+    await waitFor(() => {
+      expect(api.deleteFoodLog).toHaveBeenCalledWith(101);
+    });
   });
 });

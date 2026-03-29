@@ -1,7 +1,7 @@
 const { test, expect } = require('@playwright/test');
 
 test.describe('Food log PC header actions', () => {
-  test('header actions hide after inactivity; double-arrow reveals them again', async ({ page }) => {
+  test('header actions hide when mouse leaves header; reveal shows them again', async ({ page }) => {
     await page.goto('http://localhost:3000/login');
     await page.waitForSelector('form', { timeout: 10000 });
     await page.fill('input[name="username"]', 'testuser');
@@ -10,12 +10,18 @@ test.describe('Food log PC header actions', () => {
     await page.waitForURL('**/profile', { timeout: 10000 });
 
     await page.goto('http://localhost:3000/food-log');
+    const header = page.locator('.food-logging-dashboard .dashboard-header');
     const headerActions = page.locator('.food-logging-dashboard .header-actions');
     const reveal = page.locator('.food-logging-dashboard .header-actions-reveal');
 
+    // Header actions are hidden by default; reveal them first.
+    await expect(headerActions).toHaveCount(0);
+    await expect(reveal).toBeVisible();
+    await reveal.click();
     await expect(headerActions).toBeVisible();
 
-    await page.waitForTimeout(3200);
+    await header.hover();
+    await page.mouse.move(0, 0);
     await expect(headerActions).toHaveCount(0);
     await expect(reveal).toBeVisible();
 

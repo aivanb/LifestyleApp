@@ -107,7 +107,9 @@ const FoodMetadataModal = ({ food, onClose, embedded = false, hideHeader = false
 
   if (embedded) {
     return (
-      <div className={`food-metadata-modal food-metadata-modal--embedded${hideHeader ? ' food-metadata-modal--embedded-nohead' : ''}`}>
+      <div
+        className={`food-metadata-modal food-metadata-modal--embedded${hideHeader ? ' food-metadata-modal--embedded-nohead' : ''}${hideHeader ? ' food-logger-overlay-pane' : ''}`}
+      >
         {headerRow}
         {tableBlock}
         <style>{embeddedStyles}</style>
@@ -130,17 +132,16 @@ const FoodMetadataModal = ({ food, onClose, embedded = false, hideHeader = false
         backdropFilter: 'blur(4px)',
         display: 'flex',
         alignItems: 'center',
-        justifyContent: 'center',
-        padding: 'max(var(--space-4), env(safe-area-inset-top, 0px)) var(--space-4) var(--space-4)'
+        justifyContent: 'center'
       }}
     >
       <div
         className="modal food-metadata-modal"
         onClick={(e) => e.stopPropagation()}
         style={{
-          maxWidth: '800px',
+          maxWidth: '860px',
           width: '100%',
-          maxHeight: 'min(90vh, 100dvh)',
+          maxHeight: 'min(94vh, 100dvh)',
           overflow: 'auto',
           zIndex: 10001,
           position: 'relative',
@@ -177,56 +178,83 @@ const embeddedStyles = `
         }
         .food-metadata-modal--embedded .food-metadata-modal-header.modal-app-header {
           margin: 0 0 var(--space-2) 0;
+          padding: var(--space-3) var(--space-4);
+          position: relative;
+          justify-content: center;
+          align-items: center;
         }
-        .metadata-table {
+        .food-metadata-modal--embedded .food-metadata-modal-header .modal-app-header__title {
+          flex: 1;
+          margin: 0;
+          text-align: center;
+          font-weight: var(--font-weight-bold);
+        }
+        .food-metadata-modal--embedded .food-metadata-modal-header .modal-app-header__close {
+          position: absolute;
+          right: var(--space-2);
+          top: 50%;
+          transform: translateY(-50%);
+          margin-left: 0;
+        }
+        .food-metadata-modal--embedded .metadata-table {
           width: 100%;
           border-collapse: collapse;
+          border-spacing: 0;
           margin-top: 0;
         }
-        .metadata-table thead {
+        .food-metadata-modal--embedded .metadata-table thead {
           background: var(--bg-tertiary);
         }
-        .metadata-table th {
-          padding: var(--space-2) var(--space-3);
-          text-align: left;
-          font-size: var(--text-xs);
+        .food-metadata-modal--embedded .metadata-table th {
+          padding: 0.5rem var(--space-3);
+          text-align: center;
+          font-size: var(--text-sm);
           font-weight: var(--font-weight-bold);
           color: var(--text-primary);
           border-bottom: 2px solid var(--border-primary);
           text-transform: uppercase;
           letter-spacing: 0.05em;
         }
-        .metadata-table tbody tr.even-row {
+        .food-metadata-modal--embedded .metadata-table tbody tr.even-row {
           background: var(--bg-secondary);
         }
-        .metadata-table tbody tr.odd-row {
+        .food-metadata-modal--embedded .metadata-table tbody tr.odd-row {
           background: var(--bg-tertiary);
         }
-        .metadata-table td {
-          padding: var(--space-2) var(--space-3);
-          font-size: var(--text-xs);
+        .food-metadata-modal--embedded .metadata-table td {
+          padding: 0.55rem var(--space-3);
+          text-align: center;
+          font-size: var(--text-sm);
+          line-height: 1.35;
           color: var(--text-primary);
-          border-bottom: 1px solid var(--border-primary);
+          border-bottom: 1px solid var(--input-border);
         }
-        .metadata-label-cell {
+        .food-metadata-modal--embedded .metadata-label-cell {
           font-weight: var(--font-weight-medium);
           color: var(--text-secondary);
           width: 28%;
+          text-align: center;
         }
-        .metadata-value-cell {
+        .food-metadata-modal--embedded .metadata-value-cell {
           font-weight: var(--font-weight-medium);
           color: var(--text-primary);
           width: 45%;
+          text-align: center;
         }
-        .metadata-unit-cell {
+        .food-metadata-modal--embedded .metadata-unit-cell {
           font-weight: var(--font-weight-regular);
           color: var(--text-tertiary);
-          font-size: 10px;
+          font-size: var(--text-xs);
           width: 27%;
+          text-align: center;
         }
 `;
 
 const standaloneStyles = `
+        .food-metadata-modal-wrapper {
+          padding: max(var(--space-4), env(safe-area-inset-top, 0px)) var(--space-4) var(--space-4);
+          box-sizing: border-box;
+        }
         .food-metadata-modal-wrapper .modal.food-metadata-modal {
           position: relative !important;
           transform: none !important;
@@ -235,68 +263,182 @@ const standaloneStyles = `
           right: auto !important;
           bottom: auto !important;
         }
-        .food-metadata-modal {
-          padding: var(--space-4) 0;
+        .food-metadata-modal.modal {
+          padding: 0;
         }
         .food-metadata-modal .food-metadata-modal-header.modal-app-header {
-          margin: 0 0 var(--space-3) 0;
+          margin: 0;
+          padding: var(--space-3) var(--space-4);
+          position: relative;
+          justify-content: center;
+          align-items: center;
+        }
+        .food-metadata-modal .food-metadata-modal-header .modal-app-header__title {
+          flex: 1;
+          margin: 0;
+          text-align: center;
+          font-size: var(--text-base);
+          line-height: 1.25;
+          font-weight: var(--font-weight-bold);
+        }
+        .food-metadata-modal .food-metadata-modal-header .modal-app-header__close {
+          position: absolute;
+          right: var(--space-2);
+          top: 50%;
+          transform: translateY(-50%);
+          margin-left: 0;
         }
         .food-metadata-modal .metadata-table-wrap {
           overflow-x: auto;
           margin: 0;
           padding: 0;
         }
-        .metadata-table {
+        .food-metadata-modal .metadata-table {
           width: 100%;
           border-collapse: collapse;
+          border-spacing: 0;
           margin-top: 0;
         }
-        .metadata-table thead {
+        .food-metadata-modal .metadata-table thead {
           background: var(--bg-tertiary);
         }
-        .metadata-table th {
-          padding: var(--space-2) var(--space-3);
-          text-align: left;
-          font-size: var(--text-xs);
+        .food-metadata-modal .metadata-table th {
+          padding: 0.5rem var(--space-3);
+          text-align: center;
+          font-size: var(--text-sm);
           font-weight: var(--font-weight-bold);
           color: var(--text-primary);
-          border-bottom: 2px solid var(--border-primary);
+          border-bottom: 2px solid var(--input-border);
           text-transform: uppercase;
           letter-spacing: 0.05em;
         }
-        .metadata-table tbody tr {
+        .food-metadata-modal .metadata-table tbody tr {
           transition: background 0.2s var(--ease-out-cubic);
         }
-        .metadata-table tbody tr.even-row {
+        .food-metadata-modal .metadata-table tbody tr.even-row {
           background: var(--bg-secondary);
         }
-        .metadata-table tbody tr.odd-row {
+        .food-metadata-modal .metadata-table tbody tr.odd-row {
           background: var(--bg-tertiary);
         }
-        .metadata-table tbody tr:hover {
+        .food-metadata-modal .metadata-table tbody tr:hover {
           background: var(--bg-hover);
         }
-        .metadata-table td {
-          padding: var(--space-2) var(--space-3);
-          font-size: var(--text-xs);
+        .food-metadata-modal .metadata-table td {
+          padding: 0.55rem var(--space-3);
+          text-align: center;
+          font-size: var(--text-sm);
+          line-height: 1.35;
           color: var(--text-primary);
-          border-bottom: 1px solid var(--border-primary);
+          border-bottom: 1px solid var(--input-border);
         }
-        .metadata-label-cell {
+        .food-metadata-modal .metadata-label-cell {
           font-weight: var(--font-weight-medium);
           color: var(--text-secondary);
           width: 28%;
+          text-align: center;
         }
-        .metadata-value-cell {
+        .food-metadata-modal .metadata-value-cell {
           font-weight: var(--font-weight-medium);
           color: var(--text-primary);
           width: 45%;
+          text-align: center;
         }
-        .metadata-unit-cell {
+        .food-metadata-modal .metadata-unit-cell {
           font-weight: var(--font-weight-regular);
           color: var(--text-tertiary);
-          font-size: 10px;
+          font-size: var(--text-xs);
           width: 27%;
+          text-align: center;
+        }
+
+        /* Mobile: more gutter on backdrop; table stays flush inside card */
+        @media (max-width: 768px) {
+          .food-metadata-modal-wrapper {
+            padding: max(var(--space-5), env(safe-area-inset-top, 0px)) var(--space-5) var(--space-5) !important;
+            align-items: center;
+            box-sizing: border-box;
+          }
+
+          .food-metadata-modal-wrapper .modal.food-metadata-modal {
+            max-height: min(94vh, 100dvh) !important;
+            min-height: 0;
+            border-radius: var(--radius-lg);
+            padding: 0 !important;
+          }
+
+          .food-metadata-modal .food-metadata-modal-header.modal-app-header {
+            padding: var(--space-3) var(--space-4);
+          }
+
+          .food-metadata-modal .food-metadata-modal-header .modal-app-header__title {
+            font-size: var(--text-lg);
+          }
+
+          .food-metadata-modal .metadata-table th {
+            font-size: var(--text-base);
+            padding: 0.55rem var(--space-3);
+            text-align: center;
+          }
+
+          .food-metadata-modal .metadata-table td {
+            font-size: var(--text-base);
+            padding: 0.6rem var(--space-3);
+            text-align: center;
+          }
+
+          .food-metadata-modal .metadata-label-cell,
+          .food-metadata-modal .metadata-value-cell,
+          .food-metadata-modal .metadata-unit-cell {
+            text-align: center;
+          }
+
+          .food-metadata-modal .metadata-unit-cell {
+            font-size: var(--text-sm);
+          }
+        }
+
+        /* Desktop: larger info page + larger type */
+        @media (min-width: 769px) {
+          .food-metadata-modal-wrapper .modal.food-metadata-modal {
+            max-width: 1120px !important;
+          }
+
+          .food-metadata-modal .food-metadata-modal-header.modal-app-header {
+            padding: var(--space-4) var(--space-5);
+          }
+
+          .food-metadata-modal .food-metadata-modal-header .modal-app-header__title {
+            font-size: var(--text-2xl);
+          }
+
+          .food-metadata-modal .metadata-table th {
+            font-size: var(--text-xl);
+            padding: 0.65rem var(--space-3);
+            text-align: center;
+          }
+
+          .food-metadata-modal .metadata-table td {
+            font-size: var(--text-xl);
+            padding: 0.7rem var(--space-3);
+            line-height: 1.35;
+            text-align: center;
+          }
+
+          .food-metadata-modal .metadata-label-cell,
+          .food-metadata-modal .metadata-value-cell {
+            font-size: var(--text-xl);
+          }
+
+          .food-metadata-modal .metadata-label-cell,
+          .food-metadata-modal .metadata-value-cell,
+          .food-metadata-modal .metadata-unit-cell {
+            text-align: center;
+          }
+
+          .food-metadata-modal .metadata-unit-cell {
+            font-size: var(--text-lg);
+          }
         }
 `;
 

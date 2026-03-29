@@ -53,7 +53,7 @@ const FoodEditForm = ({ food, onSave, onCancel, showHeader = true }) => {
   };
 
   return (
-    <div className="food-edit-form">
+    <div className={`food-edit-form${showHeader ? '' : ' food-logger-overlay-pane'}`}>
       {showHeader && (
         <div className="modal-header food-edit-modal-header modal-app-header modal-app-header--compact">
           <h2 className="modal-app-header__title">Edit Food: {foodData.food_name}</h2>
@@ -288,9 +288,11 @@ const FoodAnalyticsView = ({ foodId, foodName, analyticsData, loading, onClose, 
     return () => ro.disconnect();
   }, [foodId, loading, analyticsData]);
 
+  const embeddedRootClass = `food-analytics-view food-analytics-view--embedded${hideHeader ? ' food-logger-overlay-pane' : ''}`;
+
   if (loading) {
     return (
-      <div className="food-analytics-view food-analytics-view--embedded">
+      <div className={embeddedRootClass}>
         <div className="loading-small">Loading analytics...</div>
       </div>
     );
@@ -298,7 +300,7 @@ const FoodAnalyticsView = ({ foodId, foodName, analyticsData, loading, onClose, 
 
   if (!analyticsData) {
     return (
-      <div className="food-analytics-view food-analytics-view--embedded">
+      <div className={embeddedRootClass}>
         <div className="loading-small">No analytics data available</div>
       </div>
     );
@@ -341,7 +343,7 @@ const FoodAnalyticsView = ({ foodId, foodName, analyticsData, loading, onClose, 
   }
 
   return (
-    <div className="food-analytics-view food-analytics-view--embedded" style={{ height: '100%', minHeight: 0 }}>
+    <div className={embeddedRootClass} style={{ height: '100%', minHeight: 0 }}>
       {!hideHeader && onClose && (
         <div className="modal-header modal-app-header modal-app-header--compact">
           <h2 className="modal-app-header__title">{foodName} Analytics</h2>
@@ -446,7 +448,7 @@ const FoodAnalyticsView = ({ foodId, foodName, analyticsData, loading, onClose, 
  * 
  * Handles food logging with search and serving selection.
  * Features:
- * - Search for foods and meals
+ * - Search via GET /api/foods/?search= (matches food name and brand)
  * - Toggle public foods visibility
  * - Sort by most frequently logged
  * - Adjustable servings with up/down arrows
@@ -731,7 +733,9 @@ const FoodLogger = ({ onFoodLogged, onClose, showAsPanel = false, selectedDate =
   return (
     <div className={`food-logger ${showAsPanel ? 'panel' : 'modal'}`}>
       {(onClose || loggerOverlay) && (
-        <div className="food-logger-header">
+        <div
+          className={`food-logger-header ${loggerOverlay ? 'food-logger-header--overlay' : 'food-logger-header--main'}`}
+        >
           <div className="header-content modal-app-header modal-app-header--compact">
             {loggerOverlay ? (
               <>
@@ -741,7 +745,7 @@ const FoodLogger = ({ onFoodLogged, onClose, showAsPanel = false, selectedDate =
                   onClick={clearLoggerOverlay}
                   aria-label="Back to food list"
                 >
-                  <svg className="icon icon-sm" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                  <svg className="icon icon-md" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                     <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
                   </svg>
                 </button>
@@ -789,52 +793,63 @@ const FoodLogger = ({ onFoodLogged, onClose, showAsPanel = false, selectedDate =
       {/* Search Section */}
       <div className="search-section food-logger-search-section">
         <div className="search-bar-container">
-          <div className="form-group search-input-group">
-            <label className="form-label">
-              <svg className="icon icon-sm" viewBox="0 0 20 20" fill="currentColor" style={{ display: 'inline', marginRight: '0.5rem' }}>
-                <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
-              </svg>
-              Search Foods
-            </label>
-            <input
-              type="text"
-              className="form-input search-input-wide"
-              placeholder="Search for foods or meals..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-
-          {/* Sorting Controls */}
-          <div className="sorting-controls-inline">
-            <div className="form-group">
-              <select
-                className="form-select"
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-              >
-                <option value="frequency">Frequency</option>
-                <option value="calories">Calories</option>
-                <option value="protein">Protein</option>
-                <option value="carbohydrates">Carbs</option>
-                <option value="fat">Fat</option>
-              </select>
+          <div className="food-logger-search-toolbar">
+            <div className="search-sort-row">
+              <div className="sorting-controls-inline">
+                <div className="form-group">
+                  <label htmlFor="food-logger-sort-by" className="sr-only">
+                    Sort foods by
+                  </label>
+                  <select
+                    id="food-logger-sort-by"
+                    className="form-select"
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value)}
+                  >
+                    <option value="frequency">Frequency</option>
+                    <option value="calories">Calories</option>
+                    <option value="protein">Protein</option>
+                    <option value="carbohydrates">Carbs</option>
+                    <option value="fat">Fat</option>
+                  </select>
+                </div>
+                <button
+                  type="button"
+                  className="sort-order-btn-inline"
+                  onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+                  title={sortOrder === 'asc' ? 'Switch to Descending' : 'Switch to Ascending'}
+                >
+                  <svg className="icon icon-md" viewBox="0 0 20 20" fill="currentColor">
+                    {sortOrder === 'desc' ? (
+                      <path fillRule="evenodd" d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z" clipRule="evenodd" />
+                    ) : (
+                      <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                    )}
+                  </svg>
+                </button>
+              </div>
             </div>
-            
-            <button
-              className="sort-order-btn-inline"
-              onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-              title={sortOrder === 'asc' ? 'Switch to Descending' : 'Switch to Ascending'}
-            >
-              <svg className="icon icon-sm" viewBox="0 0 20 20" fill="currentColor">
-                {sortOrder === 'desc' ? (
-                  <path fillRule="evenodd" d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z" clipRule="evenodd" />
-                ) : (
-                  <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                )}
-              </svg>
-            </button>
+            {onClose && !loggerOverlay && (
+              <button
+                type="button"
+                className="food-logger-close-mobile btn-close modal-app-header__close meal-creator-close"
+                onClick={onClose}
+                aria-label="Close food logger"
+              >
+                <svg className="icon icon-md" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                </svg>
+              </button>
+            )}
           </div>
+          <input
+            type="text"
+            className="form-input search-input-wide"
+            placeholder="Search by food name or brand..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            aria-label="Search foods by name or brand"
+          />
         </div>
       </div>
 
@@ -863,21 +878,14 @@ const FoodLogger = ({ onFoodLogged, onClose, showAsPanel = false, selectedDate =
               
               return (
                 <div key={food.food_id} className="food-card">
-                  <div className="food-header">
+                  <div className="food-card-title-row">
                     <div className="food-icon">
                       {getFoodGroupIcon(food.food_group)}
                     </div>
-                    <div className="food-info">
-                      <div className="food-name">{food.food_name}</div>
-                      <div className="food-details food-details--serving-line">
-                        {food.brand && (
-                          <>
-                            <span className="food-brand">{food.brand}</span>
-                            <span className="food-details-separator">·</span>
-                          </>
-                        )}
-                        <span className="food-serving">{food.serving_size} {food.unit}</span>
-                      </div>
+                    <div className="food-title-line">
+                      <span className="food-name">{food.food_name}</span>
+                      <span className="food-title-sep" aria-hidden="true">·</span>
+                      <span className="food-serving-inline">{food.serving_size} {food.unit}</span>
                     </div>
                   </div>
 
@@ -889,53 +897,41 @@ const FoodLogger = ({ onFoodLogged, onClose, showAsPanel = false, selectedDate =
                   </div>
 
                   <div className="food-card-actions-block">
-                    <div className="food-card-buttons-row">
-                      <div className="food-card-buttons">
-                        <button
-                          type="button"
-                          className="btn-icon-small"
-                          onClick={() => setLoggerOverlay({ type: 'metadata', food })}
-                          title="View metadata"
-                        >
-                          <svg className="icon icon-sm" viewBox="0 0 20 20" fill="currentColor">
-                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                          </svg>
-                        </button>
-                        <button
-                          type="button"
-                          className="btn-icon-small"
-                          onClick={() => setLoggerOverlay({ type: 'edit', food })}
-                          title="Edit food"
-                        >
-                          <svg className="icon icon-sm" viewBox="0 0 20 20" fill="currentColor">
-                            <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-                          </svg>
-                        </button>
-                        <button
-                          type="button"
-                          className="btn-icon-small"
-                          onClick={() => {
-                            setLoggerOverlay({ type: 'analytics', food });
-                            loadFoodAnalytics(food.food_id);
-                          }}
-                          title="View analytics"
-                        >
-                          <svg className="icon icon-sm" viewBox="0 0 20 20" fill="currentColor">
-                            <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" />
-                          </svg>
-                        </button>
-                      </div>
-                      <div className="food-time-section">
-                        <input
-                          type="time"
-                          className="time-input"
-                          value={getDefaultTime(food.food_id)}
-                          onChange={(e) => updateTime(food.food_id, e.target.value)}
-                          aria-label="Time"
-                        />
-                      </div>
+                    <div className="food-card-buttons-rail">
+                      <button
+                        type="button"
+                        className="btn-icon-small"
+                        onClick={() => {
+                          setLoggerOverlay({ type: 'analytics', food });
+                          loadFoodAnalytics(food.food_id);
+                        }}
+                        title="View analytics"
+                      >
+                        <svg className="icon icon-sm" viewBox="0 0 20 20" fill="currentColor">
+                          <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" />
+                        </svg>
+                      </button>
+                      <button
+                        type="button"
+                        className="btn-icon-small"
+                        onClick={() => setLoggerOverlay({ type: 'metadata', food })}
+                        title="View metadata"
+                      >
+                        <svg className="icon icon-sm" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                        </svg>
+                      </button>
+                      <button
+                        type="button"
+                        className="btn-icon-small"
+                        onClick={() => setLoggerOverlay({ type: 'edit', food })}
+                        title="Edit food"
+                      >
+                        <svg className="icon icon-sm" viewBox="0 0 20 20" fill="currentColor">
+                          <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                        </svg>
+                      </button>
                     </div>
-
                     <div className="servings-row">
                       <div className="servings-control servings-control--plain">
                         <button
@@ -944,7 +940,7 @@ const FoodLogger = ({ onFoodLogged, onClose, showAsPanel = false, selectedDate =
                           onClick={() => decrementServings(food.food_id)}
                           disabled={servings <= 0.1}
                         >
-                          <svg className="icon icon-sm" viewBox="0 0 20 20" fill="currentColor">
+                          <svg className="icon icon-lg" viewBox="0 0 20 20" fill="currentColor">
                             <path fillRule="evenodd" d="M3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
                           </svg>
                         </button>
@@ -955,31 +951,43 @@ const FoodLogger = ({ onFoodLogged, onClose, showAsPanel = false, selectedDate =
                           onChange={(e) => updateServings(food.food_id, e.target.value)}
                           step="0.1"
                           min="0.1"
+                          aria-label="Servings"
                         />
                         <button
                           type="button"
                           className="btn-icon btn-servings"
                           onClick={() => incrementServings(food.food_id)}
                         >
-                          <svg className="icon icon-sm" viewBox="0 0 20 20" fill="currentColor">
+                          <svg className="icon icon-lg" viewBox="0 0 20 20" fill="currentColor">
                             <path fillRule="evenodd" d="M10 3a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V4a1 1 0 011-1z" clipRule="evenodd" />
                           </svg>
                         </button>
                       </div>
                     </div>
-
-                    <div className="food-add-row">
-                      <button
-                        type="button"
-                        className="btn btn-primary btn-log"
-                        onClick={() => logFood(food)}
-                        disabled={loading}
-                      >
-                        <svg className="icon icon-sm" viewBox="0 0 20 20" fill="currentColor">
-                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                        </svg>
-                        Add
-                      </button>
+                    <div className="food-card-time-add-group">
+                      <div className="food-card-time-row food-card-time-row--slot">
+                        <input
+                          type="time"
+                          className="time-input"
+                          value={getDefaultTime(food.food_id)}
+                          onChange={(e) => updateTime(food.food_id, e.target.value)}
+                          aria-label="Time"
+                        />
+                      </div>
+                      <div className="food-add-row">
+                        <button
+                          type="button"
+                          className="btn btn-primary btn-log btn-log-food-header"
+                          onClick={() => logFood(food)}
+                          disabled={loading}
+                          aria-label="Add food to log"
+                        >
+                          <svg className="icon icon-sm" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                          <span className="btn-log-label">Add</span>
+                        </button>
+                      </div>
                     </div>
                   </div>
 
@@ -991,7 +999,7 @@ const FoodLogger = ({ onFoodLogged, onClose, showAsPanel = false, selectedDate =
       </div>
         </>
       ) : (
-        <div className="food-logger-overlay-shell">
+        <>
           {loggerOverlay.type === 'metadata' && (
             <FoodMetadataModal
               food={loggerOverlay.food}
@@ -1001,35 +1009,33 @@ const FoodLogger = ({ onFoodLogged, onClose, showAsPanel = false, selectedDate =
             />
           )}
           {loggerOverlay.type === 'edit' && (
-            <div className="food-logger-edit-shell">
-              <FoodEditForm
-                showHeader={false}
-                food={loggerOverlay.food}
-                onSave={(foodId, data) => {
-                  handleFoodUpdate(foodId, data);
-                }}
-                onCancel={clearLoggerOverlay}
-              />
-            </div>
+            <FoodEditForm
+              showHeader={false}
+              food={loggerOverlay.food}
+              onSave={(foodId, data) => {
+                handleFoodUpdate(foodId, data);
+              }}
+              onCancel={clearLoggerOverlay}
+            />
           )}
           {loggerOverlay.type === 'analytics' && (
-            <div className="food-logger-analytics-shell">
-              <FoodAnalyticsView
-                foodId={loggerOverlay.food.food_id}
-                foodName={loggerOverlay.food.food_name}
-                analyticsData={analyticsData[loggerOverlay.food.food_id]}
-                loading={loadingAnalytics[loggerOverlay.food.food_id]}
-                hideHeader
-                onClose={clearLoggerOverlay}
-                onTimeRangeChange={handleTimeRangeChange}
-              />
-            </div>
+            <FoodAnalyticsView
+              foodId={loggerOverlay.food.food_id}
+              foodName={loggerOverlay.food.food_name}
+              analyticsData={analyticsData[loggerOverlay.food.food_id]}
+              loading={loadingAnalytics[loggerOverlay.food.food_id]}
+              hideHeader
+              onClose={clearLoggerOverlay}
+              onTimeRangeChange={handleTimeRangeChange}
+            />
           )}
-        </div>
+        </>
       )}
 
       <style>{`
         .food-logger {
+          --fl-outline: #79b5fb;
+          --fl-border-width: 1px;
           background: var(--bg-secondary);
           border-radius: var(--radius-lg);
           border: none;
@@ -1040,6 +1046,15 @@ const FoodLogger = ({ onFoodLogged, onClose, showAsPanel = false, selectedDate =
 
         .food-logger.panel {
           padding: var(--space-5) var(--space-3);
+          padding-left: var(--space-7);
+          min-height: 0;
+          max-height: calc(
+            100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) -
+              var(--foodlog-panel-pc-top-reserve, 7rem)
+          );
+          display: flex;
+          flex-direction: column;
+          overflow: hidden;
         }
 
         .food-logger.modal {
@@ -1050,35 +1065,31 @@ const FoodLogger = ({ onFoodLogged, onClose, showAsPanel = false, selectedDate =
           flex: 1;
         }
 
-        .food-logger-overlay-shell {
+        .food-logger .food-logger-overlay-pane {
           flex: 1;
           min-height: 0;
-          display: flex;
-          flex-direction: column;
-          overflow: hidden;
-          background: var(--bg-secondary);
-        }
-
-        .food-logger-edit-shell,
-        .food-logger-analytics-shell {
-          flex: 1;
-          min-height: 0;
-          overflow-y: auto;
-          -webkit-overflow-scrolling: touch;
-          padding: var(--space-2) var(--space-3);
           box-sizing: border-box;
         }
 
-        .food-analytics-view--embedded {
+        .food-logger .food-logger-overlay-pane:not(.food-metadata-modal--embedded) {
+          overflow-y: auto;
+          -webkit-overflow-scrolling: touch;
           padding: var(--space-2) var(--space-3);
+        }
+
+        .food-logger .food-metadata-modal--embedded.food-logger-overlay-pane {
+          background: transparent;
+        }
+
+        .food-analytics-view--embedded {
           max-width: 100%;
           box-sizing: border-box;
         }
 
         .food-logger-back-btn {
           flex-shrink: 0;
-          width: 32px;
-          height: 32px;
+          width: 44px;
+          height: 44px;
           padding: 0;
           margin-right: var(--space-1);
           border: none;
@@ -1098,8 +1109,8 @@ const FoodLogger = ({ onFoodLogged, onClose, showAsPanel = false, selectedDate =
 
         .food-logger-header-spacer {
           display: inline-block;
-          width: 32px;
-          height: 32px;
+          width: 44px;
+          height: 44px;
           flex-shrink: 0;
         }
 
@@ -1140,7 +1151,7 @@ const FoodLogger = ({ onFoodLogged, onClose, showAsPanel = false, selectedDate =
         }
 
         .search-section {
-          padding: var(--space-6);
+          padding: var(--space-3);
           border-bottom: 1px solid var(--border-primary);
           width: 100%;
         }
@@ -1148,6 +1159,11 @@ const FoodLogger = ({ onFoodLogged, onClose, showAsPanel = false, selectedDate =
         .food-list-section {
           max-height: 500px;
           overflow-y: auto;
+        }
+        .food-logger.panel .food-list-section {
+          flex: 1;
+          min-height: 0;
+          max-height: none;
         }
 
         .section-title {
@@ -1173,22 +1189,24 @@ const FoodLogger = ({ onFoodLogged, onClose, showAsPanel = false, selectedDate =
         .food-card {
           background: var(--bg-tertiary);
           border-radius: var(--radius-md);
-          padding: var(--space-4);
-          margin-bottom: var(--space-4);
-          border: none;
+          padding: var(--space-3);
+          margin-bottom: var(--space-3);
+          border: 1px solid var(--border-primary);
+          box-sizing: border-box;
         }
 
-        .food-header {
+        .food-card-title-row {
           display: flex;
           align-items: center;
-          gap: var(--space-3);
-          margin-bottom: var(--space-6);
+          gap: var(--space-2);
+          margin-bottom: var(--space-2);
         }
 
         .food-icon {
-          font-size: var(--text-xl);
+          font-size: var(--text-2xl);
           width: 40px;
           height: 40px;
+          flex-shrink: 0;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -1196,55 +1214,81 @@ const FoodLogger = ({ onFoodLogged, onClose, showAsPanel = false, selectedDate =
           border-radius: var(--radius-md);
         }
 
-        .food-info {
+        .food-title-line {
           flex: 1;
+          min-width: 0;
+          min-height: 40px;
+          display: flex;
+          flex-wrap: wrap;
+          align-items: center;
+          gap: var(--space-1);
+          font-size: var(--text-xl);
+          line-height: 1.15;
+        }
+
+        .food-title-line .food-name {
+          margin-right: var(--space-3);
         }
 
         .food-name {
           font-weight: var(--font-weight-medium);
           color: var(--text-primary);
-          margin-bottom: var(--space-1);
         }
 
-        .food-details {
-          display: flex;
-          gap: var(--space-2);
-          font-size: var(--text-sm);
+        .food-title-sep {
           color: var(--text-tertiary);
-          flex-wrap: wrap;
-          min-width: 0;
+          opacity: 0.85;
         }
 
-        .food-brand {
+        .food-serving-inline {
+          color: var(--text-tertiary);
           font-weight: var(--font-weight-medium);
-          max-width: 100%;
           word-break: break-word;
-        }
-
-        .food-serving {
-          max-width: 100%;
-          word-break: break-word;
-        }
-
-        .food-details-separator {
-          opacity: 0.7;
         }
 
         .food-macros--logger {
           display: flex;
           flex-wrap: wrap;
           align-items: center;
-          gap: var(--space-4);
-          margin-bottom: var(--space-5);
+          justify-content: flex-start;
+          gap: var(--space-1);
+          column-gap: var(--space-2);
+          row-gap: 0;
+          width: 100%;
+          margin-bottom: var(--space-4);
+          box-sizing: border-box;
         }
 
         .macro-inline {
-          font-size: var(--text-sm);
+          font-size: var(--text-lg);
           color: var(--text-primary);
-          font-weight: var(--font-weight-medium);
+          font-weight: var(--font-weight-semibold);
           background: none;
           border: none;
           padding: 0;
+        }
+
+        .food-macros--logger .macro-inline:not(:last-child) {
+          border-right: 1px solid rgba(255, 255, 255, 0.5);
+          padding-right: var(--space-2);
+          margin-right: var(--space-2);
+        }
+
+        [data-theme="light"] .food-macros--logger .macro-inline:not(:last-child) {
+          border-right-color: rgba(0, 0, 0, 0.14);
+        }
+
+        .food-card-time-row {
+          width: 100%;
+          display: flex;
+          justify-content: flex-start;
+          margin-top: 0;
+          min-width: 0;
+        }
+
+        .food-card-time-row--slot {
+          flex: 1 1 auto;
+          min-width: 0;
         }
 
         .food-time-section {
@@ -1262,85 +1306,101 @@ const FoodLogger = ({ onFoodLogged, onClose, showAsPanel = false, selectedDate =
           font-weight: var(--font-weight-medium);
         }
 
+        .food-logger .time-input,
+        .food-logger .servings-input {
+          border: var(--fl-border-width) solid var(--fl-outline) !important;
+        }
+
         .time-input {
           padding: var(--space-2) var(--space-3);
-          border: 1px solid var(--border-primary);
+          border: var(--fl-border-width) solid var(--fl-outline);
           border-radius: var(--radius-md);
           background: var(--bg-secondary);
           color: var(--text-primary);
-          font-size: var(--text-lg);
+          font-size: var(--text-xl);
+          font-weight: var(--font-weight-semibold);
+          font-variant-numeric: tabular-nums;
           min-height: 44px;
+          width: 100%;
+          max-width: 11rem;
+          text-align: center;
+          box-sizing: border-box;
           transition: all 0.2s var(--ease-out-cubic);
+          -webkit-appearance: none;
+          appearance: none;
+        }
+
+        .time-input::-webkit-calendar-picker-indicator {
+          display: none;
+          -webkit-appearance: none;
+        }
+
+        .time-input::-moz-calendar-picker-indicator {
+          display: none;
         }
 
         .time-input:focus {
           outline: none;
-          border-color: var(--accent-primary);
-          box-shadow: 0 0 0 3px rgba(var(--accent-primary-rgb), 0.1);
+          border-color: var(--fl-outline);
+          box-shadow: 0 0 0 1px rgba(121, 181, 251, 0.45);
         }
 
         .food-card-actions-block {
           display: grid;
-          grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+          grid-template-columns: minmax(0, 1fr) auto;
           grid-template-rows: auto auto;
-          column-gap: var(--space-4);
-          row-gap: var(--space-4);
+          row-gap: var(--space-2);
+          column-gap: 20px;
           align-items: start;
-          margin-top: var(--space-1);
+          margin-top: 0;
         }
 
-        .food-card-buttons-row {
+        .food-card-buttons-rail {
+          grid-column: 1;
+          grid-row: 1 / 3;
           display: flex;
           flex-direction: column;
-          align-items: center;
-          justify-content: flex-start;
-          gap: var(--space-3);
-          width: 100%;
-          grid-column: 1;
-          grid-row: 1;
-          align-content: flex-start;
           flex-wrap: nowrap;
-        }
-
-        .food-card-buttons {
-          display: flex;
-          gap: var(--space-4);
           align-items: flex-start;
           justify-content: flex-start;
-          flex-wrap: wrap;
+          gap: var(--space-2);
           width: 100%;
+          min-width: 0;
+        }
+
+        .food-card-time-add-group {
+          grid-column: 2;
+          grid-row: 2;
+          display: flex;
+          flex-direction: row;
+          align-items: center;
+          justify-content: flex-start;
+          gap: var(--space-2);
+          width: 100%;
+          min-width: 0;
+          box-sizing: border-box;
         }
 
         .servings-row {
-          display: flex;
-          justify-content: flex-end;
-          width: 100%;
           grid-column: 2;
           grid-row: 1;
+          display: flex;
+          justify-content: flex-start;
+          width: 100%;
+          min-width: 0;
         }
 
         .food-add-row {
           display: flex;
-          justify-content: flex-end;
-          width: 100%;
-          grid-column: 2;
-          grid-row: 2;
-        }
-
-        .food-time-section {
-          width: 100%;
-          display: flex;
           justify-content: flex-start;
-        }
-
-        .food-add-row .btn-log {
-          min-width: 200px;
+          width: auto;
+          min-width: 0;
         }
 
         .servings-control {
           display: flex;
           align-items: center;
-          gap: var(--space-3);
+          gap: 0;
         }
 
         .servings-control--plain {
@@ -1351,11 +1411,14 @@ const FoodLogger = ({ onFoodLogged, onClose, showAsPanel = false, selectedDate =
         }
 
         .btn-servings {
-          width: 40px;
-          height: 40px;
+          width: 48px;
+          height: 48px;
           padding: 0;
           border-radius: var(--radius-md);
           border: none !important;
+          background: transparent;
+          box-sizing: border-box;
+          color: var(--text-primary);
         }
         .btn-servings:focus {
           outline: none;
@@ -1365,29 +1428,57 @@ const FoodLogger = ({ onFoodLogged, onClose, showAsPanel = false, selectedDate =
         .servings-input {
           width: 72px;
           text-align: center;
-          border: none;
-          background: transparent;
+          border: var(--fl-border-width) solid var(--fl-outline);
+          background: var(--bg-secondary);
           color: var(--text-primary);
           font-weight: var(--font-weight-medium);
           font-size: var(--text-base);
           border-radius: var(--radius-md);
           padding: var(--space-2);
+          box-sizing: border-box;
         }
 
         .servings-input:focus {
           outline: none;
+          box-shadow: 0 0 0 1px rgba(121, 181, 251, 0.45);
         }
 
         .btn-log {
-          padding: var(--space-3) var(--space-4);
+          padding: var(--space-2) var(--space-4);
           font-size: var(--text-base);
+        }
+
+        .btn-log-food-header {
+          background: #79b5fb !important;
+          border: var(--fl-border-width) solid var(--fl-outline) !important;
+          color: var(--foodlog-shell-bg, var(--bg-secondary)) !important;
+          min-width: 0;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: var(--space-2);
+          font-weight: var(--font-weight-bold);
+          box-shadow: none;
+        }
+
+        .btn-log-food-header:hover:not(:disabled) {
+          filter: brightness(0.96);
+        }
+
+        .btn-log-food-header svg,
+        .btn-log-food-header .btn-log-label {
+          color: var(--foodlog-shell-bg, var(--bg-secondary)) !important;
+        }
+
+        .btn-log-food-header:disabled {
+          opacity: 0.65;
         }
 
         .btn-icon-small {
           width: 44px;
           height: 44px;
           padding: 0;
-          border: 1px solid var(--border-primary);
+          border: var(--fl-border-width) solid var(--fl-outline);
           border-radius: var(--radius-md);
           background: var(--bg-secondary);
           color: var(--text-primary);
@@ -1395,11 +1486,12 @@ const FoodLogger = ({ onFoodLogged, onClose, showAsPanel = false, selectedDate =
           display: flex;
           align-items: center;
           justify-content: center;
+          box-sizing: border-box;
         }
 
         .btn-icon-small:focus {
           outline: none;
-          box-shadow: none;
+          box-shadow: 0 0 0 1px rgba(121, 181, 251, 0.45);
         }
 
         .food-metadata-expanded {
@@ -1852,14 +1944,59 @@ const FoodLogger = ({ onFoodLogged, onClose, showAsPanel = false, selectedDate =
         .search-bar-container {
           display: flex;
           flex-direction: column;
-          gap: var(--space-3);
-        }
-
-        .search-input-group {
+          gap: var(--space-2);
           width: 100%;
         }
 
+        .food-logger-search-toolbar {
+          display: flex;
+          flex-direction: row;
+          align-items: center;
+          justify-content: space-between;
+          gap: var(--space-2);
+          width: 100%;
+        }
+
+        .food-logger-close-mobile {
+          display: none;
+          flex-shrink: 0;
+          align-items: center;
+          justify-content: center;
+          width: 40px;
+          height: 40px;
+          border: none;
+          border-radius: 0;
+          box-sizing: border-box;
+          background: transparent;
+        }
+
+        .food-logger-close-mobile:focus {
+          outline: none;
+        }
+
+        .food-logger-close-mobile:focus-visible {
+          outline: 2px solid var(--accent-primary);
+          outline-offset: 2px;
+        }
+
+        .food-logger-close-mobile:hover {
+          background: transparent;
+        }
+
         .search-input-wide {
+          width: 100%;
+          height: 50px;
+          font-size: var(--text-xl);
+          padding: var(--space-2) var(--space-3);
+          box-sizing: border-box;
+        }
+
+        .search-sort-row {
+          display: flex;
+          justify-content: flex-start;
+          align-items: center;
+          flex: 1;
+          min-width: 0;
           width: 100%;
         }
 
@@ -1867,18 +2004,20 @@ const FoodLogger = ({ onFoodLogged, onClose, showAsPanel = false, selectedDate =
           display: flex;
           align-items: center;
           gap: var(--space-2);
-          border: 1px solid var(--border-primary);
-          border-radius: var(--radius-md);
-          padding: var(--space-2) var(--space-3);
+          border: none;
+          border-radius: 0;
+          background: transparent;
+          padding: 0;
           box-sizing: border-box;
+          flex-shrink: 0;
         }
 
         .sort-order-btn-inline {
-          width: 40px;
-          height: 40px;
+          width: 42px;
+          height: 42px;
           padding: 0;
           margin: 0;
-          border: 2px solid var(--border-primary);
+          border: 1px solid var(--input-border);
           border-radius: var(--radius-md);
           background: var(--bg-secondary);
           color: var(--text-secondary);
@@ -1891,11 +2030,14 @@ const FoodLogger = ({ onFoodLogged, onClose, showAsPanel = false, selectedDate =
           flex-shrink: 0;
           line-height: 0;
           align-self: center;
+          transition: all 0.2s var(--ease-out-cubic);
         }
 
         .sort-order-btn-inline:focus {
           outline: none;
-          box-shadow: none;
+          border-color: var(--accent-primary);
+          box-shadow: 0 0 0 3px var(--accent-primary-alpha);
+          background: var(--bg-tertiary);
         }
 
         .sorting-controls {
@@ -1904,51 +2046,50 @@ const FoodLogger = ({ onFoodLogged, onClose, showAsPanel = false, selectedDate =
           gap: var(--space-4);
         }
 
-        .form-select {
+        .food-logger .form-select {
           width: 100%;
-          min-width: 200px;
-          height: 40px;
-          padding: var(--space-2) var(--space-3);
+          min-width: 0;
+          height: 42px;
+          padding: var(--space-2) var(--space-4);
           margin: 0;
-          border: 2px solid var(--border-primary);
+          border: 1px solid var(--input-border);
           border-radius: var(--radius-md);
           background: var(--bg-secondary);
           color: var(--text-primary);
-          font-size: var(--text-sm);
+          font-size: var(--text-base);
+          font-weight: var(--font-weight-medium);
           box-sizing: border-box;
           line-height: 1.5;
           display: inline-block;
           vertical-align: middle;
+          appearance: none;
+          -webkit-appearance: none;
+          -moz-appearance: none;
+          background-image: none;
+          transition: all 0.2s var(--ease-out-cubic);
         }
         
         .sorting-controls-inline .form-group {
-          flex: 1;
-          min-width: 200px;
+          flex: 0 1 auto;
+          min-width: 0;
+          max-width: min(280px, 74vw);
           display: flex;
           align-items: center;
-          height: 40px;
+          height: 42px;
           margin: 0;
         }
-        
-        .sorting-controls-inline {
-          display: flex;
-          align-items: center;
-          gap: var(--space-2);
-          align-self: flex-start;
-          border: 1px solid var(--border-primary);
-          border-radius: var(--radius-md);
-          padding: var(--space-2) var(--space-3);
-          box-sizing: border-box;
-        }
-        
+
         .sorting-controls-inline .form-select {
-          height: 40px;
+          height: 42px;
+          min-width: 180px;
+          max-width: 280px;
         }
 
-        .form-select:focus {
+        .food-logger .form-select:focus {
           outline: none;
           border-color: var(--accent-primary);
-          box-shadow: 0 0 0 3px rgba(var(--accent-primary-rgb), 0.1);
+          box-shadow: 0 0 0 3px var(--accent-primary-alpha);
+          background: var(--bg-tertiary);
         }
 
         .sort-order-container {
@@ -1984,7 +2125,164 @@ const FoodLogger = ({ onFoodLogged, onClose, showAsPanel = false, selectedDate =
           padding: var(--space-8);
         }
 
+        /* PC: food card actions — slightly reduced sizing */
+        @media (min-width: 769px) {
+          .food-logger.panel {
+            padding-left: var(--space-8);
+            padding-right: var(--space-8);
+          }
+
+          .food-list {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
+          }
+
+          .food-card {
+            width: 100%;
+            max-width: 100%;
+            margin-left: 0;
+            margin-right: 0;
+            align-self: stretch;
+            box-sizing: border-box;
+          }
+
+          .food-logger.panel .food-macros--logger {
+            margin-left: 10px;
+          }
+
+          .food-logger.panel .search-section {
+            padding-bottom: var(--space-2);
+          }
+
+          .food-logger.panel .food-list {
+            padding-top: var(--space-2);
+          }
+
+          /* Col1: buttons + time (centered under buttons); col2: servings + Add (right edges aligned); col3: absorbs width */
+          .food-logger.panel .food-card-actions-block {
+            margin-top: 20px;
+            margin-left: 5px;
+            transform: none;
+            display: grid;
+            grid-template-columns: max-content max-content minmax(0, 1fr);
+            grid-template-rows: auto auto;
+            column-gap: 10px;
+            row-gap: var(--space-2);
+            align-items: start;
+            justify-items: start;
+            width: 100%;
+          }
+
+          .food-logger.panel .food-card-buttons-rail {
+            grid-column: 1;
+            grid-row: 1;
+            flex-direction: row;
+            flex-wrap: nowrap;
+            align-items: center;
+            justify-content: flex-start;
+            gap: var(--space-1);
+            width: max-content;
+            max-width: 100%;
+            min-width: 0;
+          }
+
+          .food-logger.panel .food-card-buttons-rail .btn-icon-small {
+            width: 46px;
+            height: 46px;
+          }
+
+          .food-logger.panel .food-card-buttons-rail .btn-icon-small svg {
+            width: 1.2rem;
+            height: 1.2rem;
+          }
+
+          .food-logger.panel .servings-row {
+            grid-column: 2;
+            grid-row: 1;
+            justify-self: end;
+            justify-content: flex-end;
+            width: max-content;
+            max-width: 100%;
+          }
+
+          .food-logger.panel .food-card-time-add-group {
+            display: contents;
+          }
+
+          .food-logger.panel .food-card-time-row--slot {
+            grid-column: 1;
+            grid-row: 2;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            min-width: 0;
+            max-width: 100%;
+            margin-top: 0;
+            margin-bottom: 0;
+            box-sizing: border-box;
+          }
+
+          .food-logger.panel .food-card-time-row--slot .time-input {
+            min-height: 44px;
+            font-size: var(--text-base);
+            font-weight: var(--font-weight-semibold);
+            padding: var(--space-2) var(--space-2);
+            max-width: 6.25rem;
+            width: auto;
+            text-align: center;
+          }
+
+          .food-logger.panel .food-add-row {
+            grid-column: 2;
+            grid-row: 2;
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            justify-self: end;
+            width: max-content;
+          }
+
+          .servings-row .btn-servings {
+            width: 46px;
+            height: 46px;
+          }
+
+          .servings-row .btn-servings svg {
+            width: 1.35rem;
+            height: 1.35rem;
+          }
+
+          .servings-row .servings-input {
+            width: 72px;
+            min-height: 44px;
+            font-size: var(--text-base);
+            padding: var(--space-1) var(--space-2);
+          }
+
+          .food-add-row .btn-log-food-header {
+            min-height: 46px;
+            padding: var(--space-2) var(--space-4);
+          }
+
+          .food-add-row .btn-log-food-header .btn-log-label {
+            font-size: var(--text-sm);
+          }
+        }
+
         @media (max-width: 768px) {
+          .food-logger.modal .food-logger-header--main {
+            display: none !important;
+          }
+
+          .food-logger.modal .food-logger-close-mobile {
+            display: inline-flex;
+          }
+
           .food-logger .modal {
             max-width: 100% !important;
             width: 100%;
@@ -2018,25 +2316,12 @@ const FoodLogger = ({ onFoodLogged, onClose, showAsPanel = false, selectedDate =
             -webkit-overflow-scrolling: touch;
           }
 
-          .food-logger-header {
+          .food-logger-header--overlay {
             padding: var(--space-3);
-          }
-
-          /* Mobile modal: hide "Log Food" header title; keep only the X button */
-          .food-logger.modal .header-title {
-            display: none;
-          }
-
-          .food-logger.modal .food-logger-header .header-content {
-            justify-content: flex-end;
-          }
-
-          .header-title h2 {
-            font-size: var(--text-base);
           }
 
           .search-section {
-            padding: var(--space-3);
+            padding: var(--space-2) var(--space-3);
             width: 100%;
             box-sizing: border-box;
           }
@@ -2052,11 +2337,6 @@ const FoodLogger = ({ onFoodLogged, onClose, showAsPanel = false, selectedDate =
             width: 100%;
             max-width: 100%;
             box-sizing: border-box;
-          }
-
-          .sorting-controls-inline {
-            flex-wrap: wrap;
-            width: 100%;
           }
 
           .section-title {
@@ -2092,32 +2372,13 @@ const FoodLogger = ({ onFoodLogged, onClose, showAsPanel = false, selectedDate =
             box-sizing: border-box;
           }
 
-          .food-info {
-            display: flex;
-            flex-direction: column;
-            min-width: 0;
-          }
-
-          .food-header {
+          .food-card-title-row {
             margin-bottom: var(--space-2);
             gap: var(--space-2);
           }
 
-          .food-name {
-            margin-top: var(--space-2);
-            margin-bottom: 2px;
-          }
-
-          .food-details {
-            margin-top: 2px;
-          }
-
           .food-macros--logger {
             gap: var(--space-2);
-          }
-
-          .macro-inline {
-            font-size: var(--text-sm);
           }
 
           .servings-control {
@@ -2167,94 +2428,284 @@ const FoodLogger = ({ onFoodLogged, onClose, showAsPanel = false, selectedDate =
             min-height: 240px !important;
           }
 
+          /* Mobile food logger modal: match PC panel food card (same card shell + actions grid) */
           .modal--food-logger .food-card {
-            padding-left: 0;
-            padding-right: var(--space-2);
+            padding: var(--space-3);
+            margin-bottom: var(--space-3);
+            margin-left: 0;
+            margin-right: 0;
+            width: 100%;
+            max-width: 100%;
+            align-self: stretch;
+            box-sizing: border-box;
           }
 
-          .modal--food-logger .food-header {
-            display: flex;
+          .modal--food-logger .food-card-title-row {
             flex-direction: row;
-            align-items: flex-start;
-            gap: var(--space-2);
+            align-items: center;
+            justify-content: flex-start;
             margin-bottom: var(--space-2);
-          }
-
-          .modal--food-logger .food-info {
-            order: 1;
-            flex: 1;
-            min-width: 0;
-            display: flex;
-            flex-direction: column;
-            gap: 0;
+            gap: var(--space-2);
+            padding-left: 0;
+            margin-left: 0;
           }
 
           .modal--food-logger .food-icon {
-            order: 2;
-            flex-shrink: 0;
-            margin-left: var(--space-1);
-            align-self: flex-start;
+            margin-left: 0;
+            margin-right: 0;
           }
 
-          .modal--food-logger .food-name {
-            margin-bottom: 0;
-            line-height: 1.1;
+          .modal--food-logger .food-title-line {
+            justify-content: flex-start;
+            text-align: left;
           }
 
-          .modal--food-logger .food-details {
+          .modal--food-logger .food-macros--logger {
+            margin-bottom: var(--space-4);
             margin-top: 0;
-            line-height: 1.1;
+            margin-left: 10px;
+            margin-right: 0;
+            padding-left: 0;
+            padding-right: 0;
+            align-self: stretch;
+            justify-content: flex-start;
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
             gap: var(--space-1);
+            column-gap: var(--space-2);
           }
 
           .modal--food-logger .food-card-actions-block {
-            gap: var(--space-3);
-          }
-
-          .modal--food-logger .food-card-buttons-row {
-            flex-direction: row;
-            gap: var(--space-2);
-            align-items: flex-start;
-            flex-wrap: nowrap;
-          }
-
-          .modal--food-logger .food-card-buttons {
-            gap: var(--space-2);
-            flex-wrap: nowrap;
-          }
-
-          .modal--food-logger .food-time-section {
+            margin-top: 20px;
+            margin-left: 5px;
+            transform: none;
+            display: grid;
+            grid-template-columns: max-content max-content minmax(0, 1fr);
+            grid-template-rows: auto auto;
+            column-gap: 10px;
+            row-gap: var(--space-2);
+            align-items: start;
+            justify-items: start;
             width: 100%;
+            padding-top: 0;
+            padding-left: 0;
+            padding-right: 0;
           }
 
-          .modal--food-logger .time-input {
-            height: 40px;
-            min-height: 40px;
-            font-size: var(--text-sm);
-            padding: var(--space-1) var(--space-2);
+          .modal--food-logger .food-card-time-add-group {
+            display: contents;
+          }
+
+          .modal--food-logger .food-card-buttons-rail {
+            grid-column: 1;
+            grid-row: 1;
+            flex-direction: row;
+            flex-wrap: nowrap;
+            align-items: center;
+            justify-content: flex-start;
+            gap: var(--space-1);
+            width: max-content;
             max-width: 100%;
-          }
-
-          .modal--food-logger .btn-log {
-            padding: var(--space-2) var(--space-3);
-            font-size: var(--text-xs);
-            min-height: 40px;
-            width: auto;
-            max-width: 220px;
             min-width: 0;
+            margin-left: 0;
+            margin-top: 0;
+            height: auto;
+            box-sizing: border-box;
           }
 
-          .modal--food-logger .btn-servings,
-          .modal--food-logger .btn-icon-small,
-          .modal--food-logger .servings-input {
-            height: 40px;
-            min-height: 40px;
+          .modal--food-logger .food-card-buttons-rail .btn-icon-small {
+            width: 46px;
+            height: 46px;
           }
 
-          .modal--food-logger .servings-input {
-            width: 56px;
-            padding: var(--space-1);
-            font-size: var(--text-sm);
+          .modal--food-logger .food-card-buttons-rail .btn-icon-small svg {
+            width: 1.2rem;
+            height: 1.2rem;
+          }
+
+          .modal--food-logger .servings-row {
+            grid-column: 2;
+            grid-row: 1;
+            justify-self: end;
+            justify-content: flex-end;
+            width: max-content;
+            max-width: 100%;
+            margin-top: 0;
+            display: flex;
+            align-items: center;
+            min-height: 0;
+            box-sizing: border-box;
+          }
+
+          .modal--food-logger .food-card-time-row--slot {
+            grid-column: 1;
+            grid-row: 2;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            min-width: 0;
+            max-width: 100%;
+            margin-top: 0;
+            margin-bottom: 0;
+            box-sizing: border-box;
+          }
+
+          .modal--food-logger .food-card-time-row--slot .time-input {
+            min-height: 44px;
+            font-size: var(--text-base);
+            font-weight: var(--font-weight-semibold);
+            padding: var(--space-2) var(--space-2);
+            max-width: 6.25rem;
+            width: auto;
+            text-align: center;
+            flex: none;
+            min-width: 0;
+            box-sizing: border-box;
+            border: var(--fl-border-width) solid var(--fl-outline) !important;
+          }
+
+          .modal--food-logger .food-add-row {
+            grid-column: 2;
+            grid-row: 2;
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            justify-self: end;
+            width: max-content;
+            flex-shrink: 0;
+            min-height: 0;
+            box-sizing: border-box;
+          }
+
+          .modal--food-logger .servings-row .btn-servings {
+            width: 46px;
+            height: 46px;
+          }
+
+          .modal--food-logger .servings-row .btn-servings svg {
+            width: 1.35rem;
+            height: 1.35rem;
+          }
+
+          .modal--food-logger .servings-row .servings-input {
+            width: 72px;
+            min-height: 44px;
+            font-size: var(--text-base);
+            padding: var(--space-1) var(--space-2);
+          }
+
+          .modal--food-logger .food-add-row .btn-log-food-header {
+            min-height: 46px;
+            min-width: 0;
+            width: auto;
+            height: auto;
+            padding: var(--space-2) var(--space-4);
+            box-sizing: border-box;
+          }
+
+          .modal--food-logger .food-add-row .btn-log-food-header .btn-log-label {
+            position: static;
+            width: auto;
+            height: auto;
+            padding: 0;
+            margin: 0;
+            overflow: visible;
+            clip: auto;
+            white-space: normal;
+            border: 0;
+          }
+
+          /*
+           * Cascade guard: DOM is .modal.modal--food-logger > .food-logger.modal > …
+           * Dashboard + generic @media (max-width: 768px) rules used to win after FoodLogger’s <style>.
+           * One padding budget on .food-card; layout wrappers get padding 0; controls keep explicit padding below.
+           */
+          .modal.modal--food-logger .food-logger.modal .food-list-section {
+            padding: 0 !important;
+            margin-left: 0 !important;
+            margin-right: 0 !important;
+          }
+
+          .modal.modal--food-logger .food-logger.modal .food-list {
+            padding: 0 !important;
+            margin: 0 !important;
+          }
+
+          .modal.modal--food-logger .food-logger.modal .food-card {
+            padding: var(--space-3) !important;
+            margin-bottom: var(--space-3) !important;
+            margin-left: 0 !important;
+            margin-right: 0 !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            box-sizing: border-box !important;
+          }
+
+          .modal.modal--food-logger .food-logger.modal .food-card .food-card-title-row,
+          .modal.modal--food-logger .food-logger.modal .food-card .food-card-actions-block,
+          .modal.modal--food-logger .food-logger.modal .food-card .food-card-buttons-rail,
+          .modal.modal--food-logger .food-logger.modal .food-card .servings-row,
+          .modal.modal--food-logger .food-logger.modal .food-card .food-card-time-add-group,
+          .modal.modal--food-logger .food-logger.modal .food-card .food-card-time-row--slot,
+          .modal.modal--food-logger .food-logger.modal .food-card .food-add-row,
+          .modal.modal--food-logger .food-logger.modal .food-card .servings-control,
+          .modal.modal--food-logger .food-logger.modal .food-card .food-icon {
+            padding: 0 !important;
+          }
+
+          .modal.modal--food-logger .food-logger.modal .food-card .food-macros--logger {
+            padding: 0 !important;
+          }
+
+          .modal.modal--food-logger .food-logger.modal .food-card .food-card-buttons-rail .btn-icon-small {
+            padding: 0 !important;
+            margin: 0 !important;
+            -webkit-appearance: none !important;
+            appearance: none !important;
+            box-sizing: border-box !important;
+          }
+
+          .modal.modal--food-logger .food-logger.modal .food-card .btn-servings {
+            padding: 0 !important;
+            margin: 0 !important;
+            -webkit-appearance: none !important;
+            appearance: none !important;
+            box-sizing: border-box !important;
+          }
+
+          .modal.modal--food-logger .food-logger.modal .food-card .time-input::-webkit-datetime-edit,
+          .modal.modal--food-logger .food-logger.modal .food-card .time-input::-webkit-datetime-edit-fields-wrapper,
+          .modal.modal--food-logger .food-logger.modal .food-card .time-input::-webkit-datetime-edit-text,
+          .modal.modal--food-logger .food-logger.modal .food-card .time-input::-webkit-datetime-edit-hour-field,
+          .modal.modal--food-logger .food-logger.modal .food-card .time-input::-webkit-datetime-edit-minute-field,
+          .modal.modal--food-logger .food-logger.modal .food-card .time-input::-webkit-datetime-edit-ampm-field {
+            padding: 0 !important;
+            margin: 0 !important;
+          }
+
+          .modal.modal--food-logger .food-logger.modal .food-card .food-add-row .btn-log-food-header {
+            min-height: 46px !important;
+            min-width: 0 !important;
+            width: auto !important;
+            height: auto !important;
+            padding: var(--space-2) var(--space-4) !important;
+            box-sizing: border-box !important;
+            -webkit-appearance: none !important;
+            appearance: none !important;
+          }
+
+          .modal.modal--food-logger .food-logger.modal .food-card .food-add-row .btn-log-food-header .btn-log-label {
+            position: static !important;
+            width: auto !important;
+            height: auto !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            overflow: visible !important;
+            clip: auto !important;
+            white-space: normal !important;
+            border: 0 !important;
           }
         }
 

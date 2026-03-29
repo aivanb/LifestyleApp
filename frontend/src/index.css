@@ -1192,6 +1192,37 @@ textarea.form-textarea {
 
 /* ==================== Accessibility ==================== */
 
+/* Touch / coarse pointer: no grey/blue tap flash; no focus ring on tap (keyboard still gets :focus-visible below) */
+@media (hover: none) and (pointer: coarse) {
+  button,
+  a[href],
+  [type="button"],
+  [type="submit"],
+  [type="reset"],
+  [role="button"],
+  .btn,
+  .btn-close,
+  .btn-icon,
+  .btn-primary,
+  .btn-secondary,
+  label {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  button:focus:not(:focus-visible),
+  a[href]:focus:not(:focus-visible),
+  [role="button"]:focus:not(:focus-visible),
+  [type="button"]:focus:not(:focus-visible),
+  [type="submit"]:focus:not(:focus-visible),
+  [type="reset"]:focus:not(:focus-visible),
+  .btn:focus:not(:focus-visible),
+  .btn-close:focus:not(:focus-visible),
+  .btn-icon:focus:not(:focus-visible) {
+    outline: none;
+    box-shadow: none;
+  }
+}
+
 *:focus-visible {
   outline: 2px solid var(--accent-primary);
   outline-offset: 2px;

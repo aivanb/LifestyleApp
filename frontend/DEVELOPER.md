@@ -63,7 +63,8 @@ App
 - **FoodLoggingDashboard.js** - Main food logging interface
 - **FoodCreator.js** - Create new foods with macro preview
 - **MealCreator.js** - Create meals with multiple foods
-- **FoodLogger.js** - Food logging form
+- **FoodLogger.js** - Food logging form (`/food-log` panel + modal): sort row above search (order button, then select; right edge of select aligns with search); borderless sort controls; servings +/- transparent with bordered servings input only; macro dividers; mobile food logger modal centered via `translate(-50%, -50%)` + keyframes in **FoodLoggingDashboard**. Sub-views (metadata, edit, analytics) mount `FoodMetadataModal` / `FoodEditForm` / `FoodAnalyticsView` directly; layout uses class `food-logger-overlay-pane` on each root (flex + scroll/padding for edit/analytics; metadata keeps internal table scroll).
+- **FoodLoggingDashboard.js** - Mobile food logger modal: `closeFoodLogger()` + `foodLoggerClosing` drive `modal-backdrop--food-logger` / `modal--food-logger-closing` CSS animations (~280ms) before unmount. Food creator, meal creator, and food chatbot use `food-log-feature-backdrop` + `food-log-feature-dialog--*` (card-only surface; no outer `.modal` shell). `localYmdToIsoRange(ymd)` bounds food logs to the picker’s **local** day; cardio/steps use **date-only** `start_date`/`end_date` (`YYYY-MM-DD`) because `/logging/cardio/` and `/logging/steps/` parse with `date.fromisoformat` (datetime strings skip filtering).
 - **FoodChatbot.js** - AI-powered food logging interface
 - **VoiceRecorder.js** - Voice input for food logging
 

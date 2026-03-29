@@ -104,7 +104,7 @@ export const CircularProgressBar = ({
         }
 
         .progress-percentage {
-          font-size: var(--text-lg);
+          font-size: var(--text-xl);
           font-weight: var(--font-weight-bold);
           line-height: 1;
         }
@@ -117,13 +117,13 @@ export const CircularProgressBar = ({
         }
 
         .progress-current {
-          font-size: var(--text-sm);
-          font-weight: var(--font-weight-medium);
+          font-size: var(--text-base);
+          font-weight: var(--font-weight-bold);
           color: var(--text-primary);
         }
 
         .progress-target {
-          font-size: var(--text-xs);
+          font-size: var(--text-sm);
           color: var(--text-tertiary);
         }
 
@@ -187,11 +187,35 @@ export const LinearProgressBar = ({
   return (
     <div className="linear-progress">
       <div className="progress-header">
-        <span className="progress-label">{label}</span>
+        <div className="progress-header-left">
+          <span className="progress-label">{label}</span>
+          {showValues && (
+            <>
+              <span className="progress-separator progress-separator--dot">•</span>
+              <div className="progress-values">
+                <span className="progress-current">
+                  {Math.round(current)}{unit}
+                </span>
+                <span className="progress-separator">/</span>
+                <span className="progress-target">
+                  {Math.round(target)}{unit}
+                </span>
+                {showRemaining && remaining > 0 && (
+                  <>
+                    <span className="progress-separator">•</span>
+                    <span className="progress-remaining">
+                      {Math.round(remaining)}{unit} remaining
+                    </span>
+                  </>
+                )}
+              </div>
+            </>
+          )}
+        </div>
         {showValues && (
-          <span className="progress-percentage" style={{ color: getProgressColor() }}>
-            {Math.round(percentage)}%
-          </span>
+            <span className="progress-percentage" style={{ color: getProgressColor() }}>
+              {Math.round(percentage)}%
+            </span>
         )}
       </div>
       
@@ -208,26 +232,6 @@ export const LinearProgressBar = ({
           }}
         />
       </div>
-      
-      {showValues && (
-        <div className="progress-values">
-          <span className="progress-current">
-            {Math.round(current)}{unit}
-          </span>
-          <span className="progress-separator">/</span>
-          <span className="progress-target">
-            {Math.round(target)}{unit}
-          </span>
-          {showRemaining && remaining > 0 && (
-            <>
-              <span className="progress-separator">•</span>
-              <span className="progress-remaining">
-                {Math.round(remaining)}{unit} remaining
-              </span>
-            </>
-          )}
-        </div>
-      )}
 
       <style>{`
         .linear-progress {
@@ -239,22 +243,36 @@ export const LinearProgressBar = ({
           justify-content: space-between;
           align-items: center;
           margin-bottom: var(--space-2);
+          gap: var(--space-3);
+        }
+
+        .progress-header-left {
+          display: inline-flex;
+          align-items: baseline;
+          gap: var(--space-2);
+          min-width: 0;
+          flex: 1;
+          flex-wrap: wrap;
         }
 
         .linear-progress .progress-label {
-          font-size: var(--text-sm);
+          font-size: var(--text-base);
           font-weight: var(--font-weight-medium);
           color: var(--text-secondary);
           text-transform: uppercase;
           letter-spacing: 0.05em;
+          flex-shrink: 0;
         }
         .expanded-progress-grid .linear-progress .progress-label {
           color: var(--text-secondary);
         }
 
         .progress-percentage {
-          font-size: var(--text-sm);
+          font-size: var(--text-base);
           font-weight: var(--font-weight-bold);
+          margin-left: auto;
+          flex-shrink: 0;
+          text-align: right;
         }
 
         .progress-track {
@@ -275,17 +293,24 @@ export const LinearProgressBar = ({
           display: flex;
           align-items: center;
           gap: var(--space-1);
-          margin-top: var(--space-2);
-          font-size: var(--text-xs);
+          margin-top: 0;
+          font-size: var(--text-sm);
+          white-space: nowrap;
+          min-width: 0;
         }
 
         .progress-current {
           color: var(--text-primary);
-          font-weight: var(--font-weight-medium);
+          font-weight: var(--font-weight-bold);
         }
 
         .progress-separator {
           color: var(--text-tertiary);
+        }
+
+        .progress-separator--dot {
+          font-size: var(--text-sm);
+          line-height: 1;
         }
 
         .progress-target {
@@ -324,8 +349,8 @@ export const ProgressGrid = ({ goals, consumed, className = '' }) => {
           target={goals ? (goals[macro.goalKey] || 0) : 0}
           label={macro.label}
           color={macro.color}
-          size={140}
-          strokeWidth={14}
+          size={160}
+          strokeWidth={16}
         />
       ))}
       
@@ -355,7 +380,7 @@ export const ProgressGrid = ({ goals, consumed, className = '' }) => {
  * Displays all macro goals in linear progress bars.
  * Used when clicking on the main progress section.
  */
-export const ExpandedProgressView = ({ goals, consumed, onClose }) => {
+export const ExpandedProgressView = ({ goals, consumed, isClosing = false }) => {
   const allMacros = [
     { key: 'calories', goalKey: 'calories_goal', label: 'Calories', unit: ' cal', color: '#fb923c' },
     { key: 'protein', goalKey: 'protein_goal', label: 'Protein', unit: 'g', color: '#ffe433' },
@@ -378,25 +403,7 @@ export const ExpandedProgressView = ({ goals, consumed, onClose }) => {
   ];
 
   return (
-    <div className="expanded-progress card animate-scale-in">
-      <div className="expanded-progress-header">
-        <h3 className="expanded-progress-title">Daily Nutrition Progress</h3>
-        {onClose && (
-          <button 
-            className="btn-icon" 
-            onClick={(e) => {
-              e.stopPropagation();
-              onClose(e);
-            }} 
-            aria-label="Close"
-          >
-            <svg className="icon icon-md" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L9.586 10 5.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-            </svg>
-          </button>
-        )}
-      </div>
-      
+    <div className={`expanded-progress card ${isClosing ? 'progress-expanded-out' : 'progress-expanded-in'}`}>
       <div className="expanded-progress-grid">
         {allMacros.map(macro => (
           <LinearProgressBar
@@ -408,47 +415,46 @@ export const ExpandedProgressView = ({ goals, consumed, onClose }) => {
             color={macro.color}
             height={10}
             showValues={true}
-            showRemaining={true}
+            showRemaining={false}
           />
         ))}
       </div>
 
       <style>{`
+        @keyframes progressExpandedOpen {
+          from {
+            opacity: 0;
+            transform: translateY(-14px) scale(0.9);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+        }
+
+        @keyframes progressExpandedClose {
+          from {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+          to {
+            opacity: 0;
+            transform: translateY(-14px) scale(0.9);
+          }
+        }
+
+        .progress-expanded-in {
+          animation: progressExpandedOpen 260ms var(--ease-out-cubic) both;
+        }
+
+        .progress-expanded-out {
+          animation: none;
+        }
+
         .expanded-progress {
           position: relative;
           width: 100%;
           margin: 0;
-        }
-
-        .expanded-progress-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: var(--space-3);
-          padding-bottom: var(--space-2);
-          border-bottom: 1px solid var(--border-primary);
-        }
-
-        .expanded-progress-header .btn-icon {
-          margin-left: auto;
-          flex-shrink: 0;
-        }
-
-        .expanded-progress-title {
-          font-size: var(--text-lg);
-          font-weight: var(--font-weight-medium);
-          margin: 0;
-          color: var(--text-primary);
-        }
-        .expanded-progress .btn-icon {
-          outline: none;
-          box-shadow: none;
-          border: none;
-          background: transparent;
-        }
-        .expanded-progress .btn-icon:focus {
-          outline: none;
-          box-shadow: none;
         }
 
         .expanded-progress-grid {
@@ -456,16 +462,33 @@ export const ExpandedProgressView = ({ goals, consumed, onClose }) => {
           gap: var(--space-5);
           padding-right: var(--space-2);
           scrollbar-gutter: stable;
+          box-sizing: border-box;
         }
 
         @media (max-width: 768px) {
           .expanded-progress {
             margin: 0;
           }
-          
-          .expanded-progress-header {
-            flex-direction: row;
-            align-items: center;
+
+          .expanded-progress-grid {
+            padding-right: 0;
+          }
+
+          .progress-header {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            align-items: start;
+            gap: var(--space-2);
+          }
+
+          .progress-header-left {
+            min-width: 0;
+            row-gap: 2px;
+          }
+
+          .progress-values {
+            white-space: normal;
+            flex-wrap: wrap;
           }
         }
       `}</style>
