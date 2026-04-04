@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { ComposedChart, Area, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { ComposedChart, Area, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 import AnalyticsChartBase from './AnalyticsChartBase';
+import AnalyticsSizedChart from './AnalyticsSizedChart';
+import { useAnalyticsCartesianMargin } from './analyticsChartMargins';
 import api from '../../services/api';
 import { ANALYTICS_COLORS } from './analyticsChartColors';
 
 const TOOLTIP_STYLE = { color: '#1a1a1a', fontWeight: 500 };
 
 const ActivationProgressChart = ({ dateRangeParams = {} }) => {
+  const margin = useAnalyticsCartesianMargin();
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -31,8 +34,8 @@ const ActivationProgressChart = ({ dateRangeParams = {} }) => {
 
   return (
     <AnalyticsChartBase title="Activation Progress vs Expected">
-      <ResponsiveContainer width="100%" height={320}>
-        <ComposedChart data={data} margin={{ top: 24, right: 24, left: 24, bottom: 24 }}>
+      <AnalyticsSizedChart height={320}>
+        <ComposedChart data={data} margin={margin}>
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey="date" />
           <YAxis />
@@ -41,7 +44,7 @@ const ActivationProgressChart = ({ dateRangeParams = {} }) => {
           <Area type="monotone" dataKey="total_expected" fill={ANALYTICS_COLORS.tertiary} fillOpacity={0.4} stroke={ANALYTICS_COLORS.tertiary} name="Expected" />
           <Line type="monotone" dataKey="total_actual" stroke={ANALYTICS_COLORS.primary} strokeWidth={2} name="Actual" dot={{ r: 4 }} />
         </ComposedChart>
-      </ResponsiveContainer>
+      </AnalyticsSizedChart>
     </AnalyticsChartBase>
   );
 };

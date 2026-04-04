@@ -280,8 +280,8 @@ main {
 }
 
 .card:hover {
-  transform: translateY(-6px);
-  box-shadow: 0 32px 65px rgba(0, 0, 0, 0.4);
+  transform: none;
+  box-shadow: 0 24px 55px rgba(0, 0, 0, 0.35);
 }
 
 .card-header {

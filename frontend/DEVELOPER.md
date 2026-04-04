@@ -54,7 +54,7 @@ App
 - **WorkoutTracker.js** - Workout tracking interface (uses WorkoutLoggingDashboard)
 - **AdditionalTrackers.js** - Health metrics tracking menu
 - **DataViewer.js** - Database viewer interface
-- **Analytics.js** - Data analytics dashboard
+- **Analytics.js** - `/analytics`: `main-content--full-bleed` (see `App.js`); page shell matches **Profile** (grid tint, `--profile-card-bg` cards, segment-style tabs). Workout charts: progression + activation (sets-per-day chart removed). Mobile: chart cards use block layout + fixed `ResponsiveContainer` height so Recharts gets non-zero width.
 - **Personalization.js** - Muscle priorities, splits configuration
 
 ## Key Components (`src/components/`)
@@ -84,9 +84,9 @@ App
 Exports: `mergeApiFoodWithPrevious`, `normalizeParsedFoodForPreview` (alias for merge with empty previous). Tests: `src/utils/foodParsePreview.test.js`.
 
 ### Workout Components
-- **WorkoutLoggingDashboard.js** - Main workout logging interface
+- **WorkoutLoggingDashboard.js** - Main workout logging interface. Page shell matches `/home` (grid background, card surfaces via `--workoutlog-card-bg`). Header UX matches `/food-log`: three-column `header-content--food-log` (date, chevron reveal, sets count), PC floating `header-actions` with open/close animation, mobile `mobile-quick-actions-flyout` (no duplicate in-content action row). `document.body` gets `route-workout-tracker` while mounted. Logged-set details show only **canonical attributes** from `src/constants/workoutLoggingAttributes.js` (drop set, partials, assisted sets, negatives, rest pause); tempo/intent/intensity are hidden.
 - **WorkoutAdder.js** - Create and edit workouts
-- **WorkoutLogger.js** - Log workout sessions
+- **WorkoutLogger.js** - Log workout sessions; attribute checkboxes/inputs are driven by `WORKOUT_LOG_ATTRIBUTE_OPTIONS` in `src/constants/workoutLoggingAttributes.js`. Payloads are sanitized with `sanitizeWorkoutLogAttributesForApi` before `POST /workouts/logs/`.
 - **WorkoutLog.js** - View workout history
 - **MusclePriority.js** - Manage muscle priorities
 - **SplitCreator.js** - Create workout splits
@@ -103,6 +103,7 @@ Exports: `mergeApiFoodWithPrevious`, `normalizeParsedFoodForPreview` (alias for 
 
 ### Analytics Components (`src/components/analytics/`)
 - **DateRangeSelector.js** - Shared date range (1 week–1 year + custom) for Workout and Food sections; default 2 weeks; custom default uses `getAnalyticsDateBounds(section)`.
+- **AnalyticsSizedChart.js** - Wraps Recharts `ResponsiveContainer` with measured numeric `width` + fixed `height` so charts paint on mobile WebKit (Recharts v3’s `%` width + numeric height path uses a zero-width inner wrapper).
 - **AnalyticsChartBase.js** - Base chart component
 - **WorkoutProgressionChart.js** - Single-workout progression (workout required, searchable); progression type (avg weight×reps, avg weight×sets, avg weight, max weight); optional comparison metrics (cardio, food, health, sleep, steps, weight, water, workout_log) with optional 1-day offset; second y-axis for metrics.
 - **ActivationProgressChart.js** - Activation progress vs expected

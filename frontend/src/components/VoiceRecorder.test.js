@@ -3,7 +3,7 @@
  */
 
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import VoiceRecorder from './VoiceRecorder';
 import voiceService from '../services/voiceService';
@@ -141,6 +141,8 @@ describe('VoiceRecorder Component', () => {
 
   it('auto-stops after 60 seconds', async () => {
     voiceService.startRecording.mockResolvedValue(true);
+
+    const setIntervalSpy = jest.spyOn(global, 'setInterval');
     
     render(<VoiceRecorder onTranscriptionComplete={mockOnTranscriptionComplete} />);
     
@@ -151,17 +153,18 @@ describe('VoiceRecorder Component', () => {
     await waitFor(() => {
       expect(voiceService.startRecording).toHaveBeenCalled();
     });
-    
-    // Fast-forward time incrementally to ensure each timer callback runs
-    // The timer runs every 1000ms, so we need 60 callbacks
-    for (let i = 0; i < 60; i++) {
-      jest.advanceTimersByTime(1000);
-      // Allow React to process state updates
-      await Promise.resolve();
-    }
-    
-    // After 60 seconds, stopRecording should have been called
-    expect(voiceService.stopRecording).toHaveBeenCalled();
+
+    await waitFor(() => {
+      expect(setIntervalSpy).toHaveBeenCalled();
+    });
+
+    await act(async () => {
+      jest.advanceTimersByTime(60000);
+    });
+
+    await waitFor(() => {
+      expect(voiceService.stopRecording).toHaveBeenCalled();
+    });
   });
 
   it('calls onTranscriptionComplete with transcribed text', async () => {
@@ -287,6 +290,7 @@ describe('VoiceRecorder Component', () => {
 
   it('cleans up timers on unmount', async () => {
     const clearIntervalSpy = jest.spyOn(global, 'clearInterval');
+    const setIntervalSpy = jest.spyOn(global, 'setInterval');
     
     const { unmount } = render(<VoiceRecorder onTranscriptionComplete={mockOnTranscriptionComplete} />);
     
@@ -298,13 +302,18 @@ describe('VoiceRecorder Component', () => {
     await waitFor(() => {
       expect(voiceService.startRecording).toHaveBeenCalled();
     });
-    
-    // Advance timers to ensure the setInterval is actually created
-    jest.advanceTimersByTime(1000);
-    
+
+    await waitFor(() => {
+      expect(setIntervalSpy).toHaveBeenCalled();
+    });
+
+    await act(async () => {
+      jest.advanceTimersByTime(1000);
+    });
+
     unmount();
-    
-    // clearInterval should be called during cleanup
+
+    // clearInterval should be called during cleanup.
     expect(clearIntervalSpy).toHaveBeenCalled();
     
     clearIntervalSpy.mockRestore();

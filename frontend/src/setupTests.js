@@ -8,9 +8,11 @@ import '@testing-library/jest-dom';
 // We keep other warnings/errors visible so real regressions still fail loudly.
 const originalConsoleError = console.error;
 const originalConsoleWarn = console.warn;
+let errorSpy;
+let warnSpy;
 
 beforeAll(() => {
-  jest.spyOn(console, 'error').mockImplementation((...args) => {
+  errorSpy = jest.spyOn(console, 'error').mockImplementation((...args) => {
     const first = args[0];
     if (typeof first === 'string' && first.includes('ReactDOMTestUtils.act` is deprecated')) {
       return;
@@ -18,7 +20,7 @@ beforeAll(() => {
     originalConsoleError(...args);
   });
 
-  jest.spyOn(console, 'warn').mockImplementation((...args) => {
+  warnSpy = jest.spyOn(console, 'warn').mockImplementation((...args) => {
     const first = args[0];
     if (typeof first === 'string' && first.includes('React Router Future Flag Warning')) {
       return;
@@ -28,6 +30,6 @@ beforeAll(() => {
 });
 
 afterAll(() => {
-  console.error.mockRestore();
-  console.warn.mockRestore();
+  errorSpy?.mockRestore();
+  warnSpy?.mockRestore();
 });

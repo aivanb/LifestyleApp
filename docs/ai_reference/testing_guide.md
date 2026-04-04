@@ -432,64 +432,7 @@ describe('API Service', () => {
 
 ## E2E Testing
 
-### Playwright Tests
-
-```javascript
-// tests/e2e/user_journey.spec.js
-
-const { test, expect } = require('@playwright/test');
-
-test.describe('User Journey', () => {
-  test.beforeEach(async ({ page }) => {
-    await page.goto('http://localhost:3000');
-  });
-
-  test('complete food logging flow', async ({ page }) => {
-    // Login
-    await page.fill('[name="username"]', 'testuser');
-    await page.fill('[name="password"]', 'testpass123');
-    await page.click('button:has-text("Login")');
-    
-    // Navigate to food log
-    await page.click('a:has-text("Food Log")');
-    await expect(page).toHaveURL('/food-log');
-    
-    // Search for food
-    await page.fill('[placeholder="Search foods..."]', 'chicken');
-    await page.waitForSelector('.food-results');
-    
-    // Select food
-    await page.click('.food-item:first-child');
-    
-    // Enter quantity
-    await page.fill('[name="quantity"]', '150');
-    
-    // Log food
-    await page.click('button:has-text("Log Food")');
-    
-    // Verify success
-    await expect(page.locator('.success-message')).toBeVisible();
-    await expect(page.locator('.daily-summary')).toContainText('150g');
-  });
-
-  test('responsive design', async ({ page }) => {
-    // Test mobile viewport
-    await page.setViewportSize({ width: 375, height: 667 });
-    
-    // Check mobile menu
-    await expect(page.locator('.mobile-menu-button')).toBeVisible();
-    await expect(page.locator('.desktop-nav')).not.toBeVisible();
-    
-    // Test tablet viewport
-    await page.setViewportSize({ width: 768, height: 1024 });
-    
-    // Test desktop viewport
-    await page.setViewportSize({ width: 1920, height: 1080 });
-    await expect(page.locator('.desktop-nav')).toBeVisible();
-    await expect(page.locator('.mobile-menu-button')).not.toBeVisible();
-  });
-});
-```
+E2E (end-to-end) tests were removed from this repository. Use the backend and frontend test suites for automation.
 
 ## Test Data Management
 

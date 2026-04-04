@@ -59,10 +59,10 @@ src/
 - **Navbar**: Navigation with user menu and logout
 - **Profile**: User profile management
 - **FoodLog**: Food logging interface
-- **WorkoutTracker**: Workout tracking interface
+- **WorkoutTracker**: Workout tracking interface (logging UI shares `/home`-style page shell; set “attributes” on a log are limited to drop sets, partials, assisted sets, negatives, and rest pause—see `src/constants/workoutLoggingAttributes.js`)
 - **AdditionalTrackers**: Health metrics tracking
 - **DataViewer**: Database viewer interface
-- **Analytics**: Data analytics dashboard
+- **Analytics**: Workout and food charts on a Profile-style page shell (grid background, card surfaces); full-bleed layout like `/profile`
 - **Personalization**: Muscle priorities and splits configuration
 
 ## State Management

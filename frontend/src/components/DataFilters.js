@@ -10,11 +10,11 @@ const DataFilters = ({ schema, onFilterChange, onSearchChange, onApply, onClear 
   const [search, setSearch] = useState('');
   const [filters, setFilters] = useState({});
   const [selectedField, setSelectedField] = useState('');
+  const [selectedOperation, setSelectedOperation] = useState('=');
   const [filterValue, setFilterValue] = useState('');
 
   // Get filterable fields (exclude complex types)
   const filterableFields = schema.fields ? schema.fields.filter(field => 
-    !field.name.endsWith('_id') &&
     field.name !== 'password_hash' &&
     !field.many_to_many &&
     !field.one_to_many &&
@@ -31,12 +31,22 @@ const DataFilters = ({ schema, onFilterChange, onSearchChange, onApply, onClear 
 
   const handleAddFilter = () => {
     if (selectedField && filterValue) {
+      let valueForBackend = filterValue;
+
+      // Map UI operations to backend filter operator shapes
+      if (selectedOperation === '>=') valueForBackend = { min: filterValue };
+      else if (selectedOperation === '>') valueForBackend = { gt: filterValue };
+      else if (selectedOperation === '<=') valueForBackend = { max: filterValue };
+      else if (selectedOperation === '<') valueForBackend = { lt: filterValue };
+      // '=' stays as the raw value (backend will use exact/contains behavior by field type)
+
       const newFilters = {
         ...filters,
-        [selectedField]: filterValue
+        [selectedField]: valueForBackend,
       };
       setFilters(newFilters);
       setSelectedField('');
+      setSelectedOperation('=');
       setFilterValue('');
       
       if (onFilterChange) {
@@ -65,11 +75,28 @@ const DataFilters = ({ schema, onFilterChange, onSearchChange, onApply, onClear 
     setSearch('');
     setFilters({});
     setSelectedField('');
+    setSelectedOperation('=');
     setFilterValue('');
     
     if (onClear) {
       onClear();
     }
+  };
+
+  const formatFilterTag = (value) => {
+    if (value == null) return '= null';
+
+    // '=' case
+    if (typeof value !== 'object') return `= ${String(value)}`;
+
+    // Range / strict comparisons created by this UI
+    if ('gt' in value) return `> ${String(value.gt)}`;
+    if ('min' in value) return `>= ${String(value.min)}`;
+    if ('lt' in value) return `< ${String(value.lt)}`;
+    if ('max' in value) return `<= ${String(value.max)}`;
+
+    // Fallback for other dict structures
+    return `= ${JSON.stringify(value)}`;
   };
 
   return (
@@ -107,10 +134,11 @@ const DataFilters = ({ schema, onFilterChange, onSearchChange, onApply, onClear 
           
           <div className="filter-row" style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
             <select
-              className="form-input"
+              className="form-input filter-field-select"
+              aria-label="Filter field"
               value={selectedField}
               onChange={(e) => setSelectedField(e.target.value)}
-              style={{ flex: 1 }}
+              style={{ flex: 2 }}
             >
               <option value="">Select field...</option>
               {filterableFields.map(field => (
@@ -120,10 +148,29 @@ const DataFilters = ({ schema, onFilterChange, onSearchChange, onApply, onClear 
               ))}
             </select>
 
+            <select
+              className="form-input filter-operator-select"
+              aria-label="Filter operation"
+              value={selectedOperation}
+              onChange={(e) => setSelectedOperation(e.target.value)}
+              style={{
+                flex: '0 0 78px',
+                padding: 'var(--space-2) var(--space-2)',
+                fontSize: 'var(--text-sm)',
+              }}
+            >
+              <option value=">=">&gt;=</option>
+              <option value=">">&gt;</option>
+              <option value="<=">&lt;=</option>
+              <option value="<">&lt;</option>
+              <option value="=">=</option>
+            </select>
+
             <input
               type="text"
-              className="form-input"
+              className="form-input filter-value-input"
               placeholder="Filter value..."
+              aria-label="Filter value"
               value={filterValue}
               onChange={(e) => setFilterValue(e.target.value)}
               style={{ flex: 1 }}
@@ -131,7 +178,7 @@ const DataFilters = ({ schema, onFilterChange, onSearchChange, onApply, onClear 
             />
 
             <button
-              className="btn btn-secondary"
+              className="btn btn-secondary filter-add-button"
               onClick={handleAddFilter}
               disabled={!selectedField || !filterValue}
             >
@@ -148,7 +195,9 @@ const DataFilters = ({ schema, onFilterChange, onSearchChange, onApply, onClear 
               <div className="form-label">Active Filters:</div>
               {Object.entries(filters).map(([field, value]) => (
                 <div key={field} className="filter-tag">
-                  <span>{field}: {value}</span>
+                  <span>
+                    {field} {formatFilterTag(value)}
+                  </span>
                   <button
                     className="filter-remove"
                     onClick={() => handleRemoveFilter(field)}
@@ -205,12 +254,15 @@ const DataFilters = ({ schema, onFilterChange, onSearchChange, onApply, onClear 
         .filter-tag {
           display: inline-flex;
           align-items: center;
-          background-color: #e9ecef;
+          background-color: var(--accent-primary-alpha);
+          border: 1px solid rgba(90, 166, 255, 0.45);
           border-radius: 4px;
-          padding: 5px 10px;
+          padding: 8px 12px;
           margin-right: 10px;
           margin-bottom: 10px;
-          font-size: 14px;
+          font-size: var(--text-sm);
+          color: var(--accent-primary);
+          font-weight: var(--font-weight-semibold);
         }
 
         .filter-remove {
@@ -229,14 +281,45 @@ const DataFilters = ({ schema, onFilterChange, onSearchChange, onApply, onClear 
           color: #c82333;
         }
 
+        .filter-add-button:not(:disabled) {
+          outline: 2px solid var(--accent-primary);
+          outline-offset: 2px;
+        }
+
         @media (max-width: 768px) {
           .filter-row {
             flex-wrap: wrap !important;
+            gap: 0 !important;
           }
-          .filter-row .form-input,
-          .filter-row select {
-            min-width: 0;
+
+          .filter-field-select {
+            flex: 0 0 50% !important;
+            max-width: 50% !important;
+            min-width: 0 !important;
           }
+
+          .filter-operator-select {
+            flex: 0 0 15% !important;
+            max-width: 15% !important;
+            min-width: 0 !important;
+          }
+
+          .filter-value-input {
+            flex: 0 0 35% !important;
+            max-width: 35% !important;
+            min-width: 0 !important;
+          }
+
+          /* Force Add button to the next line */
+          .filter-add-button {
+            flex: 0 0 50% !important;
+            max-width: 50% !important;
+            margin-top: var(--space-2);
+            width: 50%;
+            margin-left: auto;
+            margin-right: auto;
+          }
+
           .filter-actions {
             flex-wrap: wrap !important;
             gap: var(--space-2) !important;

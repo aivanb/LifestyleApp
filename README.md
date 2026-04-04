@@ -87,7 +87,7 @@ The app will be available at:
 
 #### Workout Tracking
 - Create custom workout routines and splits
-- Log sets, reps, and weights
+- Log sets, reps, and weights (optional set modifiers: drop sets, partials, assisted sets, negatives, rest pause)
 - Track muscle group activation
 - View workout history and progress
 - Manage muscle priorities for balanced training

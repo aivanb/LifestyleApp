@@ -135,6 +135,35 @@ class DataAccessServiceTest(TestCase):
         self.assertIn('data', result)
         self.assertIn('pagination', result)
         self.assertGreater(len(result['data']), 0)
+
+    def test_user_cannot_access_admin_only_tables(self):
+        """Test users cannot see admin-only reference tables"""
+        service = DataAccessService(user=self.regular_user)
+        tables = service.get_available_tables()
+        table_names = [t['name'] for t in tables]
+
+        self.assertNotIn('access_levels', table_names)
+        self.assertNotIn('invite_key', table_names)
+
+    def test_get_table_data_with_strict_gt_lt_filters(self):
+        """Test retrieving data with strict comparison operators"""
+        service = DataAccessService(user=self.regular_user)
+
+        # calories=250 in setUp -> should match gt 200
+        result_gt = service.get_table_data(
+            'foods',
+            filters={'calories': {'gt': 200}}
+        )
+        self.assertIn('data', result_gt)
+        self.assertGreater(len(result_gt['data']), 0)
+
+        # calories=250 does not match lt 200
+        result_lt = service.get_table_data(
+            'foods',
+            filters={'calories': {'lt': 200}}
+        )
+        self.assertIn('data', result_lt)
+        self.assertEqual(len(result_lt['data']), 0)
     
     def test_get_table_data_with_search(self):
         """Test retrieving data with search term"""

@@ -20,10 +20,10 @@ const DataTable = ({
 
   useEffect(() => {
     if (schema.fields && schema.fields.length > 0) {
-      // Filter out system fields and limit display fields
+      // Filter out sensitive/system fields; keep the rest aligned with backend schema
       const fields = schema.fields
-        .filter(field => !field.name.endsWith('_id') && field.name !== 'password_hash')
-        .slice(0, 10); // Limit to 10 fields for better UX
+        .filter(field => field.name !== 'password_hash')
+        ;
       
       setDisplayFields(fields);
     }
@@ -85,7 +85,7 @@ const DataTable = ({
   }
 
   return (
-    <div className="data-table-container card">
+    <div className="data-table-container">
       <div style={{ overflowX: 'auto' }}>
         <table className="data-table">
           <thead>

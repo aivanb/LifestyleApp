@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
+import { useTheme } from '../contexts/ThemeContext';
 
 /**
  * Personalization Component
@@ -12,6 +13,7 @@ import api from '../services/api';
  */
 const Personalization = () => {
   const navigate = useNavigate();
+  const { theme } = useTheme();
   const [goals, setGoals] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -153,7 +155,7 @@ const Personalization = () => {
 
   if (loading) {
     return (
-      <div className="personalization-page">
+      <div className={`personalization-page personalization-page--shell${theme === 'light' ? ' personalization-page--shell-light' : ''}`}>
         <div className="loading-container">
           <div className="spinner"></div>
           <p>Loading personalization data...</p>
@@ -163,7 +165,7 @@ const Personalization = () => {
   }
 
   return (
-    <div className="personalization-page">
+    <div className={`personalization-page personalization-page--shell${theme === 'light' ? ' personalization-page--shell-light' : ''}`}>
       <div className="personalization-actions">
         <button
           type="button"
@@ -190,9 +192,11 @@ const Personalization = () => {
       {/* Body Composition Goals */}
       <div className="goals-section goals-section--body-comp">
         {editingBodyComposition ? (
-          <BodyCompositionForm 
+          <BodyCompositionForm
             goals={goals}
             onSave={handleGoalsUpdate}
+            formatGoalLabel={formatGoalLabel}
+            bodyCompositionGoalKeys={bodyCompositionGoalKeys}
           />
         ) : (
           <div className="goals-display">
@@ -219,9 +223,12 @@ const Personalization = () => {
       {/* Macro Goals */}
       <div className="goals-section goals-section--macro-goals">
         {editingMacroGoals ? (
-          <MacroGoalsForm 
+          <MacroGoalsForm
             goals={goals}
             onSave={handleGoalsUpdate}
+            formatGoalLabel={formatGoalLabel}
+            primaryMacroGoalKeys={primaryMacroGoalKeys}
+            macroGoalKeys={macroGoalKeys}
           />
         ) : (
           <div className="macro-goals-display">
@@ -265,12 +272,41 @@ const Personalization = () => {
         }
 
         .personalization-page {
+          flex: 1;
           width: 100%;
           max-width: none;
           margin: 0;
           padding: 0 var(--space-4) var(--space-4);
           font-size: var(--text-lg);
           font-family: var(--font-primary);
+          box-sizing: border-box;
+          min-height: 100dvh;
+          min-height: 100svh;
+          overflow-x: hidden;
+          padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px));
+        }
+
+        .personalization-page--shell {
+          --profile-shell-tint: rgba(255, 255, 255, 0.045);
+          --profile-shell-strong: rgba(255, 255, 255, 0.11);
+          --profile-card-bg: #171c24;
+          --profile-card-border: #2a3140;
+          background-color: #040508;
+          background-image:
+            linear-gradient(var(--profile-shell-tint) 1px, transparent 1px),
+            linear-gradient(90deg, var(--profile-shell-tint) 1px, transparent 1px),
+            linear-gradient(var(--profile-shell-strong) 1px, transparent 1px),
+            linear-gradient(90deg, var(--profile-shell-strong) 1px, transparent 1px);
+          background-size: 20px 20px, 20px 20px, 80px 80px, 80px 80px;
+          background-position: 0 0, 0 0, 0 0, 0 0;
+        }
+
+        .personalization-page--shell-light {
+          --profile-shell-tint: rgba(0, 0, 0, 0.04);
+          --profile-shell-strong: rgba(0, 0, 0, 0.1);
+          --profile-card-bg: #ffffff;
+          --profile-card-border: #d8dce8;
+          background-color: #e8eaf2;
         }
 
         .personalization-actions {
@@ -278,44 +314,123 @@ const Personalization = () => {
           justify-content: flex-end;
           gap: var(--space-8);
           margin-bottom: var(--space-6);
-          padding-right: var(--space-10);
+          padding-top: var(--space-4);
         }
 
         .personalization-action-btn,
         .personalization-splits-btn {
-          padding: 0 var(--space-6);
-          min-height: 56px;
+          padding: var(--space-3) var(--space-6);
+          min-height: 62px;
           border-radius: var(--radius-md);
-          transition: transform 0.25s var(--ease-out-cubic), box-shadow 0.25s var(--ease-out-cubic), background 0.25s var(--ease-out-cubic);
+          border: 1px solid var(--input-border);
+          background: var(--bg-tertiary);
+          color: var(--text-primary);
+          font-weight: var(--font-weight-semibold);
+          transition: background 0.2s var(--ease-out-cubic), border-color 0.2s;
         }
 
         .btn.personalization-action-btn,
         .btn.personalization-splits-btn {
-          font-size: var(--text-base);
+          font-size: var(--text-lg);
           font-weight: var(--font-weight-bold);
-          text-transform: uppercase;
-          letter-spacing: 0.12em;
+          letter-spacing: 0.08em;
         }
 
         .personalization-action-btn {
-          background: var(--accent-primary);
-          border-color: var(--accent-primary);
-          color: #ffffff;
+          background: #79b5fb;
+          border-color: #79b5fb;
+          color: #040508;
         }
 
         .personalization-splits-btn {
-          background: var(--accent-primary);
-          border-color: var(--accent-primary);
-          color: #ffffff;
+          background: #79b5fb;
+          border-color: #79b5fb;
+          color: #040508;
         }
 
         .personalization-action-btn:hover,
         .personalization-action-btn:focus,
         .personalization-splits-btn:hover,
         .personalization-splits-btn:focus {
-          transform: translateY(-3px);
-          box-shadow: 0 24px 45px rgba(0, 0, 0, 0.4);
+          background: #79b5fb;
+          color: #040508;
+          border-color: #79b5fb;
+          filter: brightness(0.95);
           outline: none;
+        }
+
+        .personalization-page .btn.btn-primary.personalization-action-btn,
+        .personalization-page .btn.btn-primary.personalization-splits-btn {
+          background: #79b5fb !important;
+          border-color: #79b5fb !important;
+          color: #040508 !important;
+          opacity: 1;
+        }
+
+        .personalization-page .btn.btn-primary.personalization-action-btn:hover,
+        .personalization-page .btn.btn-primary.personalization-action-btn:focus,
+        .personalization-page .btn.btn-primary.personalization-splits-btn:hover,
+        .personalization-page .btn.btn-primary.personalization-splits-btn:focus {
+          background: #79b5fb !important;
+          border-color: #79b5fb !important;
+          color: #040508 !important;
+          filter: brightness(0.95);
+        }
+
+        .personalization-page .profile-field {
+          display: flex;
+          flex-direction: column;
+          gap: var(--space-2);
+          margin: 0;
+          min-width: 0;
+        }
+
+        .personalization-page .profile-field-label {
+          font-size: var(--text-xs);
+          color: var(--text-secondary);
+          font-weight: var(--font-weight-semibold);
+          text-transform: uppercase;
+          letter-spacing: 0.1em;
+        }
+
+        .personalization-page .profile-field-input.personalization-goals-field-input {
+          width: 100%;
+          box-sizing: border-box;
+          min-height: 52px;
+          padding: var(--space-3) var(--space-4);
+          border: 1px solid var(--input-border);
+          border-radius: var(--radius-md);
+          background: rgba(255, 255, 255, 0.07);
+          color: var(--text-primary);
+          font-family: var(--font-primary);
+          font-size: var(--text-lg);
+          text-align: center;
+          transition: border-color 0.2s var(--ease-out-cubic), box-shadow 0.2s;
+        }
+
+        .personalization-page--shell-light .profile-field-input.personalization-goals-field-input {
+          background: #f0f3f8;
+        }
+
+        .personalization-page .profile-field-input.personalization-goals-field-input:focus {
+          outline: none;
+          border-color: var(--accent-primary);
+          box-shadow: 0 0 0 3px rgba(var(--accent-primary-rgb), 0.12);
+        }
+
+        .body-composition-form .goals-display--edit,
+        .macro-goals-form .macro-goals-display--edit {
+          width: 100%;
+        }
+
+        .macro-goals-form .macro-primary-row--edit .profile-field.macro-item--primary .profile-field-label {
+          font-size: var(--text-xs);
+        }
+
+        .macro-goals-form .macro-primary-row--edit .profile-field.macro-item--primary .personalization-goals-field-input {
+          font-size: var(--text-2xl);
+          font-weight: var(--font-weight-semibold);
+          min-height: 56px;
         }
 
         .loading-container {
@@ -350,14 +465,13 @@ const Personalization = () => {
         }
 
         .goals-section {
-          background: var(--bg-secondary);
-          border: none;
+          background: var(--profile-card-bg, var(--bg-secondary));
+          border: 1px solid var(--profile-card-border, var(--border-primary));
           border-radius: var(--radius-lg);
           padding: var(--space-6);
           margin-bottom: var(--space-6);
-          box-shadow: 0 24px 55px rgba(0, 0, 0, 0.4);
-          transition: transform 0.25s var(--ease-out-cubic), box-shadow 0.25s var(--ease-out-cubic);
-          backdrop-filter: blur(8px);
+          box-shadow: var(--shadow-md);
+          transition: border-color 0.2s var(--ease-out-cubic);
         }
 
         .goals-section:hover {
@@ -372,6 +486,47 @@ const Personalization = () => {
           display: flex;
           justify-content: flex-end;
           margin-top: var(--space-5);
+        }
+
+        .body-composition-form .goals-display--edit {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+          gap: var(--space-4);
+        }
+
+        .body-composition-form .goals-display--edit .profile-field {
+          align-items: center;
+          text-align: center;
+        }
+
+        .macro-goals-form .macro-goals-display--edit {
+          display: flex;
+          flex-direction: column;
+          gap: 0;
+        }
+
+        .macro-goals-form .macro-primary-row--edit {
+          display: grid;
+          grid-template-columns: repeat(5, minmax(140px, 1fr));
+          gap: var(--space-4);
+          margin-bottom: var(--space-5);
+          padding-top: var(--space-4);
+        }
+
+        .macro-goals-form .macro-primary-row--edit .profile-field {
+          align-items: center;
+          text-align: center;
+        }
+
+        .macro-goals-form .macro-grid--edit {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+          gap: var(--space-4);
+        }
+
+        .macro-goals-form .macro-grid--edit .profile-field {
+          align-items: center;
+          text-align: center;
         }
 
         .goals-display {
@@ -397,12 +552,14 @@ const Personalization = () => {
 
         .goal-label {
           font-size: var(--text-base);
-          color: var(--text-tertiary);
-          font-weight: var(--font-weight-medium);
+          color: var(--text-secondary);
+          font-weight: var(--font-weight-semibold);
+          text-transform: uppercase;
+          letter-spacing: 0.1em;
         }
 
         .goal-value {
-          font-size: var(--text-xl);
+          font-size: var(--text-2xl);
           color: var(--text-primary);
           font-weight: var(--font-weight-semibold);
         }
@@ -410,17 +567,30 @@ const Personalization = () => {
         .goals-text-btn {
           background: transparent;
           border: none;
-          padding: 0;
+          padding: var(--space-2) 0;
           color: var(--text-secondary);
           font-family: var(--font-primary);
-          font-size: var(--text-base);
-          font-weight: var(--font-weight-medium);
+          font-size: var(--text-sm);
+          font-weight: var(--font-weight-semibold);
+          text-transform: uppercase;
+          letter-spacing: 0.12em;
           cursor: pointer;
         }
 
         .goals-text-btn:hover {
           text-decoration: underline;
           color: var(--text-primary);
+        }
+
+        .body-composition-form .form-actions,
+        .macro-goals-form .form-actions {
+          justify-content: flex-end;
+          margin-top: var(--space-5);
+        }
+
+        .body-composition-form .goals-text-btn,
+        .macro-goals-form .goals-text-btn {
+          padding: var(--space-2) 0;
         }
 
         .macro-primary-row {
@@ -448,9 +618,11 @@ const Personalization = () => {
         }
 
         .macro-label {
-          font-size: var(--text-base);
-          color: var(--text-tertiary);
-          font-weight: var(--font-weight-medium);
+          font-size: var(--text-xs);
+          color: var(--text-secondary);
+          font-weight: var(--font-weight-semibold);
+          text-transform: uppercase;
+          letter-spacing: 0.1em;
         }
 
         .macro-value {
@@ -460,9 +632,11 @@ const Personalization = () => {
         }
 
         .macro-item--primary .macro-label {
-          font-size: var(--text-xl);
-          color: var(--text-primary);
+          font-size: var(--text-xs);
+          color: var(--text-secondary);
           font-weight: var(--font-weight-semibold);
+          text-transform: uppercase;
+          letter-spacing: 0.1em;
         }
 
         .macro-item--primary .macro-value {
@@ -476,21 +650,24 @@ const Personalization = () => {
         }
 
         .form-group label {
-          font-size: var(--text-sm);
+          font-size: var(--text-xs);
           color: var(--text-secondary);
-          font-weight: var(--font-weight-medium);
+          font-weight: var(--font-weight-semibold);
+          text-transform: uppercase;
+          letter-spacing: 0.1em;
         }
 
         .form-input {
           width: 100%;
-          padding: var(--space-2) var(--space-3);
-          border: 1px solid var(--border-primary);
+          min-height: 52px;
+          padding: var(--space-3) var(--space-4);
+          border: 1px solid var(--input-border);
           border-radius: var(--radius-md);
           background: var(--bg-secondary);
           color: var(--text-primary);
           font-family: var(--font-primary);
-          font-size: var(--text-sm);
-          transition: all 0.2s var(--ease-out-cubic);
+          font-size: var(--text-lg);
+          transition: border-color 0.2s var(--ease-out-cubic), box-shadow 0.2s;
         }
 
         .form-input:focus {
@@ -503,24 +680,23 @@ const Personalization = () => {
           padding: var(--space-3) var(--space-4);
           border-radius: var(--radius-md);
           font-family: var(--font-primary);
-          font-size: var(--text-sm);
-          font-weight: var(--font-weight-medium);
+          font-size: var(--text-base);
+          font-weight: var(--font-weight-semibold);
           cursor: pointer;
           transition: all 0.2s var(--ease-out-cubic);
           border: 1px solid transparent;
         }
 
         .btn-primary {
-          background: var(--accent-primary);
-          color: white;
+          background: var(--accent-primary-alpha);
+          color: var(--accent-primary);
           border-color: var(--accent-primary);
         }
 
         .btn-primary:hover {
-          background: var(--accent-primary-dark);
-          border-color: var(--accent-primary-dark);
-          transform: translateY(-1px);
-          box-shadow: var(--shadow-md);
+          background: var(--accent-primary);
+          border-color: var(--accent-primary);
+          color: #fff;
         }
 
         .btn-secondary {
@@ -542,8 +718,10 @@ const Personalization = () => {
 
         @media (max-width: 768px) {
           .personalization-page {
-            padding: var(--space-2);
+            padding: var(--space-3) var(--space-3) var(--space-4);
             box-sizing: border-box;
+            padding-top: calc(var(--space-3) + env(safe-area-inset-top, 0px));
+            padding-bottom: calc(110px + env(safe-area-inset-bottom, 0px));
           }
 
           .personalization-actions {
@@ -565,6 +743,7 @@ const Personalization = () => {
           .personalization-action-btn {
             width: 100%;
             transform: none;
+            min-height: 56px;
           }
 
           .goals-section {
@@ -580,6 +759,14 @@ const Personalization = () => {
 
           .goal-item {
             gap: 2px;
+          }
+
+          .goal-label {
+            font-size: var(--text-sm);
+          }
+
+          .goal-value {
+            font-size: var(--text-xl);
           }
 
           .goals-section--body-comp {
@@ -603,6 +790,23 @@ const Personalization = () => {
 
           .macro-grid {
             gap: var(--space-1);
+          }
+
+          .macro-goals-form .macro-grid--edit {
+            grid-template-columns: 1fr;
+            gap: var(--space-2);
+          }
+
+          .macro-goals-form .macro-primary-row--edit {
+            grid-template-columns: 1fr;
+            gap: var(--space-2);
+            margin-bottom: var(--space-3);
+            padding-top: var(--space-2);
+          }
+
+          .body-composition-form .goals-display--edit {
+            grid-template-columns: 1fr;
+            gap: var(--space-2);
           }
 
           .macro-item,
@@ -629,7 +833,7 @@ const Personalization = () => {
 };
 
 // Body Composition Form Component
-const BodyCompositionForm = ({ goals, onSave }) => {
+const BodyCompositionForm = ({ goals, onSave, formatGoalLabel, bodyCompositionGoalKeys }) => {
   const [formData, setFormData] = useState({
     weight_goal: goals?.weight_goal || '',
     lean_mass_goal: goals?.lean_mass_goal || '',
@@ -649,54 +853,23 @@ const BodyCompositionForm = ({ goals, onSave }) => {
 
   return (
     <form onSubmit={handleSubmit} className="body-composition-form">
-      <div className="form-grid">
-        <div className="form-group">
-          <label>Target Weight (kg)</label>
-          <input
-            type="number"
-            step="0.1"
-            name="weight_goal"
-            value={formData.weight_goal}
-            onChange={handleChange}
-            className="form-input"
-          />
-        </div>
-        <div className="form-group">
-          <label>Lean Mass Goal (kg)</label>
-          <input
-            type="number"
-            step="0.1"
-            name="lean_mass_goal"
-            value={formData.lean_mass_goal}
-            onChange={handleChange}
-            className="form-input"
-          />
-        </div>
-        <div className="form-group">
-          <label>Fat Mass Goal (kg)</label>
-          <input
-            type="number"
-            step="0.1"
-            name="fat_mass_goal"
-            value={formData.fat_mass_goal}
-            onChange={handleChange}
-            className="form-input"
-          />
-        </div>
-        <div className="form-group">
-          <label>Cost Goal ($)</label>
-          <input
-            type="number"
-            step="0.01"
-            name="cost_goal"
-            value={formData.cost_goal}
-            onChange={handleChange}
-            className="form-input"
-          />
-        </div>
+      <div className="goals-display goals-display--edit">
+        {bodyCompositionGoalKeys.map((key) => (
+          <label key={key} className="profile-field">
+            <span className="profile-field-label">{formatGoalLabel(key)}</span>
+            <input
+              type="number"
+              step={key === 'cost_goal' ? '0.01' : '0.1'}
+              name={key}
+              value={formData[key]}
+              onChange={handleChange}
+              className="profile-field-input personalization-goals-field-input"
+            />
+          </label>
+        ))}
       </div>
       <div className="form-actions">
-        <button type="submit" className="btn btn-primary">
+        <button type="submit" className="goals-text-btn">
           Save Goals
         </button>
       </div>
@@ -705,7 +878,13 @@ const BodyCompositionForm = ({ goals, onSave }) => {
 };
 
 // Macro Goals Form Component
-const MacroGoalsForm = ({ goals, onSave }) => {
+const MacroGoalsForm = ({
+  goals,
+  onSave,
+  formatGoalLabel,
+  primaryMacroGoalKeys,
+  macroGoalKeys,
+}) => {
   const [formData, setFormData] = useState({
     calories_goal: goals?.calories_goal || '',
     protein_goal: goals?.protein_goal || '',
@@ -736,198 +915,53 @@ const MacroGoalsForm = ({ goals, onSave }) => {
     onSave({ ...goals, ...formData });
   };
 
+  const secondaryMacroKeys = macroGoalKeys.filter(
+    (k) => !primaryMacroGoalKeys.includes(k)
+  );
+
   return (
     <form onSubmit={handleSubmit} className="macro-goals-form">
-      <div className="macro-form-grid">
-        <div className="form-group">
-          <label>Calories</label>
-          <input
-            type="number"
-            name="calories_goal"
-            value={formData.calories_goal}
-            onChange={handleChange}
-            className="form-input"
-          />
+      <div className="macro-goals-display macro-goals-display--edit">
+        <div className="macro-primary-row macro-primary-row--edit">
+          {primaryMacroGoalKeys.map((key) => (
+            <label
+              key={key}
+              className="profile-field macro-item macro-item--primary"
+            >
+              <span className="profile-field-label macro-label">
+                {formatGoalLabel(key)}
+              </span>
+              <input
+                type="number"
+                step="0.1"
+                name={key}
+                value={formData[key]}
+                onChange={handleChange}
+                className="profile-field-input personalization-goals-field-input"
+              />
+            </label>
+          ))}
         </div>
-        <div className="form-group">
-          <label>Protein (g)</label>
-          <input
-            type="number"
-            step="0.1"
-            name="protein_goal"
-            value={formData.protein_goal}
-            onChange={handleChange}
-            className="form-input"
-          />
-        </div>
-        <div className="form-group">
-          <label>Fat (g)</label>
-          <input
-            type="number"
-            step="0.1"
-            name="fat_goal"
-            value={formData.fat_goal}
-            onChange={handleChange}
-            className="form-input"
-          />
-        </div>
-        <div className="form-group">
-          <label>Carbohydrates (g)</label>
-          <input
-            type="number"
-            step="0.1"
-            name="carbohydrates_goal"
-            value={formData.carbohydrates_goal}
-            onChange={handleChange}
-            className="form-input"
-          />
-        </div>
-        <div className="form-group">
-          <label>Fiber (g)</label>
-          <input
-            type="number"
-            step="0.1"
-            name="fiber_goal"
-            value={formData.fiber_goal}
-            onChange={handleChange}
-            className="form-input"
-          />
-        </div>
-        <div className="form-group">
-          <label>Sodium (mg)</label>
-          <input
-            type="number"
-            step="0.1"
-            name="sodium_goal"
-            value={formData.sodium_goal}
-            onChange={handleChange}
-            className="form-input"
-          />
-        </div>
-        <div className="form-group">
-          <label>Sugar (g)</label>
-          <input
-            type="number"
-            step="0.1"
-            name="sugar_goal"
-            value={formData.sugar_goal}
-            onChange={handleChange}
-            className="form-input"
-          />
-        </div>
-        <div className="form-group">
-          <label>Saturated Fat (g)</label>
-          <input
-            type="number"
-            step="0.1"
-            name="saturated_fat_goal"
-            value={formData.saturated_fat_goal}
-            onChange={handleChange}
-            className="form-input"
-          />
-        </div>
-        <div className="form-group">
-          <label>Trans Fat (g)</label>
-          <input
-            type="number"
-            step="0.1"
-            name="trans_fat_goal"
-            value={formData.trans_fat_goal}
-            onChange={handleChange}
-            className="form-input"
-          />
-        </div>
-        <div className="form-group">
-          <label>Calcium (mg)</label>
-          <input
-            type="number"
-            step="0.1"
-            name="calcium_goal"
-            value={formData.calcium_goal}
-            onChange={handleChange}
-            className="form-input"
-          />
-        </div>
-        <div className="form-group">
-          <label>Iron (mg)</label>
-          <input
-            type="number"
-            step="0.1"
-            name="iron_goal"
-            value={formData.iron_goal}
-            onChange={handleChange}
-            className="form-input"
-          />
-        </div>
-        <div className="form-group">
-          <label>Magnesium (mg)</label>
-          <input
-            type="number"
-            step="0.1"
-            name="magnesium_goal"
-            value={formData.magnesium_goal}
-            onChange={handleChange}
-            className="form-input"
-          />
-        </div>
-        <div className="form-group">
-          <label>Cholesterol (mg)</label>
-          <input
-            type="number"
-            step="0.1"
-            name="cholesterol_goal"
-            value={formData.cholesterol_goal}
-            onChange={handleChange}
-            className="form-input"
-          />
-        </div>
-        <div className="form-group">
-          <label>Vitamin A (IU)</label>
-          <input
-            type="number"
-            step="0.1"
-            name="vitamin_a_goal"
-            value={formData.vitamin_a_goal}
-            onChange={handleChange}
-            className="form-input"
-          />
-        </div>
-        <div className="form-group">
-          <label>Vitamin C (mg)</label>
-          <input
-            type="number"
-            step="0.1"
-            name="vitamin_c_goal"
-            value={formData.vitamin_c_goal}
-            onChange={handleChange}
-            className="form-input"
-          />
-        </div>
-        <div className="form-group">
-          <label>Vitamin D (IU)</label>
-          <input
-            type="number"
-            step="0.1"
-            name="vitamin_d_goal"
-            value={formData.vitamin_d_goal}
-            onChange={handleChange}
-            className="form-input"
-          />
-        </div>
-        <div className="form-group">
-          <label>Caffeine (mg)</label>
-          <input
-            type="number"
-            step="0.1"
-            name="caffeine_goal"
-            value={formData.caffeine_goal}
-            onChange={handleChange}
-            className="form-input"
-          />
+        <div className="macro-grid macro-grid--edit">
+          {secondaryMacroKeys.map((key) => (
+            <label key={key} className="profile-field macro-item">
+              <span className="profile-field-label macro-label">
+                {formatGoalLabel(key)}
+              </span>
+              <input
+                type="number"
+                step="0.1"
+                name={key}
+                value={formData[key]}
+                onChange={handleChange}
+                className="profile-field-input personalization-goals-field-input"
+              />
+            </label>
+          ))}
         </div>
       </div>
       <div className="form-actions">
-        <button type="submit" className="btn btn-primary">
+        <button type="submit" className="goals-text-btn">
           Save Goals
         </button>
       </div>

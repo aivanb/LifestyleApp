@@ -54,6 +54,8 @@ describe('App Component', () => {
   test('renders navbar', () => {
     renderApp();
     
-    expect(screen.getByText('Tracking App')).toBeInTheDocument();
+    // Navbar link labels (avoid colliding with login page "Login" heading/button text)
+    expect(screen.getByText('Login', { selector: '.nav-hub-link-label' })).toBeInTheDocument();
+    expect(screen.getByText('Register', { selector: '.nav-hub-link-label' })).toBeInTheDocument();
   });
 });

@@ -1455,18 +1455,16 @@ const SplitCreator = ({
         }
 
         .split-creator-section {
-          background: var(--bg-secondary);
-          border: none;
+          background: var(--profile-card-bg, var(--bg-secondary));
+          border: 1px solid var(--profile-card-border, var(--border-primary));
           border-radius: var(--radius-lg);
           padding: var(--space-5);
-          box-shadow: 0 24px 55px rgba(0, 0, 0, 0.4);
-          transition: transform 0.25s var(--ease-out-cubic), box-shadow 0.25s var(--ease-out-cubic);
-          backdrop-filter: blur(8px);
+          box-shadow: var(--shadow-md);
+          transition: border-color 0.2s var(--ease-out-cubic);
         }
 
         .split-creator-section:hover {
-          transform: translateY(-3px);
-          box-shadow: 0 30px 60px rgba(0, 0, 0, 0.45);
+          border-color: var(--profile-card-border, var(--border-primary));
         }
 
         .split-creator-section-header {
@@ -1499,22 +1497,27 @@ const SplitCreator = ({
           width: 100%;
           text-align: left;
           cursor: pointer;
-          background: var(--bg-tertiary);
-          border: 1px solid var(--border-primary);
+          background: #121722;
+          border: 1px solid var(--profile-card-border, var(--border-primary));
           border-radius: var(--radius-lg);
           padding: var(--space-4);
-          transition: transform 0.25s var(--ease-out-cubic), box-shadow 0.25s var(--ease-out-cubic);
+          transition: border-color 0.2s var(--ease-out-cubic), box-shadow 0.2s var(--ease-out-cubic);
         }
 
         .split-creator-split-card:hover {
-          transform: translateY(-3px);
-          box-shadow: 0 24px 55px rgba(0, 0, 0, 0.4);
+          border-color: var(--profile-card-border, var(--border-primary));
+          box-shadow: none;
         }
 
         .split-creator-split-card--latest {
+          border: 3px solid var(--accent-secondary);
+          box-shadow: none;
+          background: #121722;
+        }
+
+        .split-creator-split-card--latest:hover {
           border-color: var(--accent-secondary);
-          box-shadow: 0 0 0 1px var(--accent-secondary-alpha);
-          background: linear-gradient(180deg, var(--accent-secondary-alpha) 0%, var(--bg-tertiary) 55%);
+          box-shadow: none;
         }
 
         .split-creator-split-card__header {
@@ -1633,16 +1636,16 @@ const SplitCreator = ({
         }
 
         .split-creator-day-card {
-          background: var(--bg-secondary);
-          border: 1px solid var(--border-primary);
+          background: var(--profile-card-bg, var(--bg-secondary));
+          border: 1px solid var(--profile-card-border, var(--border-primary));
           border-radius: var(--radius-lg);
           padding: var(--space-5);
-          transition: transform 0.25s var(--ease-out-cubic), box-shadow 0.25s var(--ease-out-cubic);
+          transition: border-color 0.2s var(--ease-out-cubic), box-shadow 0.2s var(--ease-out-cubic);
         }
 
         .split-creator-day-card:hover {
-          transform: translateY(-3px);
-          box-shadow: 0 24px 55px rgba(0, 0, 0, 0.4);
+          border-color: var(--profile-card-border, var(--border-primary));
+          box-shadow: none;
         }
 
         .split-creator-day-card__header {
@@ -1659,20 +1662,20 @@ const SplitCreator = ({
 
         .split-creator-targets {
           display: grid;
-          gap: var(--space-3);
+          gap: var(--space-2);
         }
 
         .split-creator-target {
           background: var(--bg-tertiary);
           border: 1px solid var(--border-secondary);
           border-radius: var(--radius-md);
-          padding: var(--space-3);
+          padding: var(--space-2);
         }
 
         .split-creator-target-row {
           display: grid;
           grid-template-columns: 1fr 120px auto auto;
-          gap: var(--space-3);
+          gap: var(--space-2);
           align-items: center;
         }
 
@@ -1688,6 +1691,33 @@ const SplitCreator = ({
           box-shadow: none;
         }
 
+        .split-creator .form-input,
+        .split-creator .form-select {
+          min-height: 48px;
+          border: 1px solid var(--input-border);
+          border-radius: var(--radius-md);
+          background: var(--bg-tertiary);
+          color: var(--text-primary);
+          font-size: var(--text-base);
+        }
+
+        .split-creator .form-input:focus,
+        .split-creator .form-select:focus {
+          border-color: var(--accent-primary);
+          box-shadow: 0 0 0 3px rgba(var(--accent-primary-rgb), 0.12);
+          outline: none;
+        }
+
+        .split-creator .sc-date-input,
+        .split-creator #split_name.form-input {
+          background: var(--bg-tertiary) !important;
+        }
+
+        [data-theme='light'] .split-creator .sc-date-input,
+        [data-theme='light'] .split-creator #split_name.form-input {
+          background: var(--bg-tertiary) !important;
+        }
+
         .split-creator-activation-input {
           text-align: center;
           min-width: 0;
@@ -1698,7 +1728,7 @@ const SplitCreator = ({
           align-items: center;
           justify-content: space-between;
           gap: var(--space-2);
-          margin-top: var(--space-2);
+          margin-top: var(--space-1);
         }
 
         .split-creator-target-help-text {
@@ -1722,15 +1752,15 @@ const SplitCreator = ({
         }
 
         .split-creator-sidebar {
-          background: var(--bg-secondary);
-          border: 1px solid var(--border-primary);
+          background: var(--profile-card-bg, var(--bg-secondary));
+          border: 1px solid var(--profile-card-border, var(--border-primary));
           border-radius: var(--radius-lg);
           padding: var(--space-5);
           position: sticky;
           top: var(--space-6);
           max-height: calc(100vh - var(--space-12));
           overflow: auto;
-          box-shadow: 0 24px 55px rgba(0, 0, 0, 0.42);
+          box-shadow: var(--shadow-md);
         }
 
         .split-creator-status-name-wrap {
@@ -1838,7 +1868,7 @@ const SplitCreator = ({
 
         .split-creator-sidebar-title {
           margin: 0 0 var(--space-3) 0;
-          font-size: var(--text-sm);
+          font-size: calc(var(--text-sm) * 2);
           text-transform: uppercase;
           letter-spacing: 0.05em;
           color: var(--text-secondary);
@@ -1904,7 +1934,7 @@ const SplitCreator = ({
           padding: var(--space-3) var(--space-4);
           border: 1px solid var(--surface-overlay);
           border-radius: var(--radius-md);
-          background: var(--bg-secondary);
+          background: var(--bg-tertiary);
           font-size: var(--text-base);
           color: var(--text-primary);
           transition: border-color 0.3s ease, background 0.3s ease, color 0.3s ease;
@@ -1919,15 +1949,51 @@ const SplitCreator = ({
           height: auto;
         }
 
+        [data-theme='light'] .split-creator[data-variant="splitsPage"] input[type="date"] {
+          background: var(--bg-tertiary);
+        }
+
         .split-creator[data-variant="splitsPage"] input[type="date"]:focus {
           outline: none;
           border-color: var(--accent-primary);
-          background: rgba(90, 166, 255, 0.12);
+          background: var(--bg-tertiary);
+        }
+
+        [data-theme='light'] .split-creator[data-variant="splitsPage"] input[type="date"]:focus {
+          background: var(--bg-tertiary);
         }
 
         .split-creator[data-variant="splitsPage"] input[type="date"]:hover {
           border-color: var(--accent-primary);
-          background: rgba(90, 166, 255, 0.08);
+          background: var(--bg-tertiary);
+        }
+
+        [data-theme='light'] .split-creator[data-variant="splitsPage"] input[type="date"]:hover {
+          background: var(--bg-tertiary);
+        }
+
+        .split-creator[data-variant="splitsPage"] #split_name.form-input {
+          background: var(--bg-tertiary);
+        }
+
+        [data-theme='light'] .split-creator[data-variant="splitsPage"] #split_name.form-input {
+          background: var(--bg-tertiary);
+        }
+
+        .split-creator[data-variant="splitsPage"] #split_name.form-input:focus {
+          background: var(--bg-tertiary);
+        }
+
+        [data-theme='light'] .split-creator[data-variant="splitsPage"] #split_name.form-input:focus {
+          background: var(--bg-tertiary);
+        }
+
+        .split-creator[data-variant="splitsPage"] #split_name.form-input:hover {
+          background: var(--bg-tertiary);
+        }
+
+        [data-theme='light'] .split-creator[data-variant="splitsPage"] #split_name.form-input:hover {
+          background: var(--bg-tertiary);
         }
 
         .split-creator[data-variant="splitsPage"] input[type="date"]::-webkit-calendar-picker-indicator {
@@ -1986,15 +2052,46 @@ const SplitCreator = ({
           height: auto;
         }
 
-        .sc-date-input:focus {
+        .split-creator .sc-date-input:focus {
           outline: none;
           border-color: var(--accent-primary);
-          background: rgba(90, 166, 255, 0.12);
+          box-shadow: 0 0 0 3px rgba(var(--accent-primary-rgb), 0.12);
+          background: var(--bg-tertiary) !important;
+        }
+
+        [data-theme='light'] .split-creator .sc-date-input:focus {
+          background: var(--bg-tertiary) !important;
         }
 
         .sc-date-input:hover {
           border-color: var(--accent-primary);
           background: rgba(90, 166, 255, 0.08);
+        }
+
+        .split-creator .sc-date-input:hover {
+          border-color: var(--input-border);
+          background: var(--bg-tertiary) !important;
+          box-shadow: none;
+        }
+
+        [data-theme='light'] .split-creator .sc-date-input:hover {
+          background: var(--bg-tertiary) !important;
+        }
+
+        .split-creator #split_name.form-input:focus {
+          background: var(--bg-tertiary) !important;
+        }
+
+        [data-theme='light'] .split-creator #split_name.form-input:focus {
+          background: var(--bg-tertiary) !important;
+        }
+
+        .split-creator #split_name.form-input:hover {
+          background: var(--bg-tertiary) !important;
+        }
+
+        [data-theme='light'] .split-creator #split_name.form-input:hover {
+          background: var(--bg-tertiary) !important;
         }
 
         .sc-calendar-popup {
@@ -2263,14 +2360,13 @@ const SplitCreator = ({
 
         .split-creator-submit {
           width: 100%;
-          background: var(--bg-tertiary);
-          border-color: var(--border-primary);
-          color: var(--text-primary);
+          background: #79b5fb;
+          border-color: #79b5fb;
+          color: #040508;
         }
 
         .split-creator-submit:hover:not(:disabled) {
-          background: var(--bg-hover, var(--bg-tertiary));
-          border-color: var(--border-secondary);
+          filter: brightness(0.95);
         }
 
         @media (max-width: 1024px) {
@@ -2373,36 +2469,54 @@ const SplitCreator = ({
             padding-right: 0;
           }
 
+          /* Match WorkoutLoggingDashboard .workout-mobile-muscle-toggle */
           .split-creator-mobile-sidebar-toggle {
             order: unset;
             position: fixed;
-            bottom: var(--space-6);
-            right: var(--space-4);
+            bottom: calc(var(--space-4) + env(safe-area-inset-bottom, 0px) + 40px);
+            right: auto;
             top: auto;
-            left: auto;
+            left: var(--space-3);
             z-index: 1000;
-            width: 112px;
-            height: 56px;
-            min-height: 56px;
-            padding: 0;
-            margin: 0;
-            border-radius: var(--radius-md);
-            border: none;
-            background: var(--accent-primary);
-            color: #ffffff;
-            box-shadow: var(--shadow-md);
-            display: flex;
+            display: inline-flex;
             align-items: center;
             justify-content: center;
+            padding: var(--space-3) var(--space-3);
+            min-width: 6rem;
+            max-width: 8.25rem;
+            min-height: 50px;
+            width: auto;
+            height: auto;
+            margin: 0;
+            font-size: var(--text-base);
+            font-weight: var(--font-weight-semibold);
+            letter-spacing: 0.02em;
+            border-radius: var(--radius-lg);
+            border: 1px solid rgba(128, 128, 128, 0.55);
+            background: var(--profile-card-bg, var(--bg-secondary));
+            color: var(--text-primary);
+            box-shadow: var(--shadow-md);
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+            outline: none;
+            transition: background 0.2s ease, border-color 0.2s ease;
           }
 
-          .split-creator-mobile-sidebar-toggle:hover {
-            background: var(--accent-primary-dark, var(--accent-primary));
+          .split-creator-mobile-sidebar-toggle:hover,
+          .split-creator-mobile-sidebar-toggle:focus,
+          .split-creator-mobile-sidebar-toggle:focus-visible {
+            background: var(--profile-card-bg, var(--bg-secondary));
+            color: var(--text-primary);
+            border-color: rgba(128, 128, 128, 0.65);
+            box-shadow: var(--shadow-md);
+            outline: none;
           }
 
           .split-creator-mobile-sidebar-toggle-icon {
-            width: 28px;
-            height: 28px;
+            width: 22px;
+            height: 22px;
+            color: inherit;
+            flex-shrink: 0;
           }
 
           .split-creator-days {
@@ -2443,25 +2557,15 @@ const SplitCreator = ({
             gap: var(--space-2);
           }
 
-          .split-creator-mobile-sidebar-toggle {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: background 0.2s ease, transform 0.2s ease;
-          }
-
           @media (max-width: 480px) {
             .split-creator-mobile-sidebar-toggle {
-              width: 96px;
-              height: 48px;
-              min-height: 48px;
-              bottom: var(--space-4);
-              right: var(--space-4);
+              bottom: calc(var(--space-3) + env(safe-area-inset-bottom, 0px) + 36px);
+              right: auto;
+              left: var(--space-3);
             }
             .split-creator-mobile-sidebar-toggle-icon {
-              width: 24px;
-              height: 24px;
+              width: 20px;
+              height: 20px;
             }
           }
 
@@ -2522,7 +2626,7 @@ const SplitCreator = ({
 
           .split-creator-sidebar-title {
             padding-right: 36px;
-            font-size: 10px;
+            font-size: 20px;
           }
 
           /* Mobile status typography priorities:
@@ -2557,12 +2661,12 @@ const SplitCreator = ({
           }
 
           .split-creator-targets {
-            gap: var(--space-4);
-            margin-top: var(--space-3);
+            gap: var(--space-2);
+            margin-top: var(--space-2);
           }
 
           .split-creator-target {
-            padding: var(--space-3) 0;
+            padding: var(--space-2) 0;
           }
 
           .split-creator-day-card__header {
@@ -2581,12 +2685,12 @@ const SplitCreator = ({
           }
 
           .split-creator[data-variant="splitsPage"] .split-creator-targets {
-            gap: var(--space-3);
-            margin-top: var(--space-3);
+            gap: var(--space-2);
+            margin-top: var(--space-2);
           }
 
           .split-creator[data-variant="splitsPage"] .split-creator-target {
-            padding: var(--space-3) var(--space-3);
+            padding: var(--space-2) var(--space-2);
           }
 
           .split-creator-days-list {

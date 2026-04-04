@@ -12,6 +12,7 @@ import DataFilters from '../components/DataFilters';
  */
 const DataViewer = () => {
   const { user } = useAuth();
+  const DEFAULT_TABLE_NAME = 'api_usage_log';
   
   // State for tables list
   const [tables, setTables] = useState([]);
@@ -59,6 +60,12 @@ const DataViewer = () => {
       if (response.data && response.data.tables) {
         setTables(response.data.tables);
         setError('');
+
+        // Default table on initial load (only if user has access to it)
+        const hasDefault = response.data.tables.some((t) => t.name === DEFAULT_TABLE_NAME);
+        if (hasDefault && !selectedTable) {
+          await handleTableSelect(DEFAULT_TABLE_NAME);
+        }
       }
     } catch (err) {
       console.error('Failed to load tables:', err);
@@ -170,17 +177,11 @@ const DataViewer = () => {
   };
 
   return (
-    <div className="data-viewer animate-fade-in" style={{ padding: 0 }}>
-      <div className="flex items-center gap-6 mb-6 data-viewer-page-header">
-        <svg className="icon icon-xl" viewBox="0 0 20 20" fill="var(--accent-primary)">
-          <path d="M3 12v3c0 1.657 3.134 3 7 3s7-1.343 7-3v-3c0 1.657-3.134 3-7 3s-7-1.343-7-3z" />
-          <path d="M3 7v3c0 1.657 3.134 3 7 3s7-1.343 7-3V7c0 1.657-3.134 3-7 3S3 8.657 3 7z" />
-          <path d="M17 5c0 1.657-3.134 3-7 3S3 6.657 3 5s3.134-3 7-3 7 1.343 7 3z" />
-        </svg>
-        <h1 style={{ margin: 0 }}>Database Viewer</h1>
-      </div>
-      
-      <div className="card" style={{ background: 'var(--accent-primary-alpha)', borderColor: 'var(--accent-primary)' }}>
+    <div className="data-viewer animate-fade-in">
+      <div
+        className="card data-viewer-access-level-card"
+        style={{ background: 'var(--data-viewer-card-bg)', borderColor: 'var(--accent-primary)' }}
+      >
         <div className="flex items-center gap-4 data-viewer-card-header">
           <svg className="icon" viewBox="0 0 20 20" fill="var(--accent-primary)">
             <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-6-3a2 2 0 11-4 0 2 2 0 014 0zm-2 4a5 5 0 00-4.546 2.916A5.986 5.986 0 0010 16a5.986 5.986 0 004.546-2.084A5 5 0 0010 11z" clipRule="evenodd" />
@@ -221,7 +222,8 @@ const DataViewer = () => {
           onClick={() => setTablesSidebarOpen(true)}
           aria-label="Open tables list"
         >
-          Available Tables
+          <span className="data-viewer-tables-toggle__desktop">Available Tables</span>
+          <span className="data-viewer-tables-toggle__mobile">Tables</span>
         </button>
         {tablesSidebarOpen && (
           <div
@@ -369,7 +371,63 @@ const DataViewer = () => {
 
       <style jsx>{`
         .data-viewer {
-          padding: var(--space-6) 0;
+          width: 100%;
+          max-width: none;
+          margin: 0 auto;
+          padding: var(--space-5) var(--space-5) var(--space-8);
+          font-family: var(--font-primary);
+          min-height: 100dvh;
+          box-sizing: border-box;
+
+          /* Match the /home shell background (rendered on a fixed pseudo-element below) */
+          --data-viewer-shell-tint: rgba(255, 255, 255, 0.045);
+          --data-viewer-shell-strong: rgba(255, 255, 255, 0.11);
+          --data-viewer-card-bg: #171c24;
+          --data-viewer-card-border: transparent;
+          position: relative;
+          color: var(--text-primary);
+          background: transparent;
+        }
+
+        /* Full-viewport background so margins/padding elsewhere don't reveal other colors */
+        .data-viewer::before {
+          content: '';
+          position: fixed;
+          inset: 0;
+          z-index: -1;
+          pointer-events: none;
+
+          background-color: #040508;
+          background-image:
+            linear-gradient(var(--data-viewer-shell-tint) 1px, transparent 1px),
+            linear-gradient(90deg, var(--data-viewer-shell-tint) 1px, transparent 1px),
+            linear-gradient(var(--data-viewer-shell-strong) 1px, transparent 1px),
+            linear-gradient(90deg, var(--data-viewer-shell-strong) 1px, transparent 1px);
+          background-size: 20px 20px, 20px 20px, 80px 80px, 80px 80px;
+        }
+
+        :global([data-theme="light"]) .data-viewer {
+          --data-viewer-shell-tint: rgba(0, 0, 0, 0.04);
+          --data-viewer-shell-strong: rgba(0, 0, 0, 0.1);
+          --data-viewer-card-bg: #ffffff;
+        }
+
+        :global([data-theme="light"]) .data-viewer::before {
+          background-color: #e8eaf2;
+        }
+
+        .data-viewer .card {
+          background: var(--data-viewer-card-bg);
+          border: 1px solid var(--data-viewer-card-border);
+          box-shadow: var(--shadow-md);
+        }
+
+        .data-viewer-page-header {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: var(--space-4);
+          margin-bottom: var(--space-6);
         }
 
         .data-viewer-page-header,
@@ -494,19 +552,45 @@ const DataViewer = () => {
           display: none;
         }
 
+        .data-viewer-tables-toggle__desktop {
+          display: inline;
+        }
+
+        .data-viewer-tables-toggle__mobile {
+          display: none;
+        }
+
         @media (max-width: 768px) {
+          .data-viewer {
+            padding: var(--space-4) var(--space-3) max(var(--space-12), 4rem);
+          }
+
           .data-viewer-tables-toggle {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            padding: var(--space-2) var(--space-4);
-            margin-bottom: var(--space-3);
-            font-size: var(--text-sm);
+            position: fixed;
+            right: var(--space-4);
+            bottom: calc(var(--space-6) + 30px);
+            z-index: 950;
+
+            padding: var(--space-4) var(--space-5);
+            font-size: var(--text-base);
+
             background: var(--bg-tertiary);
-            border: 1px solid var(--border-primary);
-            border-radius: var(--radius-md);
+            border: 1px solid var(--input-border);
+            border-radius: var(--radius-lg);
             color: var(--text-primary);
             cursor: pointer;
+            box-shadow: var(--shadow-md);
+          }
+
+          .data-viewer-tables-toggle__desktop {
+            display: none;
+          }
+
+          .data-viewer-tables-toggle__mobile {
+            display: inline;
           }
 
           .data-viewer-tables-overlay {
@@ -539,11 +623,27 @@ const DataViewer = () => {
           .data-viewer-tables-col .data-viewer-tables-card {
             height: 100%;
             max-height: 60vh;
-            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
             border-radius: var(--radius-lg) var(--radius-lg) 0 0;
           }
 
+          .data-viewer-tables-col .data-viewer-tables-card > .loading {
+            flex: 1;
+            min-height: 0;
+            overflow: hidden;
+          }
+
+          .data-viewer-tables-col .tables-list {
+            flex: 1;
+            min-height: 0;
+            max-height: none;
+            overflow-y: auto;
+          }
+
           .data-viewer-tables-col .data-viewer-card-header {
+            flex-shrink: 0;
             position: relative;
             padding-right: 2.5rem;
           }
@@ -551,14 +651,19 @@ const DataViewer = () => {
           .data-viewer-tables-close {
             display: flex;
             position: absolute;
-            top: var(--space-2);
+            top: var(--space-1);
             right: var(--space-2);
             padding: var(--space-2);
             background: transparent;
             border: none;
-            font-size: var(--text-xl);
-            color: var(--text-secondary);
+            font-size: var(--text-3xl);
+            color: var(--text-primary);
             cursor: pointer;
+            line-height: 1;
+          }
+
+          .data-viewer-access-level-card {
+            display: none;
           }
 
           .data-viewer-filters-wrap .flex {

@@ -5,17 +5,24 @@ import WorkoutLogger from './WorkoutLogger';
 import WorkoutAdder from './WorkoutAdder';
 import { LinearProgressBar } from './ProgressBar';
 import WorkoutAnalytics from './WorkoutAnalytics';
-import { ChartBarIcon } from '@heroicons/react/24/outline';
+import {
+  ChartBarIcon,
+  ClipboardDocumentListIcon,
+  PlusCircleIcon,
+  TrashIcon,
+  XMarkIcon,
+} from '@heroicons/react/24/outline';
+import { WORKOUT_TRACKER_CLOSE_BTN_CSS } from '../constants/workoutTrackerCloseButtonCss';
+import {
+  canonicalWorkoutLogAttributesForDisplay,
+  labelForWorkoutLogAttributeKey,
+} from '../constants/workoutLoggingAttributes';
 
 /**
- * WorkoutLoggingDashboard Component
- * 
- * Main interface for workout logging with PC/mobile responsive design.
- * Features:
- * - Workout log list with time-based separation
- * - Integrated workout logging and creation
- * - Responsive layout for PC and mobile
- * - Real-time data from database
+ * WorkoutLoggingDashboard — `/workout-tracker` shell (aligned with `/home` + `/food-log` header UX).
+ *
+ * Logged-set “attributes” shown per group are limited to the canonical list in
+ * `src/constants/workoutLoggingAttributes.js` (same as `WorkoutLogger` modal).
  */
 const WorkoutLoggingDashboard = () => {
   const location = useLocation();
@@ -52,15 +59,34 @@ const WorkoutLoggingDashboard = () => {
       return true;
     }
   });
-  const [isDatePickerActive, setIsDatePickerActive] = useState(true);
-  const datePickerTimeoutRef = useRef(null);
-  const [areFloatingActionsActive, setAreFloatingActionsActive] = useState(true);
   const [analyticsWorkout, setAnalyticsWorkout] = useState(null);
   const [showAnalytics, setShowAnalytics] = useState(false);
-  const floatingActionsTimeoutRef = useRef(null);
   const [collapsedWorkouts, setCollapsedWorkouts] = useState({});
   const [mobileMuscleSidebarOpen, setMobileMuscleSidebarOpen] = useState(false);
   const [initialMuscleFilter, setInitialMuscleFilter] = useState('');
+  const MOBILE_WORKOUT_DELETE_SWIPE_THRESHOLD = 96;
+  const MOBILE_WORKOUT_SWIPE_MAX = 132;
+  const [mobileWorkoutSwipeState, setMobileWorkoutSwipeState] = useState({});
+  const [mobileWorkoutDeletingLogId, setMobileWorkoutDeletingLogId] = useState(null);
+  const mobileWorkoutSwipeStartXRef = useRef({});
+  const mobileWorkoutSwipeActiveIdRef = useRef(null);
+  const [isMobileViewport, setIsMobileViewport] = useState(
+    () => typeof window !== 'undefined' && window.innerWidth <= 768
+  );
+
+  const PC_HEADER_ACTIONS_ANIM_MS = 220;
+  const PC_HEADER_ACTIONS_START_CLOSE_DELAY_MS = 650;
+  const MOBILE_QUICK_ACTIONS_ANIM_MS = 220;
+  const headerRegionRef = useRef(null);
+  const [showPcHeaderActions, setShowPcHeaderActions] = useState(false);
+  const [pcHeaderActionsMounted, setPcHeaderActionsMounted] = useState(false);
+  const [pcHeaderActionsClosing, setPcHeaderActionsClosing] = useState(false);
+  const pcHeaderActionsStartCloseTimeoutRef = useRef(null);
+  const pcHeaderActionsUnmountTimeoutRef = useRef(null);
+  const [showMobileQuickActions, setShowMobileQuickActions] = useState(false);
+  const [mobileQuickActionsMounted, setMobileQuickActionsMounted] = useState(false);
+  const [mobileQuickActionsClosing, setMobileQuickActionsClosing] = useState(false);
+  const mobileQuickActionsUnmountTimeoutRef = useRef(null);
 
   const toggleWorkoutCollapse = useCallback((workoutId) => {
     setCollapsedWorkouts((prev) => ({
@@ -69,62 +95,83 @@ const WorkoutLoggingDashboard = () => {
     }));
   }, []);
 
-  const clearDatePickerFadeTimeout = useCallback(() => {
-    if (datePickerTimeoutRef.current) {
-      clearTimeout(datePickerTimeoutRef.current);
-      datePickerTimeoutRef.current = null;
-    }
+  useEffect(() => {
+    document.body.classList.add('route-workout-tracker');
+    return () => document.body.classList.remove('route-workout-tracker');
   }, []);
 
-  const startDatePickerFade = useCallback(() => {
-    clearDatePickerFadeTimeout();
-    datePickerTimeoutRef.current = setTimeout(() => {
-      setIsDatePickerActive(false);
-    }, 3000);
-  }, [clearDatePickerFadeTimeout]);
-
-  const handleDatePickerInteraction = useCallback(() => {
-    setIsDatePickerActive(true);
-    if (!showCustomCalendar) {
-      startDatePickerFade();
-    }
-  }, [startDatePickerFade, showCustomCalendar]);
-
-  const clearFloatingActionsFadeTimeout = useCallback(() => {
-    if (floatingActionsTimeoutRef.current) {
-      clearTimeout(floatingActionsTimeoutRef.current);
-      floatingActionsTimeoutRef.current = null;
-    }
+  useEffect(() => {
+    const onResize = () => setIsMobileViewport(window.innerWidth <= 768);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
   }, []);
 
-  const startFloatingActionsFade = useCallback(() => {
-    clearFloatingActionsFadeTimeout();
-    floatingActionsTimeoutRef.current = setTimeout(() => {
-      setAreFloatingActionsActive(false);
-    }, 3000);
-  }, [clearFloatingActionsFadeTimeout]);
+  const showPcHeaderActionsFromKeyboard = useCallback(() => {
+    if (typeof window === 'undefined' || window.innerWidth <= 768) return;
+    if (pcHeaderActionsStartCloseTimeoutRef.current) {
+      clearTimeout(pcHeaderActionsStartCloseTimeoutRef.current);
+    }
+    if (pcHeaderActionsUnmountTimeoutRef.current) {
+      clearTimeout(pcHeaderActionsUnmountTimeoutRef.current);
+    }
+    setPcHeaderActionsMounted(true);
+    setShowPcHeaderActions(true);
+  }, []);
 
-  const handleFloatingActionsInteraction = useCallback(() => {
-    setAreFloatingActionsActive(true);
-    startFloatingActionsFade();
-  }, [startFloatingActionsFade]);
+  const openPcHeaderActions = useCallback(() => {
+    if (typeof window === 'undefined' || window.innerWidth <= 768) return;
+    if (pcHeaderActionsStartCloseTimeoutRef.current) {
+      clearTimeout(pcHeaderActionsStartCloseTimeoutRef.current);
+    }
+    if (pcHeaderActionsUnmountTimeoutRef.current) {
+      clearTimeout(pcHeaderActionsUnmountTimeoutRef.current);
+    }
+    setPcHeaderActionsClosing(false);
+    setPcHeaderActionsMounted(true);
+    setShowPcHeaderActions(true);
+  }, []);
+
+  const closePcHeaderActionsAnimated = useCallback(() => {
+    if (!pcHeaderActionsMounted) return;
+    if (pcHeaderActionsUnmountTimeoutRef.current) {
+      clearTimeout(pcHeaderActionsUnmountTimeoutRef.current);
+    }
+    setPcHeaderActionsClosing(true);
+    setShowPcHeaderActions(false);
+    pcHeaderActionsUnmountTimeoutRef.current = window.setTimeout(() => {
+      setPcHeaderActionsMounted(false);
+      setPcHeaderActionsClosing(false);
+    }, PC_HEADER_ACTIONS_ANIM_MS);
+  }, [pcHeaderActionsMounted, PC_HEADER_ACTIONS_ANIM_MS]);
+
+  const openMobileQuickActions = useCallback(() => {
+    if (typeof window === 'undefined' || window.innerWidth > 768) return;
+    if (mobileQuickActionsUnmountTimeoutRef.current) {
+      clearTimeout(mobileQuickActionsUnmountTimeoutRef.current);
+    }
+    setMobileQuickActionsClosing(false);
+    setMobileQuickActionsMounted(true);
+    setShowMobileQuickActions(true);
+  }, []);
+
+  const closeMobileQuickActionsAnimated = useCallback(() => {
+    if (!mobileQuickActionsMounted) return;
+    if (mobileQuickActionsUnmountTimeoutRef.current) {
+      clearTimeout(mobileQuickActionsUnmountTimeoutRef.current);
+    }
+    setShowMobileQuickActions(false);
+    setMobileQuickActionsClosing(true);
+    mobileQuickActionsUnmountTimeoutRef.current = window.setTimeout(() => {
+      setMobileQuickActionsClosing(false);
+      setMobileQuickActionsMounted(false);
+    }, MOBILE_QUICK_ACTIONS_ANIM_MS);
+  }, [mobileQuickActionsMounted, MOBILE_QUICK_ACTIONS_ANIM_MS]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
       localStorage.setItem('workout-dashboard-show-quick-add', showQuickAdd ? 'true' : 'false');
     }
   }, [showQuickAdd]);
-
-  useEffect(() => {
-    startFloatingActionsFade();
-    return () => clearFloatingActionsFadeTimeout();
-  }, [startFloatingActionsFade, clearFloatingActionsFadeTimeout]);
-
-  useEffect(() => {
-    if (showWorkoutCreator || showWorkoutSelectionModal) {
-      handleFloatingActionsInteraction();
-    }
-  }, [showWorkoutCreator, showWorkoutSelectionModal, handleFloatingActionsInteraction]);
 
   useEffect(() => {
     const openWorkoutSelection = Boolean(location.state?.openWorkoutSelection);
@@ -348,23 +395,6 @@ const WorkoutLoggingDashboard = () => {
     loadPreviousDayWorkouts(selectedDate);
   }, [selectedDate, loadWorkoutLogs, loadWorkoutStats, loadSplitData]);
 
-  useEffect(() => {
-    if (showCustomCalendar) {
-      setIsDatePickerActive(true);
-      clearDatePickerFadeTimeout();
-      return;
-    }
-    startDatePickerFade();
-    return () => {
-      clearDatePickerFadeTimeout();
-    };
-  }, [showCustomCalendar, startDatePickerFade, clearDatePickerFadeTimeout]);
-
-  useEffect(() => {
-    return () => clearDatePickerFadeTimeout();
-  }, [clearDatePickerFadeTimeout]);
-
-
   const handleDateChange = (newDate) => {
     setSelectedDate(newDate);
   };
@@ -447,6 +477,27 @@ const WorkoutLoggingDashboard = () => {
     averageVolumeDiff: dailyStats.averageVolumeDiff
   }), [dailyStats, workoutStats]);
 
+  /** Per-set rows for canonical attributes only (see `workoutLoggingAttributes.js`). */
+  const renderCanonicalAttributeDetails = (log) =>
+    canonicalWorkoutLogAttributesForDisplay(log.attributes).map((attrKey, idx) => {
+      const attrInputs = log.attribute_inputs
+        ? Object.entries(log.attribute_inputs)
+            .filter(([key]) => key.startsWith(`${attrKey}_`))
+            .map(([, value]) => value)
+        : [];
+      return (
+        <div key={`${attrKey}-${idx}`} className="workout-log-detail">
+          <span className="metric-label-small">{labelForWorkoutLogAttributeKey(attrKey)}</span>
+          <span className="metric-colon">:</span>
+          {attrInputs.length > 0 ? (
+            <span className="metric-value-small">{attrInputs.join(' / ')}</span>
+          ) : (
+            <span className="metric-value-small">-</span>
+          )}
+        </div>
+      );
+    });
+
   // Filter quick workouts to exclude ones already logged today
   const filteredQuickWorkouts = useMemo(() => {
     if (!previousDayWorkouts.length || !workoutLogs.length) {
@@ -500,21 +551,22 @@ const WorkoutLoggingDashboard = () => {
                 if (!nameWithoutEmoji) nameWithoutEmoji = workoutName;
                 return (
                   <div key={workout.workouts_id || workout.workout_id} className="quick-workout-set-group" data-testid="quick-workout-card">
+                    <button
+                      type="button"
+                      className="workout-analytics-button-dashboard workout-analytics-button-dashboard--group-corner"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setAnalyticsWorkout(workout);
+                        setShowAnalytics(true);
+                      }}
+                      title="View Analytics"
+                    >
+                      <ChartBarIcon className="w-6 h-6" />
+                    </button>
                     <div className="workout-set-header">
                       <div className="workout-emoji-box">{workoutEmoji}</div>
-                      <div className="workout-name-row">
+                      <div className="workout-name-row workout-name-row--stacked">
                         <div className="workout-name">{nameWithoutEmoji}</div>
-                        <button
-                          className="workout-analytics-button-dashboard"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setAnalyticsWorkout(workout);
-                            setShowAnalytics(true);
-                          }}
-                          title="View Analytics"
-                        >
-                          <ChartBarIcon className="w-6 h-6" />
-                        </button>
                         {muscles && muscles.length > 0 && (
                           <div className="workout-muscles-inline">{muscles.join(', ')}</div>
                         )}
@@ -577,7 +629,7 @@ const WorkoutLoggingDashboard = () => {
     setShowWorkoutCreator(false);
   };
 
-  const deleteWorkoutLog = async (logId) => {
+  const deleteWorkoutLog = useCallback(async (logId) => {
     try {
       await api.deleteWorkoutLog(logId);
       loadWorkoutLogs();
@@ -585,7 +637,73 @@ const WorkoutLoggingDashboard = () => {
     } catch (err) {
       console.error('Failed to delete workout log:', err);
     }
-  };
+  }, [loadWorkoutLogs, loadWorkoutStats]);
+
+  const setWorkoutLogSwipeOffset = useCallback((logId, offsetX, isDragging = false) => {
+    const clamped = Math.max(-MOBILE_WORKOUT_SWIPE_MAX, Math.min(0, offsetX));
+    setMobileWorkoutSwipeState((prev) => ({
+      ...prev,
+      [logId]: { offsetX: clamped, isDragging },
+    }));
+  }, []);
+
+  const handleWorkoutLogSwipeStart = useCallback(
+    (logId, event) => {
+      if (typeof window !== 'undefined' && window.innerWidth > 768) return;
+      if (!event.touches || event.touches.length === 0) return;
+      mobileWorkoutSwipeActiveIdRef.current = logId;
+      mobileWorkoutSwipeStartXRef.current[logId] = event.touches[0].clientX;
+      setWorkoutLogSwipeOffset(logId, mobileWorkoutSwipeState[logId]?.offsetX || 0, true);
+    },
+    [mobileWorkoutSwipeState, setWorkoutLogSwipeOffset]
+  );
+
+  const handleWorkoutLogSwipeMove = useCallback(
+    (logId, event) => {
+      const startX = mobileWorkoutSwipeStartXRef.current[logId];
+      if (startX === undefined || mobileWorkoutSwipeActiveIdRef.current !== logId) return;
+      if (!event.touches || event.touches.length === 0) return;
+      const deltaX = event.touches[0].clientX - startX;
+      if (deltaX < 0) {
+        event.preventDefault();
+        setWorkoutLogSwipeOffset(logId, deltaX, true);
+      }
+    },
+    [setWorkoutLogSwipeOffset]
+  );
+
+  const handleWorkoutLogSwipeEnd = useCallback(
+    async (logId) => {
+      const currentOffset = mobileWorkoutSwipeState[logId]?.offsetX || 0;
+      mobileWorkoutSwipeActiveIdRef.current = null;
+      delete mobileWorkoutSwipeStartXRef.current[logId];
+
+      if (
+        currentOffset <= -MOBILE_WORKOUT_DELETE_SWIPE_THRESHOLD &&
+        mobileWorkoutDeletingLogId !== logId
+      ) {
+        setMobileWorkoutDeletingLogId(logId);
+        setWorkoutLogSwipeOffset(logId, -MOBILE_WORKOUT_SWIPE_MAX, false);
+        await deleteWorkoutLog(logId);
+        setMobileWorkoutDeletingLogId(null);
+        setMobileWorkoutSwipeState((prev) => {
+          const next = { ...prev };
+          delete next[logId];
+          return next;
+        });
+        return;
+      }
+
+      setWorkoutLogSwipeOffset(logId, 0, false);
+    },
+    [
+      MOBILE_WORKOUT_DELETE_SWIPE_THRESHOLD,
+      mobileWorkoutDeletingLogId,
+      mobileWorkoutSwipeState,
+      setWorkoutLogSwipeOffset,
+      deleteWorkoutLog,
+    ]
+  );
 
   const handleAddSetForWorkout = (workout, logsForWorkout = []) => {
     let latestLog = null;
@@ -659,65 +777,68 @@ const WorkoutLoggingDashboard = () => {
     }
   }, [showCustomCalendar]);
 
-  const isMobile = window.innerWidth <= 768;
-
   if (loading) {
     return (
-      <div className="loading">
-        <div className="spinner"></div>
-        <p>Loading workout logging dashboard...</p>
+      <div className="workout-logging-dashboard workout-logging-dashboard--loading">
+        <div className="loading">
+          <div className="spinner"></div>
+          <p>Loading workout logging dashboard...</p>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="workout-logging-dashboard">
-      {/* Header */}
-      <div className="dashboard-header">
-          <div className="header-content">
-            <div className="header-control-bar" onMouseEnter={handleFloatingActionsInteraction}>
-              <div
-                className="custom-date-picker"
-                style={{ opacity: (isDatePickerActive || showCustomCalendar || areFloatingActionsActive) ? 1 : 0.1 }}
-                onMouseEnter={() => {
-                  handleDatePickerInteraction();
-                  handleFloatingActionsInteraction();
-                }}
-                onMouseLeave={() => {
-                  if (!showCustomCalendar) {
-                    startDatePickerFade();
-                  }
-                }}
-              >
+      <div
+        className="dashboard-header"
+        ref={headerRegionRef}
+        onMouseEnter={() => {
+          if (typeof window === 'undefined' || window.innerWidth <= 768) return;
+          if (pcHeaderActionsStartCloseTimeoutRef.current) {
+            clearTimeout(pcHeaderActionsStartCloseTimeoutRef.current);
+          }
+          if (pcHeaderActionsUnmountTimeoutRef.current) {
+            clearTimeout(pcHeaderActionsUnmountTimeoutRef.current);
+          }
+        }}
+        onMouseLeave={() => {
+          if (typeof window === 'undefined' || window.innerWidth <= 768) return;
+          if (!showPcHeaderActions) return;
+          if (pcHeaderActionsStartCloseTimeoutRef.current) {
+            clearTimeout(pcHeaderActionsStartCloseTimeoutRef.current);
+          }
+          pcHeaderActionsStartCloseTimeoutRef.current = window.setTimeout(() => {
+            closePcHeaderActionsAnimated();
+          }, PC_HEADER_ACTIONS_START_CLOSE_DELAY_MS);
+        }}
+      >
+        <div className="header-content header-content--food-log workout-tracker-header--cols-2">
+          <div className="header-date-wrap">
+            <div className="controls-section">
+              <div className="custom-date-picker">
                 <input
                   type="text"
                   value={selectedDate}
                   readOnly
                   className="form-input date-input"
-                  onClick={() => {
-                    handleDatePickerInteraction();
-                    handleFloatingActionsInteraction();
-                    setShowCustomCalendar(!showCustomCalendar);
-                  }}
-                  onFocus={() => {
-                    handleDatePickerInteraction();
-                    handleFloatingActionsInteraction();
-                  }}
-                  onBlur={() => {
-                    if (!showCustomCalendar) {
-                      startDatePickerFade();
-                    }
-                  }}
+                  onClick={() => setShowCustomCalendar(!showCustomCalendar)}
                   title="Click to open calendar"
                 />
                 {showCustomCalendar && (
                   <div className="custom-calendar-popup">
                     <div className="calendar-header">
-                      <button onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1))}>
+                      <button
+                        type="button"
+                        onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1))}
+                      >
                         ←
                       </button>
                       <span>{currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</span>
-                      <button onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1))}>
+                      <button
+                        type="button"
+                        onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1))}
+                      >
                         →
                       </button>
                     </div>
@@ -731,6 +852,7 @@ const WorkoutLoggingDashboard = () => {
                       <div className="calendar-day-header">Sat</div>
                       {getCalendarDays().map((day, index) => (
                         <button
+                          type="button"
                           key={index}
                           className={`calendar-day ${day.isCurrentMonth ? 'current-month' : 'other-month'} ${day.date === selectedDate ? 'selected' : ''}`}
                           onClick={() => handleCustomDateSelect(day.date)}
@@ -743,35 +865,116 @@ const WorkoutLoggingDashboard = () => {
                   </div>
                 )}
               </div>
-              <div className="header-actions" style={{ opacity: areFloatingActionsActive ? 1 : 0.1 }}>
-                <button
-                  className="btn-secondary-header"
-                  onMouseEnter={handleFloatingActionsInteraction}
-                  onFocus={handleFloatingActionsInteraction}
-                  onClick={() => {
-                    handleFloatingActionsInteraction();
-                    setShowWorkoutSelectionModal(true);
-                  }}
-                  title="Select Workout"
-                >
-                  <span>Select Workout</span>
-                </button>
-                <button
-                  className="btn-primary-header"
-                  onMouseEnter={handleFloatingActionsInteraction}
-                  onFocus={handleFloatingActionsInteraction}
-                  onClick={() => {
-                    handleFloatingActionsInteraction();
-                    setShowWorkoutCreator(true);
-                  }}
-                  title="Create Workout"
-                >
-                  <span>Create Workout</span>
-                </button>
-              </div>
             </div>
           </div>
+
+          <div className="header-actions-center">
+            {isMobileViewport && (
+              <button
+                type="button"
+                className="mobile-header-reveal"
+                onClick={() => {
+                  if (showMobileQuickActions) closeMobileQuickActionsAnimated();
+                  else openMobileQuickActions();
+                }}
+                aria-expanded={showMobileQuickActions}
+                aria-label={showMobileQuickActions ? 'Hide quick actions' : 'Show quick actions'}
+                title={showMobileQuickActions ? 'Hide quick actions' : 'Show quick actions'}
+              >
+                {showMobileQuickActions ? (
+                  <svg className="mobile-header-reveal__icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+                    <path d="M6 19l6-6 6 6M6 11l6-6 6 6" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                ) : (
+                  <svg className="mobile-header-reveal__icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+                    <path d="M6 5l6 6 6-6M6 13l6 6 6-6" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                )}
+              </button>
+            )}
+            {!isMobileViewport && !showPcHeaderActions && (
+              <button
+                type="button"
+                className="header-actions-reveal"
+                aria-label="Show header actions"
+                onClick={openPcHeaderActions}
+              >
+                <span className="header-actions-reveal__glyph" aria-hidden>
+                  <svg className="header-actions-reveal__icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M6 5l6 6 6-6M6 13l6 6 6-6" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </span>
+              </button>
+            )}
+          </div>
+        </div>
+
+        {!isMobileViewport && pcHeaderActionsMounted && (
+          <div
+            className={`header-actions${showPcHeaderActions ? ' header-actions--open' : ''}${pcHeaderActionsClosing ? ' header-actions--closing' : ''}`}
+          >
+            <button
+              type="button"
+              className="btn-primary-header"
+              onFocus={showPcHeaderActionsFromKeyboard}
+              onClick={() => setShowWorkoutSelectionModal(true)}
+              title="Select Workout"
+            >
+              <span className="header-action-label">Select Workout</span>
+            </button>
+            <button
+              type="button"
+              className="btn-primary-header"
+              onFocus={showPcHeaderActionsFromKeyboard}
+              onClick={() => setShowWorkoutCreator(true)}
+              title="Create Workout"
+            >
+              <span className="header-action-label">Create Workout</span>
+            </button>
+          </div>
+        )}
       </div>
+
+      {isMobileViewport && mobileQuickActionsMounted && (
+        <>
+          <button
+            type="button"
+            className={`mobile-quick-actions-backdrop${showMobileQuickActions ? ' is-open' : ''}${mobileQuickActionsClosing ? ' is-closing' : ''}`}
+            aria-label="Close quick actions"
+            onClick={closeMobileQuickActionsAnimated}
+          />
+          <div
+            className={`mobile-quick-actions-flyout${showMobileQuickActions ? ' is-open' : ''}${mobileQuickActionsClosing ? ' is-closing' : ''}`}
+            role="dialog"
+            aria-label="Quick actions"
+          >
+            <div className="mobile-actions mobile-actions--flyout">
+              <button
+                type="button"
+                className="btn-icon-mobile btn-icon-mobile--primary-header"
+                onClick={() => {
+                  setShowWorkoutSelectionModal(true);
+                  closeMobileQuickActionsAnimated();
+                }}
+                title="Select Workout"
+              >
+                <ClipboardDocumentListIcon className="btn-icon-mobile__hero" aria-hidden />
+              </button>
+              <button
+                type="button"
+                className="btn-icon-mobile btn-icon-mobile--primary-header"
+                onClick={() => {
+                  setShowWorkoutCreator(true);
+                  closeMobileQuickActionsAnimated();
+                }}
+                title="Create Workout"
+              >
+                <PlusCircleIcon className="btn-icon-mobile__hero" aria-hidden />
+              </button>
+            </div>
+          </div>
+        </>
+      )}
 
       {/* Main Content */}
       <div className="dashboard-content">
@@ -810,6 +1013,7 @@ const WorkoutLoggingDashboard = () => {
                           label={muscleName}
                           unit=""
                           color="var(--accent-danger)"
+                          outOfSplit
                           height={12}
                           showValues={true}
                           showRemaining={true}
@@ -829,14 +1033,7 @@ const WorkoutLoggingDashboard = () => {
             {/* Right Side - Main Content Sections */}
             <div className="main-content-sections">
               {/* Workout Log List */}
-              <div
-                className="workout-log-section card"
-                onClick={(e) => {
-                  if (e.currentTarget === e.target) {
-                    setShowWorkoutSelectionModal(true);
-                  }
-                }}
-              >
+              <div className="workout-log-section card">
                 <div className="workout-log-list">
                   {getSortedWorkoutLogs().length === 0 ? (
                     <div className="empty-state">
@@ -916,140 +1113,124 @@ const WorkoutLoggingDashboard = () => {
                         const isCollapsed = !!collapsedWorkouts[workoutId];
 
                         return (
-                          <div key={workoutId} className="workout-set-group">
-                            <div className="workout-set-header">
-                              <div className="workout-emoji-box">{workoutEmoji}</div>
-                              <div className="workout-name-row">
-                                <div className="workout-name">{nameWithoutEmoji}</div>
-                                <button
-                                  className="workout-analytics-button-dashboard"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setAnalyticsWorkout(workout);
-                                    setShowAnalytics(true);
-                                  }}
-                                  title="View Analytics"
-                                >
-                                  <ChartBarIcon className="w-6 h-6" />
-                                </button>
-                                {musclesList.length > 0 && (
-                                  <div className="workout-muscles-inline">{musclesList.join(', ')}</div>
-                                )}
-                              </div>
-                            </div>
-                            <div className="workout-set-summary">
+                          <div key={workoutId} className="workout-set-block">
+                            <div className="workout-set-group">
                               <button
-                                className="workout-collapse-toggle"
                                 type="button"
-                                onClick={() => toggleWorkoutCollapse(workoutId)}
-                                aria-expanded={!isCollapsed}
-                                aria-controls={`workout-set-${workoutId}`}
-                                aria-label={isCollapsed ? 'Expand workout sets' : 'Collapse workout sets'}
+                                className="workout-analytics-button-dashboard workout-analytics-button-dashboard--group-corner"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setAnalyticsWorkout(workout);
+                                  setShowAnalytics(true);
+                                }}
+                                title="View Analytics"
                               >
-                                <svg className="collapse-triangle-icon" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
-                                  {isCollapsed ? (
-                                    <path d="M2 4 L6 8 L10 4" />
-                                  ) : (
-                                    <path d="M2 8 L6 4 L10 8" />
-                                  )}
-                                </svg>
+                                <ChartBarIcon className="w-6 h-6" />
                               </button>
-                              <div className="workout-set-totals">
-                                <div className="metric-item">
-                                  <span className="metric-value">{averageWeight}</span>
-                                  <span className="metric-label">Weight</span>
-                                </div>
-                                <div className="metric-item">
-                                  <span className="metric-value">{averageReps}</span>
-                                  <span className="metric-label">Reps</span>
-                                </div>
-                                <div className="metric-item">
-                                  <span className="metric-value">{averageRir}</span>
-                                  <span className="metric-label">RIR</span>
-                                </div>
-                                <div className="metric-item">
-                                  <span className="metric-value">{averageRestTime}</span>
-                                  <span className="metric-label">Rest</span>
+                              <div className="workout-set-header">
+                                <div className="workout-emoji-box">{workoutEmoji}</div>
+                                <div className="workout-name-row workout-name-row--stacked">
+                                  <div className="workout-name">{nameWithoutEmoji}</div>
+                                  {musclesList.length > 0 && (
+                                    <div className="workout-muscles-inline">{musclesList.join(', ')}</div>
+                                  )}
                                 </div>
                               </div>
-                              <button
-                                className="btn-add-set"
-                                onClick={() => {
-                                  setPreSelectedWorkout(workout);
-                                  setShowWorkoutSelectionModal(true);
-                                }}
-                                title="Add another set"
-                              >
-                                + Add Set
-                              </button>
+                              <div className="workout-set-summary">
+                                <button
+                                  className="workout-collapse-toggle"
+                                  type="button"
+                                  onClick={() => toggleWorkoutCollapse(workoutId)}
+                                  aria-expanded={!isCollapsed}
+                                  aria-controls={`workout-set-${workoutId}`}
+                                  aria-label={isCollapsed ? 'Expand workout sets' : 'Collapse workout sets'}
+                                >
+                                  <svg className="workout-collapse-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                    {isCollapsed ? (
+                                      <circle cx="12" cy="12" r="8" fill="currentColor" />
+                                    ) : (
+                                      <circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" strokeWidth="2" />
+                                    )}
+                                  </svg>
+                                </button>
+                                <div className="workout-set-totals">
+                                  <div className="metric-item">
+                                    <span className="metric-value">{averageWeight}</span>
+                                    <span className="metric-label">Weight</span>
+                                  </div>
+                                  <div className="metric-item">
+                                    <span className="metric-value">{averageReps}</span>
+                                    <span className="metric-label">Reps</span>
+                                  </div>
+                                  <div className="metric-item">
+                                    <span className="metric-value">{averageRir}</span>
+                                    <span className="metric-label">RIR</span>
+                                  </div>
+                                  <div className="metric-item">
+                                    <span className="metric-value">{averageRestTime}</span>
+                                    <span className="metric-label">Rest</span>
+                                  </div>
+                                </div>
+                                <button
+                                  className="btn-add-set"
+                                  onClick={() => {
+                                    setPreSelectedWorkout(workout);
+                                    setShowWorkoutSelectionModal(true);
+                                  }}
+                                  title="Add another set"
+                                >
+                                  + Add Set
+                                </button>
+                              </div>
                             </div>
                             <div
-                              className={`workout-set-logs ${isCollapsed ? 'collapsed' : 'expanded'}`}
+                              className={`workout-set-logs workout-set-logs--detached ${isCollapsed ? 'collapsed' : 'expanded'}`}
                               id={`workout-set-${workoutId}`}
                               aria-hidden={isCollapsed}
                             >
                               <div className="workout-set-logs-content">
                                 {logs.map((log) => (
                                   <div key={log.workout_log_id} className="workout-log-item">
-                                  <div className="workout-info">
-                                    <div className="workout-details">
-                                      <div className="workout-log-line">
-                                        <div className="workout-log-detail">
-                                          <span className="metric-label-small">Weight (lbs)</span>
-                                          <span className="metric-colon">:</span>
-                                          <span className="metric-value-small">{Math.round(log.weight) || 0}</span>
+                                    <div className="workout-info">
+                                      <div className="workout-details">
+                                        <div className="workout-log-line">
+                                          <div className="workout-log-detail">
+                                            <span className="metric-label-small">Weight (lbs)</span>
+                                            <span className="metric-colon">:</span>
+                                            <span className="metric-value-small">{Math.round(log.weight) || 0}</span>
+                                          </div>
+                                          <div className="workout-log-detail workout-log-detail-compact">
+                                            <span className="metric-label-small">Reps</span>
+                                            <span className="metric-colon">:</span>
+                                            <span className="metric-value-small">{log.reps || 0}</span>
+                                          </div>
+                                          <div className="workout-log-detail workout-log-detail-rir">
+                                            <span className="metric-label-small">RIR</span>
+                                            <span className="metric-colon">:</span>
+                                            <span className="metric-value-small">{log.rir || 0}</span>
+                                          </div>
+                                          <div className="workout-log-detail workout-log-detail-compact">
+                                            <span className="metric-label-small">Rest</span>
+                                            <span className="metric-colon">:</span>
+                                            <span className="metric-value-small">{log.rest_time || 0}</span>
+                                          </div>
+                                          {renderCanonicalAttributeDetails(log)}
                                         </div>
-                                        <div className="workout-log-detail workout-log-detail-compact">
-                                          <span className="metric-label-small">Reps</span>
-                                          <span className="metric-colon">:</span>
-                                          <span className="metric-value-small">{log.reps || 0}</span>
-                                        </div>
-                                        <div className="workout-log-detail workout-log-detail-rir">
-                                          <span className="metric-label-small">RIR</span>
-                                          <span className="metric-colon">:</span>
-                                          <span className="metric-value-small">{log.rir || 0}</span>
-                                        </div>
-                                        <div className="workout-log-detail workout-log-detail-compact">
-                                          <span className="metric-label-small">Rest</span>
-                                          <span className="metric-colon">:</span>
-                                          <span className="metric-value-small">{log.rest_time || 0}</span>
-                                        </div>
-                                        {log.attributes && log.attributes.length > 0 && log.attributes.map((attr, idx) => {
-                                          const attrInputs = log.attribute_inputs 
-                                            ? Object.entries(log.attribute_inputs)
-                                                .filter(([key]) => key.startsWith(`${attr}_`))
-                                                .map(([key, value]) => value)
-                                            : [];
-                                          return (
-                                            <div key={idx} className="workout-log-detail">
-                                              <span className="metric-label-small">{attr.replace('_', ' ')}</span>
-                                              <span className="metric-colon">:</span>
-                                              {attrInputs.length > 0 ? (
-                                                <span className="metric-value-small">
-                                                  {attrInputs.join(' / ')}
-                                                </span>
-                                              ) : (
-                                                <span className="metric-value-small">-</span>
-                                              )}
-                                            </div>
-                                          );
-                                        })}
                                       </div>
                                     </div>
+                                    <div className="workout-actions">
+                                      <button
+                                        className="btn-icon-delete"
+                                        onClick={() => deleteWorkoutLog(log.workout_log_id)}
+                                        title="Remove from log"
+                                      >
+                                        <svg className="icon icon-sm" viewBox="0 0 20 20" fill="currentColor">
+                                          <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                                        </svg>
+                                      </button>
+                                    </div>
                                   </div>
-                                  <div className="workout-actions">
-                                    <button
-                                      className="btn-icon-delete"
-                                      onClick={() => deleteWorkoutLog(log.workout_log_id)}
-                                      title="Remove from log"
-                                    >
-                                      <svg className="icon icon-sm" viewBox="0 0 20 20" fill="currentColor">
-                                        <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
-                                      </svg>
-                                    </button>
-                                  </div>
-                                </div>
-                              ))}
+                                ))}
                               </div>
                             </div>
                           </div>
@@ -1106,26 +1287,26 @@ const WorkoutLoggingDashboard = () => {
                   onClick={() => setMobileMuscleSidebarOpen(true)}
                   aria-label="Open muscle targets"
                 >
-                  Muscle Targets
+                  Muscles
                 </button>
-                {mobileMuscleSidebarOpen && (
-                  <div
-                    className="workout-muscle-sidebar-overlay"
-                    onClick={() => setMobileMuscleSidebarOpen(false)}
-                    aria-hidden="true"
-                  />
-                )}
-                <div className={`muscle-progress-sidebar muscle-progress-sidebar--mobile ${mobileMuscleSidebarOpen ? 'muscle-progress-sidebar--mobile-open' : ''}`}>
+                <div
+                  className={`workout-muscle-sidebar-overlay${mobileMuscleSidebarOpen ? ' workout-muscle-sidebar-overlay--open' : ''}`}
+                  onClick={() => setMobileMuscleSidebarOpen(false)}
+                  aria-hidden={!mobileMuscleSidebarOpen}
+                />
+                <div
+                  className={`muscle-progress-sidebar muscle-progress-sidebar--mobile ${mobileMuscleSidebarOpen ? 'muscle-progress-sidebar--mobile-open' : ''}`}
+                >
                   <button
                     type="button"
-                    className="workout-muscle-sidebar-close"
+                    className="workout-muscle-sidebar-close wk-track-close-btn"
                     onClick={() => setMobileMuscleSidebarOpen(false)}
                     aria-label="Close muscle targets"
                   >
-                    ×
+                    <XMarkIcon className="wk-track-close-icon" strokeWidth={2} aria-hidden />
                   </button>
                   <h3 className="section-title">Today&apos;s Muscle Targets</h3>
-                  <div className="muscle-progress-stack">
+                  <div className="muscle-progress-stack muscle-progress-stack--mobile">
                     {Object.entries(muscleProgress)
                       .filter(([_, progress]) => progress.isInSplit)
                       .map(([muscleName, progress]) => (
@@ -1136,9 +1317,12 @@ const WorkoutLoggingDashboard = () => {
                           label={muscleName}
                           unit=""
                           color="var(--accent-primary)"
-                          height={12}
-                          showValues={true}
-                          showRemaining={true}
+                          layout="stacked"
+                          showPercentage={false}
+                          showLabelSeparatorDot={false}
+                          height={10}
+                          showValues
+                          showRemaining={false}
                         />
                       ))}
                     {Object.entries(muscleProgress)
@@ -1151,9 +1335,13 @@ const WorkoutLoggingDashboard = () => {
                           label={muscleName}
                           unit=""
                           color="var(--accent-danger)"
-                          height={12}
-                          showValues={true}
-                          showRemaining={true}
+                          outOfSplit
+                          layout="stacked"
+                          showPercentage={false}
+                          showLabelSeparatorDot={false}
+                          height={10}
+                          showValues
+                          showRemaining={false}
                         />
                       ))}
                   </div>
@@ -1161,33 +1349,8 @@ const WorkoutLoggingDashboard = () => {
               </>
             )}
 
-            {/* Action Buttons */}
-            <div className="mobile-actions">
-              <button
-                className="btn-icon-mobile"
-                onClick={() => setShowWorkoutSelectionModal(true)}
-                title="Select Workout"
-              >
-                <span className="icon icon-lg">📋</span>
-              </button>
-              <button
-                className="btn-icon-mobile"
-                onClick={() => setShowWorkoutCreator(true)}
-                title="Create Workout"
-              >
-                <span className="icon icon-lg">🏋️</span>
-              </button>
-            </div>
-
             {/* Workout Log List */}
-            <div
-              className="workout-log-section card"
-              onClick={(e) => {
-                if (e.currentTarget === e.target) {
-                  setShowWorkoutSelectionModal(true);
-                }
-              }}
-            >
+            <div className="workout-log-section card">
               <div className="workout-log-list">
                 {getSortedWorkoutLogs().length === 0 ? (
                   <div className="empty-state">
@@ -1259,147 +1422,121 @@ const WorkoutLoggingDashboard = () => {
                         const musclesList = Array.from(uniqueMuscles);
 
                       return (
-                        <div key={workoutId} className="workout-set-group">
-                          <div className="workout-set-header">
-                            <div className="workout-emoji-box">{workoutEmoji}</div>
-                            <div className="workout-name-row">
-                              <button
-                                type="button"
-                                className="workout-name workout-name-button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setAnalyticsWorkout(workout);
-                                  setShowAnalytics(true);
-                                }}
-                                title="View Analytics"
-                              >
-                                {nameWithoutEmoji}
-                              </button>
-                              <button
-                                className="workout-analytics-button-dashboard workout-analytics-button-dashboard--mobile-hide"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setAnalyticsWorkout(workout);
-                                  setShowAnalytics(true);
-                                }}
-                                title="View Analytics"
-                              >
-                                <ChartBarIcon className="w-6 h-6" />
-                              </button>
-                              {musclesList.length > 0 && (
-                                <div className="workout-muscles-inline">{musclesList.join(', ')}</div>
-                              )}
-                            </div>
-                          </div>
-                          <div className="workout-set-summary">
+                        <div key={workoutId} className="workout-set-block">
+                          <div className="workout-set-group">
                             <button
-                              className="workout-collapse-toggle"
                               type="button"
-                              onClick={() => toggleWorkoutCollapse(workoutId)}
-                              aria-expanded={!collapsedWorkouts[workoutId]}
-                              aria-controls={`workout-set-mobile-${workoutId}`}
-                              aria-label={collapsedWorkouts[workoutId] ? 'Expand workout sets' : 'Collapse workout sets'}
+                              className="workout-analytics-button-dashboard workout-analytics-button-dashboard--group-corner"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setAnalyticsWorkout(workout);
+                                setShowAnalytics(true);
+                              }}
+                              title="View Analytics"
                             >
-                              <svg className="collapse-triangle-icon" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
-                                {collapsedWorkouts[workoutId] ? (
-                                  <path d="M2 4 L6 8 L10 4" />
-                                ) : (
-                                  <path d="M2 8 L6 4 L10 8" />
-                                )}
-                              </svg>
+                              <ChartBarIcon className="w-6 h-6" />
                             </button>
-                            <div className="workout-set-totals">
-                              <div className="metric-item">
-                                <span className="metric-value">{averageWeight}</span>
-                                <span className="metric-label">Weight</span>
-                              </div>
-                              <div className="metric-item">
-                                <span className="metric-value">{averageReps}</span>
-                                <span className="metric-label">Reps</span>
-                              </div>
-                              <div className="metric-item">
-                                <span className="metric-value">{averageRir}</span>
-                                <span className="metric-label">RIR</span>
-                              </div>
-                              <div className="metric-item">
-                                <span className="metric-value">{averageRestTime}</span>
-                                <span className="metric-label">Rest</span>
+                            <div className="workout-set-header">
+                              <div className="workout-emoji-box">{workoutEmoji}</div>
+                              <div className="workout-name-row workout-name-row--stacked">
+                                <div className="workout-name">{nameWithoutEmoji}</div>
+                                {musclesList.length > 0 && (
+                                  <div className="workout-muscles-inline">{musclesList.join(', ')}</div>
+                                )}
                               </div>
                             </div>
-                            <button
-                              className="btn-add-set"
-                              onClick={() => handleAddSetForWorkout(workout, logs)}
-                              title="Add another set"
-                            >
-                              + Add Set
-                            </button>
+                            <div className="workout-set-summary">
+                              <button
+                                className="workout-collapse-toggle"
+                                type="button"
+                                onClick={() => toggleWorkoutCollapse(workoutId)}
+                                aria-expanded={!collapsedWorkouts[workoutId]}
+                                aria-controls={`workout-set-mobile-${workoutId}`}
+                                aria-label={collapsedWorkouts[workoutId] ? 'Expand workout sets' : 'Collapse workout sets'}
+                              >
+                                <svg className="workout-collapse-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                  {collapsedWorkouts[workoutId] ? (
+                                    <circle cx="12" cy="12" r="8" fill="currentColor" />
+                                  ) : (
+                                    <circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" strokeWidth="2" />
+                                  )}
+                                </svg>
+                              </button>
+                              <div className="workout-set-totals">
+                                <div className="metric-item">
+                                  <span className="metric-value">{averageWeight}</span>
+                                  <span className="metric-label">Weight</span>
+                                </div>
+                                <div className="metric-item">
+                                  <span className="metric-value">{averageReps}</span>
+                                  <span className="metric-label">Reps</span>
+                                </div>
+                                <div className="metric-item">
+                                  <span className="metric-value">{averageRir}</span>
+                                  <span className="metric-label">RIR</span>
+                                </div>
+                                <div className="metric-item">
+                                  <span className="metric-value">{averageRestTime}</span>
+                                  <span className="metric-label">Rest</span>
+                                </div>
+                              </div>
+                              <button
+                                className="btn-add-set"
+                                onClick={() => handleAddSetForWorkout(workout, logs)}
+                                title="Add another set"
+                              >
+                                + Add Set
+                              </button>
+                            </div>
                           </div>
                           <div
-                            className={`workout-set-logs ${collapsedWorkouts[workoutId] ? 'collapsed' : 'expanded'}`}
+                            className={`workout-set-logs workout-set-logs--detached ${collapsedWorkouts[workoutId] ? 'collapsed' : 'expanded'}`}
                             id={`workout-set-mobile-${workoutId}`}
                             aria-hidden={collapsedWorkouts[workoutId]}
                           >
                             <div className="workout-set-logs-content">
                               {logs.map((log) => (
-                                <div key={log.workout_log_id} className="workout-log-item mobile">
-                                  <div className="workout-info">
-                                    <div className="workout-details">
-                                      <div className="workout-log-line">
-                                        <div className="workout-log-detail">
-                                          <span className="metric-label-small">Weight (lbs)</span>
-                                          <span className="metric-colon">:</span>
-                                          <span className="metric-value-small">{Math.round(log.weight) || 0}</span>
+                                <div key={log.workout_log_id} className="workout-log-item-mobile-wrap">
+                                  <div className="workout-log-item-delete-bg" aria-hidden>
+                                    <TrashIcon className="workout-log-item-delete-bg__icon" />
+                                  </div>
+                                  <div
+                                    className={`workout-log-item mobile${mobileWorkoutDeletingLogId === log.workout_log_id ? ' is-deleting' : ''}`}
+                                    style={{
+                                      transform: `translateX(${mobileWorkoutSwipeState[log.workout_log_id]?.offsetX || 0}px)`,
+                                    }}
+                                    onTouchStart={(e) => handleWorkoutLogSwipeStart(log.workout_log_id, e)}
+                                    onTouchMove={(e) => handleWorkoutLogSwipeMove(log.workout_log_id, e)}
+                                    onTouchEnd={() => handleWorkoutLogSwipeEnd(log.workout_log_id)}
+                                    onTouchCancel={() => handleWorkoutLogSwipeEnd(log.workout_log_id)}
+                                  >
+                                    <div className="workout-info">
+                                      <div className="workout-details">
+                                        <div className="workout-log-line workout-log-line--mobile-one-line">
+                                          <div className="workout-log-detail">
+                                            <span className="metric-label-small">Wt</span>
+                                            <span className="metric-colon">:</span>
+                                            <span className="metric-value-small">{Math.round(log.weight) || 0}</span>
+                                          </div>
+                                          <div className="workout-log-detail workout-log-detail-compact">
+                                            <span className="metric-label-small">Reps</span>
+                                            <span className="metric-colon">:</span>
+                                            <span className="metric-value-small">{log.reps || 0}</span>
+                                          </div>
+                                          <div className="workout-log-detail workout-log-detail-rir">
+                                            <span className="metric-label-small">RIR</span>
+                                            <span className="metric-colon">:</span>
+                                            <span className="metric-value-small">{log.rir || 0}</span>
+                                          </div>
+                                          <div className="workout-log-detail workout-log-detail-compact">
+                                            <span className="metric-label-small">Rest</span>
+                                            <span className="metric-colon">:</span>
+                                            <span className="metric-value-small">{log.rest_time || 0}</span>
+                                          </div>
+                                          {renderCanonicalAttributeDetails(log)}
                                         </div>
-                                        <div className="workout-log-detail workout-log-detail-compact">
-                                          <span className="metric-label-small">Reps</span>
-                                          <span className="metric-colon">:</span>
-                                          <span className="metric-value-small">{log.reps || 0}</span>
-                                        </div>
-                                        <div className="workout-log-detail workout-log-detail-rir">
-                                          <span className="metric-label-small">RIR</span>
-                                          <span className="metric-colon">:</span>
-                                          <span className="metric-value-small">{log.rir || 0}</span>
-                                        </div>
-                                        <div className="workout-log-detail workout-log-detail-compact">
-                                          <span className="metric-label-small">Rest</span>
-                                          <span className="metric-colon">:</span>
-                                          <span className="metric-value-small">{log.rest_time || 0}</span>
-                                        </div>
-                                        {log.attributes && log.attributes.length > 0 && log.attributes.map((attr, idx) => {
-                                          console.log('Attribute:', attr, 'Log attribute_inputs:', log.attribute_inputs);
-                                          // Find all attribute inputs that start with this attribute key
-                                          const attrInputs = log.attribute_inputs 
-                                            ? Object.entries(log.attribute_inputs)
-                                                .filter(([key]) => key.startsWith(`${attr}_`))
-                                                .map(([key, value]) => value)
-                                            : [];
-                                          return (
-                                            <div key={idx} className="workout-log-detail">
-                                              <span className="metric-label-small">{attr.replace('_', ' ')}</span>
-                                              <span className="metric-colon">:</span>
-                                              {attrInputs.length > 0 ? (
-                                                <span className="metric-value-small">
-                                                  {attrInputs.join(' / ')}
-                                                </span>
-                                              ) : (
-                                                <span className="metric-value-small">-</span>
-                                              )}
-                                            </div>
-                                          );
-                                        })}
                                       </div>
                                     </div>
-                                  </div>
-                                  <div className="workout-actions">
-                                    <button
-                                      className="btn-icon-delete"
-                                      onClick={() => deleteWorkoutLog(log.workout_log_id)}
-                                      title="Remove from log"
-                                    >
-                                      <svg className="icon icon-sm" viewBox="0 0 20 20" fill="currentColor">
-                                        <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
-                                      </svg>
-                                    </button>
                                   </div>
                                 </div>
                               ))}
@@ -1449,23 +1586,27 @@ const WorkoutLoggingDashboard = () => {
       </div>
 
       {/* Modals for Mobile */}
-      {isMobile && (
+      {isMobileViewport && (
         <>
           {showWorkoutCreator && (
-            <div className="modal-backdrop" onClick={() => setShowWorkoutCreator(false)}>
-              <div className="modal workout-modal-mobile" onClick={(e) => e.stopPropagation()}>
-                <div className="modal-header">
-                  <h2>Create Workout</h2>
+            <div className="modal-backdrop modal-backdrop--workout-creator-mobile" onClick={() => setShowWorkoutCreator(false)}>
+              <div className="modal-content workout-creator-modal workout-creator-modal--mobile" onClick={(e) => e.stopPropagation()}>
+                <div className="modal-header workout-creator-modal-header">
+                  <h2 className="modal-title">Create Workout</h2>
                   <button 
-                    className="close-button"
+                    type="button"
+                    className="close-button workout-creator-modal-close wk-track-close-btn"
                     onClick={() => setShowWorkoutCreator(false)}
+                    aria-label="Close"
                   >
-                    ×
+                    <XMarkIcon className="wk-track-close-icon" strokeWidth={2} aria-hidden />
                   </button>
                 </div>
-                <WorkoutAdder
-                  onWorkoutAdded={handleWorkoutCreated}
-                />
+                <div className="modal-body workout-creator-modal-body">
+                  <WorkoutAdder
+                    onWorkoutAdded={handleWorkoutCreated}
+                  />
+                </div>
               </div>
             </div>
           )}
@@ -1499,21 +1640,23 @@ const WorkoutLoggingDashboard = () => {
       )}
 
       {/* PC Modals */}
-      {!isMobile && (
+      {!isMobileViewport && (
         <>
           {showWorkoutCreator && (
             <div className="modal-backdrop" onClick={() => setShowWorkoutCreator(false)}>
               <div className="modal-content workout-creator-modal" onClick={(e) => e.stopPropagation()}>
-                <div className="modal-header">
+                <div className="modal-header workout-creator-modal-header">
                   <h2 className="modal-title">Create Workout</h2>
                   <button 
-                    className="modal-close-button"
+                    type="button"
+                    className="modal-close-button wk-track-close-btn"
                     onClick={() => setShowWorkoutCreator(false)}
+                    aria-label="Close"
                   >
-                    ×
+                    <XMarkIcon className="wk-track-close-icon" strokeWidth={2} aria-hidden />
                   </button>
                 </div>
-                <div className="modal-body">
+                <div className="modal-body workout-creator-modal-body">
                   <WorkoutAdder
                     onWorkoutAdded={handleWorkoutCreated}
                   />
@@ -1551,147 +1694,375 @@ const WorkoutLoggingDashboard = () => {
         </>
       )}
 
-      <style>{`
+      <style>{`${WORKOUT_TRACKER_CLOSE_BTN_CSS}
+        .route-workout-tracker .main-content {
+          justify-content: flex-start;
+          align-items: stretch;
+          max-width: 100%;
+          overflow-x: clip;
+          box-sizing: border-box;
+        }
+
         .workout-logging-dashboard {
+          --workoutlog-card-bg: #171c24;
+          --workoutlog-shell-bg: #040508;
           min-height: 100vh;
-          background: #25282d;
-          width: 100vw;
+          width: 100%;
+          max-width: 100%;
           margin: 0;
-          padding: var(--space-2) 0 0;
+          padding: 0 0 var(--space-4);
           position: absolute;
           left: 0;
           right: 0;
           top: 0;
+          font-size: var(--text-lg);
+          font-family: var(--font-primary);
+          box-sizing: border-box;
         }
 
-        .dashboard-header {
-          width: 100%;
-          height: 0;
-          margin: 0;
-          padding: 0;
-          pointer-events: none;
+        .workout-logging-dashboard--loading {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        [data-theme="dark"] .workout-logging-dashboard {
+          --workoutlog-shell-tint: rgba(255, 255, 255, 0.045);
+          --workoutlog-shell-strong: rgba(255, 255, 255, 0.11);
+          background-color: #040508;
+          background-image:
+            linear-gradient(var(--workoutlog-shell-tint) 1px, transparent 1px),
+            linear-gradient(90deg, var(--workoutlog-shell-tint) 1px, transparent 1px),
+            linear-gradient(var(--workoutlog-shell-strong) 1px, transparent 1px),
+            linear-gradient(90deg, var(--workoutlog-shell-strong) 1px, transparent 1px);
+          background-size: 20px 20px, 20px 20px, 80px 80px, 80px 80px;
+          background-attachment: fixed;
+        }
+
+        [data-theme="light"] .workout-logging-dashboard {
+          --workoutlog-card-bg: #ffffff;
+          --workoutlog-shell-bg: #e8eaf2;
+          --workoutlog-shell-tint: rgba(0, 0, 0, 0.04);
+          --workoutlog-shell-strong: rgba(0, 0, 0, 0.1);
+          background-color: #e8eaf2;
+          background-image:
+            linear-gradient(var(--workoutlog-shell-tint) 1px, transparent 1px),
+            linear-gradient(90deg, var(--workoutlog-shell-tint) 1px, transparent 1px),
+            linear-gradient(var(--workoutlog-shell-strong) 1px, transparent 1px),
+            linear-gradient(90deg, var(--workoutlog-shell-strong) 1px, transparent 1px);
+          background-size: 20px 20px, 20px 20px, 80px 80px, 80px 80px;
+          background-attachment: fixed;
+        }
+
+        .workout-logging-dashboard .dashboard-header {
+          position: relative;
+          z-index: 30;
+          overflow: visible;
           background: transparent;
           border: none;
+          padding: 0;
+          width: 100%;
+          margin: 0;
         }
 
-        .header-content {
-          display: contents;
+        .workout-logging-dashboard .header-content--food-log {
+          display: grid;
+          grid-template-columns: max-content 1fr max-content;
+          align-items: center;
+          width: 100%;
+          margin: 0;
+          padding: var(--space-2) var(--space-4);
+          gap: var(--space-2);
+          box-sizing: border-box;
         }
 
-        .header-control-bar {
-          position: fixed;
-          top: var(--space-4);
-          left: 50%;
-          transform: translateX(-50%);
+        .workout-logging-dashboard .header-content--food-log.workout-tracker-header--cols-2 {
+          grid-template-columns: max-content 1fr;
+        }
+
+        .workout-logging-dashboard .header-date-wrap {
+          display: flex;
+          justify-content: flex-start;
+          align-items: center;
+          min-width: 0;
+        }
+
+        .workout-logging-dashboard .header-actions-center {
+          position: relative;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          min-width: 0;
+          align-self: center;
+          min-height: 52px;
+        }
+
+        .workout-logging-dashboard .header-actions-reveal {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          min-width: 380px;
+          height: 52px;
+          padding: 0 var(--space-4);
+          border: none;
+          border-radius: var(--radius-md);
+          background: transparent;
+          color: rgba(255, 255, 255, 0.95);
+          font-family: var(--font-primary);
+          cursor: pointer;
+          box-shadow: none;
+          -webkit-tap-highlight-color: transparent;
+        }
+
+        [data-theme="light"] .workout-logging-dashboard .header-actions-reveal {
+          color: var(--text-primary);
+        }
+
+        .workout-logging-dashboard .header-actions-reveal:focus,
+        .workout-logging-dashboard .header-actions-reveal:focus-visible,
+        .workout-logging-dashboard .header-actions-reveal:active {
+          outline: none !important;
+          box-shadow: none !important;
+        }
+
+        .workout-logging-dashboard .header-actions-reveal__glyph {
           display: flex;
           align-items: center;
-          gap: var(--space-4);
-          pointer-events: auto;
-          z-index: calc(var(--z-fixed) + 10);
+          justify-content: center;
+          line-height: 0;
         }
 
-        .header-actions {
-          display: flex;
-          align-items: center;
-          gap: var(--space-4);
-          pointer-events: auto;
-          transition: opacity 0.4s var(--ease-out-cubic);
+        .workout-logging-dashboard .header-actions-reveal__icon {
+          width: 120px;
+          height: 44px;
         }
 
-        .header-title {
+        .workout-logging-dashboard .mobile-header-reveal {
           display: none;
+          align-items: center;
+          justify-content: center;
+          width: 100%;
+          min-height: 40px;
+          padding: var(--space-1);
+          border: none;
+          background: transparent;
+          color: var(--text-primary);
+          cursor: pointer;
+          -webkit-tap-highlight-color: transparent;
         }
 
-        .btn-secondary-header,
-        .btn-primary-header {
+        .workout-logging-dashboard .mobile-header-reveal:focus,
+        .workout-logging-dashboard .mobile-header-reveal:focus-visible,
+        .workout-logging-dashboard .mobile-header-reveal:active {
+          outline: none !important;
+          box-shadow: none !important;
+        }
+
+        .workout-logging-dashboard .mobile-header-reveal__icon {
+          width: 36px;
+          height: 36px;
+        }
+
+        .workout-logging-dashboard .header-streak-wrap {
+          display: flex;
+          justify-content: flex-start;
+          align-items: center;
+          min-width: 0;
+          transform: translateX(-10px);
+        }
+
+        .workout-logging-dashboard .header-actions {
+          position: absolute;
+          top: calc(100% - 50px);
+          left: 50%;
+          transform: translateX(-50%) translateY(-10px) scale(0.98);
+          display: flex;
+          flex-wrap: nowrap;
+          align-items: center;
+          justify-content: center;
+          gap: var(--space-3);
+          white-space: nowrap;
+          z-index: 1200;
+          pointer-events: none;
+          opacity: 0;
+          transition:
+            opacity 220ms ease,
+            transform 220ms ease;
+          will-change: opacity, transform;
+        }
+
+        .workout-logging-dashboard .header-actions--open {
+          pointer-events: auto;
+          opacity: 1;
+          transform: translateX(-50%) translateY(0) scale(1);
+          animation: workoutHeaderActionsIn 220ms ease both;
+        }
+
+        .workout-logging-dashboard .header-actions--closing {
+          pointer-events: none;
+          transition: none;
+          animation: workoutHeaderActionsOut 220ms ease both;
+        }
+
+        @keyframes workoutHeaderActionsIn {
+          from {
+            opacity: 0;
+            transform: translateX(-50%) translateY(-10px) scale(0.98);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0) scale(1);
+          }
+        }
+
+        @keyframes workoutHeaderActionsOut {
+          from {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0) scale(1);
+          }
+          to {
+            opacity: 0;
+            transform: translateX(-50%) translateY(-10px) scale(0.98);
+          }
+        }
+
+        .workout-logging-dashboard .streak-counter {
+          display: inline-flex;
+          align-items: center;
+          gap: var(--space-1);
+          background: transparent;
+          padding: 0;
+          border-radius: 0;
+          border: none;
+          box-shadow: none;
+          backdrop-filter: none;
+          opacity: 1;
+        }
+
+        .workout-logging-dashboard .workout-header-sets-icon {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #79b5fb;
+        }
+
+        .workout-logging-dashboard .workout-header-sets-icon svg {
+          display: block;
+          position: relative;
+          top: 1px;
+        }
+
+        .workout-logging-dashboard .streak-number {
+          font-size: var(--text-2xl);
+          font-weight: var(--font-weight-regular);
+          color: #79b5fb;
+          line-height: 1;
+          position: relative;
+          top: 5px;
+        }
+
+        .workout-logging-dashboard .btn-primary-header {
           padding: 0 var(--space-6);
           border: none;
           border-radius: var(--radius-md);
-          font-size: var(--text-base);
+          opacity: 1;
+          font-size: var(--text-2xl);
           font-weight: var(--font-weight-bold);
           text-transform: uppercase;
-          letter-spacing: 0.12em;
-          color: #ffffff;
+          letter-spacing: 0.08em;
+          color: var(--workoutlog-shell-bg);
           cursor: pointer;
           display: inline-flex;
           align-items: center;
           justify-content: center;
           gap: var(--space-2);
-          min-width: 220px;
-          height: 56px;
-          box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
-          transition: transform 0.25s var(--ease-out-cubic), box-shadow 0.25s var(--ease-out-cubic);
-          backdrop-filter: blur(6px);
+          min-width: 268px;
+          height: 80px;
+          box-shadow: none;
           font-family: var(--font-primary);
-          z-index: calc(var(--z-fixed) + 10);
+          z-index: calc(var(--z-fixed) + 5);
+          background: #79b5fb;
         }
 
-        .btn-secondary-header {
-          background: var(--accent-info);
+        .workout-logging-dashboard .btn-primary-header:focus {
+          outline: 2px solid #a78bfa;
+          outline-offset: 2px;
         }
 
-        .btn-primary-header {
-          background: var(--accent-primary);
+        .workout-logging-dashboard .btn-primary-header .header-action-label {
+          color: var(--workoutlog-shell-bg);
+          font-weight: var(--font-weight-bold);
         }
 
-        .btn-secondary-header:hover,
-        .btn-primary-header:hover {
-          transform: translateY(-3px);
-          box-shadow: 0 24px 45px rgba(0, 0, 0, 0.4);
+        .workout-logging-dashboard .controls-section {
+          display: flex;
+          align-items: center;
+          gap: var(--space-3);
+          justify-content: flex-start;
         }
 
-        .btn-secondary-header:focus,
-        .btn-primary-header:focus {
-          outline: none;
-          box-shadow: 0 0 0 3px var(--accent-primary-alpha), 0 24px 50px rgba(0, 0, 0, 0.45);
-        }
-
-        .date-input {
-          padding: var(--space-4) var(--space-5);
-          border: 1px solid var(--surface-overlay);
+        .workout-logging-dashboard .date-input {
+          padding: var(--space-2) var(--space-3);
+          min-height: 48px;
+          height: 48px;
+          border: none;
           border-radius: var(--radius-md);
-          background: transparent;
+          background: var(--bg-secondary);
           font-size: var(--text-base);
           color: var(--text-primary);
-          transition: border-color 0.3s ease, background 0.3s ease, color 0.3s ease;
           font-family: var(--font-primary);
-          min-width: 220px;
+          min-width: 182px;
           font-weight: var(--font-weight-medium);
           cursor: pointer;
           text-align: center;
-          letter-spacing: 0.08em;
-          box-shadow: none;
-          height: 56px;
-        }
-
-        .date-input:focus {
-          outline: none;
-          border-color: var(--accent-primary);
-          background: rgba(90, 166, 255, 0.12);
-        }
-
-        .date-input:hover {
-          border-color: var(--accent-primary);
-          background: rgba(90, 166, 255, 0.08);
-        }
-
-        .custom-date-picker {
-          position: relative;
-          display: inline-flex;
+          display: flex;
           align-items: center;
           justify-content: center;
-          min-width: 220px;
-          pointer-events: auto;
-          transition: opacity 0.4s var(--ease-out-cubic);
-          z-index: calc(var(--z-fixed) + 20);
+          box-sizing: border-box;
+        }
+
+        .workout-logging-dashboard .date-input:focus {
+          outline: none;
+          border-color: transparent;
+          box-shadow: none;
+        }
+
+        @media (min-width: 769px) {
+          .workout-logging-dashboard .header-content--food-log {
+            padding: var(--space-4) var(--space-4);
+            gap: var(--space-3);
+          }
+
+          .workout-logging-dashboard .streak-number {
+            font-size: var(--text-4xl);
+            top: 6px;
+          }
+
+          .workout-logging-dashboard .workout-header-sets-icon svg {
+            width: 32px;
+            height: 32px;
+          }
+
+          .workout-logging-dashboard .header-date-wrap .date-input {
+            font-size: var(--text-xl);
+            font-weight: var(--font-weight-bold);
+            min-height: 52px;
+            height: 52px;
+          }
+        }
+
+        .workout-logging-dashboard .custom-date-picker {
+          position: relative;
+          display: inline-block;
+          z-index: 50;
         }
 
         /* Custom calendar popup */
-        .custom-calendar-popup {
+        .workout-logging-dashboard .custom-calendar-popup {
           position: absolute;
           top: 100%;
-          right: 0;
-          left: auto;
+          left: 0;
+          right: auto;
           background: var(--bg-tertiary);
           border-radius: var(--radius-xl);
           box-shadow: 0 30px 60px rgba(0, 0, 0, 0.45);
@@ -1806,37 +2177,51 @@ const WorkoutLoggingDashboard = () => {
           color: var(--text-primary);
         }
 
-        .dashboard-content {
+        .workout-logging-dashboard .dashboard-content {
           width: 100%;
           margin: 0;
-          padding: var(--space-28) var(--space-6) var(--space-6);
-          padding-top: calc(var(--space-4) + 56px + var(--space-3));
+          padding: var(--space-2) var(--space-1) var(--space-5);
+          box-sizing: border-box;
         }
 
-        /* PC Layout */
-        .dashboard-layout-pc {
+        @media (min-width: 769px) {
+          .workout-logging-dashboard .dashboard-content {
+            padding: var(--space-3) var(--space-2) var(--space-8);
+          }
+        }
+
+        .workout-logging-dashboard .dashboard-layout-pc {
           display: grid;
-          grid-template-columns: minmax(340px, 360px) 1fr;
+          grid-template-columns: minmax(360px, 480px) 1fr;
           column-gap: var(--space-5);
           row-gap: 0;
           align-items: start;
           width: 100%;
+          padding-left: var(--space-2);
+          box-sizing: border-box;
         }
 
-        .muscle-progress-sidebar {
+        @media (min-width: 769px) {
+          .workout-logging-dashboard .dashboard-layout-pc {
+            padding-left: var(--space-3);
+          }
+        }
+
+        .workout-logging-dashboard .muscle-progress-sidebar {
           width: 100%;
-          background: var(--bg-secondary);
-          padding: var(--space-6);
+          background: var(--workoutlog-card-bg);
+          padding: var(--space-5);
           border-radius: var(--radius-lg);
-          border: none;
-          box-shadow: 0 24px 55px rgba(0, 0, 0, 0.42);
+          border: 1px solid transparent;
+          box-shadow: var(--shadow-md);
           position: sticky;
-          top: var(--space-10);
+          top: var(--space-6);
           height: 100%;
           align-self: stretch;
           display: flex;
           flex-direction: column;
-          backdrop-filter: blur(10px);
+          backdrop-filter: blur(8px);
+          box-sizing: border-box;
         }
 
         .dashboard-left {
@@ -1870,29 +2255,33 @@ const WorkoutLoggingDashboard = () => {
           margin: 0;
         }
 
-        /* Mobile Layout */
-        .dashboard-layout-mobile {
+        .workout-logging-dashboard .dashboard-layout-mobile {
           display: flex;
           flex-direction: column;
-          gap: var(--space-4);
+          gap: var(--space-3);
+          width: 100%;
+          max-width: 100%;
+          box-sizing: border-box;
         }
 
-        .mobile-actions {
+        .workout-logging-dashboard .mobile-actions--flyout {
           display: grid;
           grid-template-columns: repeat(2, 1fr);
-          gap: var(--space-3);
+          gap: var(--space-4);
+          width: 100%;
+          max-width: 360px;
+          margin: 0 auto;
         }
 
-        .btn-icon-mobile {
-          width: 64px;
-          height: 64px;
+        .workout-logging-dashboard .btn-icon-mobile {
+          width: 72px;
+          height: 72px;
           padding: 0;
           border: none;
           border-radius: var(--radius-md);
-          background: var(--accent-primary);
-          color: #ffffff;
+          background: #79b5fb;
+          color: var(--workoutlog-shell-bg);
           cursor: pointer;
-          transition: none;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -1900,21 +2289,117 @@ const WorkoutLoggingDashboard = () => {
           box-shadow: none;
         }
 
-        .btn-icon-mobile:hover {
-          transform: none;
-          box-shadow: none;
+        .workout-logging-dashboard .btn-icon-mobile--primary-header {
+          background: #79b5fb;
+          color: var(--workoutlog-shell-bg);
+        }
+
+        .workout-logging-dashboard .btn-icon-mobile__hero {
+          width: 2rem;
+          height: 2rem;
+        }
+
+        .workout-logging-dashboard .btn-icon-mobile:focus {
+          outline: 2px solid #a78bfa;
+          outline-offset: 2px;
+        }
+
+        .workout-logging-dashboard .mobile-quick-actions-backdrop {
+          position: fixed;
+          inset: 0;
+          z-index: 1023;
+          border: none;
+          margin: 0;
+          padding: 0;
+          background: rgba(0, 0, 0, 0.42);
+          cursor: pointer;
+          opacity: 0;
+          pointer-events: none;
+          transition: opacity 220ms ease;
+          -webkit-tap-highlight-color: transparent;
+        }
+
+        .workout-logging-dashboard .mobile-quick-actions-backdrop.is-open {
+          opacity: 1;
+          pointer-events: auto;
+        }
+
+        .workout-logging-dashboard .mobile-quick-actions-backdrop.is-closing {
+          pointer-events: none;
+          opacity: 1;
+          transition: none;
+          animation: workoutMobileQuickBackdropOut 220ms ease both;
+        }
+
+        .workout-logging-dashboard .mobile-quick-actions-flyout {
+          position: fixed;
+          left: 0;
+          right: 0;
+          top: calc(max(var(--space-2), env(safe-area-inset-top, 0px)) + 64px);
+          z-index: 1024;
+          padding: 0 var(--space-3) var(--space-3);
+          pointer-events: none;
+          opacity: 0;
+          transform: translateY(-10px) scale(0.98);
+          transition:
+            opacity 220ms ease,
+            transform 220ms ease;
+        }
+
+        .workout-logging-dashboard .mobile-quick-actions-flyout.is-open {
+          pointer-events: auto;
+          opacity: 1;
+          transform: translateY(0) scale(1);
+          animation: workoutMobileQuickActionsIn 220ms ease both;
+        }
+
+        .workout-logging-dashboard .mobile-quick-actions-flyout.is-closing {
+          pointer-events: none;
+          transition: none;
+          animation: workoutMobileQuickActionsOut 220ms ease both;
+        }
+
+        @keyframes workoutMobileQuickActionsIn {
+          from {
+            opacity: 0;
+            transform: translateY(-10px) scale(0.98);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+        }
+
+        @keyframes workoutMobileQuickActionsOut {
+          from {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+          to {
+            opacity: 0;
+            transform: translateY(-10px) scale(0.98);
+          }
+        }
+
+        @keyframes workoutMobileQuickBackdropOut {
+          from {
+            opacity: 1;
+          }
+          to {
+            opacity: 0;
+          }
         }
 
         /* Workout Stats */
-        .workout-stats-section {
-          background: var(--bg-secondary);
-          padding: var(--space-4) var(--space-6);
-          border-radius: var(--radius-lg); /* Reduced roundness */
-          border: none;
-          box-shadow: 0 18px 40px rgba(0, 0, 0, 0.32);
-          margin: var(--space-3) 0;
-          margin-left: var(--space-2);
-          backdrop-filter: blur(6px);
+        .workout-logging-dashboard .workout-stats-section {
+          background: var(--workoutlog-card-bg);
+          padding: var(--space-4) var(--space-5);
+          border-radius: var(--radius-lg);
+          border: 1px solid transparent;
+          box-shadow: var(--shadow-md);
+          margin: var(--space-3) 0 0;
+          backdrop-filter: blur(8px);
+          box-sizing: border-box;
         }
 
         .workout-log-section.card {
@@ -1930,9 +2415,9 @@ const WorkoutLoggingDashboard = () => {
           background: transparent;
         }
 
-        .workout-stats-section.card:hover {
+        .workout-logging-dashboard .workout-stats-section.card:hover {
           transform: none;
-          box-shadow: 0 24px 55px rgba(0, 0, 0, 0.42);
+          box-shadow: var(--shadow-md);
         }
 
         .stats-grid {
@@ -2092,7 +2577,7 @@ const WorkoutLoggingDashboard = () => {
         /* Workout Log */
         .workout-log-section {
           background: transparent;
-          padding: var(--space-6);
+          padding: var(--space-3) var(--space-2);
           border-radius: var(--radius-lg);
           border: none;
           box-shadow: none;
@@ -2101,7 +2586,16 @@ const WorkoutLoggingDashboard = () => {
         }
 
         .workout-log-list {
-          padding: var(--space-2);
+          padding: var(--space-1);
+          max-width: 100%;
+          min-width: 0;
+          box-sizing: border-box;
+        }
+
+        .workout-log-items {
+          max-width: 100%;
+          min-width: 0;
+          box-sizing: border-box;
         }
 
         .empty-state {
@@ -2138,14 +2632,19 @@ const WorkoutLoggingDashboard = () => {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          padding: var(--space-2) 0;
-          background: transparent;
-          border-radius: 0;
-          margin: 0;
-          border-top: 1px solid var(--surface-overlay);
-          border-bottom: 1px solid var(--surface-overlay);
+          padding: var(--space-3) var(--space-3);
+          background: var(--bg-tertiary);
+          border-radius: var(--radius-md);
+          margin: 0 0 var(--space-3);
+          border: 2px solid rgba(255, 255, 255, 0.11);
+          position: relative;
           transition: none;
           box-shadow: none;
+          box-sizing: border-box;
+        }
+
+        [data-theme='light'] .workout-logging-dashboard .workout-log-item {
+          border-color: rgba(15, 23, 42, 0.12);
         }
 
         .workout-log-item:hover {
@@ -2153,29 +2652,65 @@ const WorkoutLoggingDashboard = () => {
           box-shadow: none;
         }
 
+        .workout-set-logs--detached .workout-set-logs-content {
+          position: relative;
+          margin-top: 0;
+          margin-left: var(--space-2);
+          padding-left: var(--space-4);
+          border-left: 2px solid rgba(255, 255, 255, 0.72);
+        }
+
+        [data-theme='light'] .workout-logging-dashboard .workout-set-logs--detached .workout-set-logs-content {
+          border-left-color: rgba(148, 163, 184, 0.55);
+        }
+
+        .workout-set-logs-content > .workout-log-item:last-child {
+          margin-bottom: 0;
+        }
+
         .workout-log-item.mobile {
           flex-direction: column;
           align-items: flex-start;
           gap: var(--space-4);
+          margin-bottom: 0;
         }
 
-        .workout-set-group {
-          margin-bottom: var(--space-5);
-          background: #181b22;
-          border-radius: var(--radius-lg); /* Reduced roundness */
-          border: none;
-          padding: var(--space-4) var(--space-5);
-          box-shadow: none;
-        }
-        .quick-workout-set-group {
+        .workout-set-block {
           margin-bottom: var(--space-4);
-          background: #181b22;
+          width: 100%;
+          min-width: 0;
+          box-sizing: border-box;
+        }
+
+        .workout-logging-dashboard .workout-set-group {
+          position: relative;
+          margin-bottom: 0;
+          background: var(--workoutlog-card-bg);
           border-radius: var(--radius-lg);
-          border: none;
+          border: 1px solid transparent;
+          padding: var(--space-4) var(--space-5) var(--space-1);
+          box-shadow: var(--shadow-md);
+          box-sizing: border-box;
+        }
+
+        .workout-set-logs.workout-set-logs--detached {
+          margin-top: var(--space-3);
+        }
+
+        .workout-set-logs.workout-set-logs--detached.collapsed {
+          margin-top: 0;
+        }
+        .workout-logging-dashboard .quick-workout-set-group {
+          position: relative;
+          margin-bottom: var(--space-4);
+          background: var(--workoutlog-card-bg);
+          border-radius: var(--radius-lg);
+          border: 1px solid transparent;
           padding: var(--space-3) var(--space-4);
-          box-shadow: none;
-          opacity: 0.75;
-          filter: grayscale(100%);
+          box-shadow: var(--shadow-md);
+          opacity: 0.85;
+          filter: grayscale(80%);
+          box-sizing: border-box;
         }
         .quick-add-list {
           display: grid;
@@ -2183,12 +2718,12 @@ const WorkoutLoggingDashboard = () => {
           gap: var(--space-3);
         }
 
-        .workout-set-header {
+        .workout-logging-dashboard .workout-set-header {
           display: flex;
           justify-content: flex-start;
-          align-items: center;
-          margin-bottom: 0;
-          gap: var(--space-4);
+          align-items: flex-start;
+          margin-bottom: var(--space-2);
+          gap: var(--space-3);
           position: relative;
         }
 
@@ -2205,6 +2740,19 @@ const WorkoutLoggingDashboard = () => {
           justify-content: center;
           flex-shrink: 0;
           margin-left: var(--space-2);
+        }
+
+        .workout-analytics-button-dashboard--group-corner {
+          position: absolute;
+          top: var(--space-3);
+          right: var(--space-3);
+          z-index: 2;
+          margin-left: 0;
+        }
+
+        .workout-logging-dashboard .quick-workout-set-group .workout-analytics-button-dashboard--group-corner {
+          top: var(--space-2);
+          right: var(--space-2);
         }
 
         .workout-analytics-button-dashboard svg {
@@ -2296,7 +2844,8 @@ const WorkoutLoggingDashboard = () => {
           min-height: 0;
           display: flex;
           flex-direction: column;
-          gap: var(--space-3);
+          gap: var(--space-2);
+          margin-top: var(--space-2);
         }
 
         .workout-log-line {
@@ -2376,23 +2925,32 @@ const WorkoutLoggingDashboard = () => {
           text-align: left;
         }
 
-        .workout-name-row {
+        .workout-logging-dashboard .workout-name-row {
           display: flex;
-          flex-wrap: nowrap;
+          flex-wrap: wrap;
           flex-direction: row;
-          align-items: center;
-          gap: var(--space-10);
+          align-items: flex-start;
+          gap: var(--space-2);
           flex: 1;
           min-width: 0;
         }
 
-        .workout-name {
+        .workout-logging-dashboard .workout-name-row--stacked {
+          flex-direction: column;
+          align-items: flex-start;
+          align-self: stretch;
+          gap: var(--space-1);
+          padding-right: 3.25rem;
+          box-sizing: border-box;
+        }
+
+        .workout-logging-dashboard .workout-name {
           font-weight: var(--font-weight-bold);
           color: var(--text-primary);
-          font-size: clamp(1.1rem, 1.6vw, 1.5rem);
-          line-height: 1.1;
+          font-size: clamp(1.25rem, 2vw, 1.75rem);
+          line-height: 1.2;
           margin: 0;
-          margin-bottom: var(--space-3);
+          margin-bottom: 0;
           min-width: 0;
           flex: 1 1 auto;
           overflow: hidden;
@@ -2400,16 +2958,30 @@ const WorkoutLoggingDashboard = () => {
           white-space: nowrap;
         }
 
-        .workout-muscles-inline {
-          font-size: var(--text-base);
+        .workout-logging-dashboard .workout-muscles-inline {
+          font-size: var(--text-sm);
           color: var(--text-secondary);
-          display: inline-flex;
-          align-items: center;
-          gap: var(--space-4);
+          display: inline;
+          width: auto;
+          max-width: min(100%, 52vw);
           font-weight: var(--font-weight-medium);
-          margin-top: var(--space-6);
+          margin-top: 0;
+          line-height: 1.35;
+          flex: 1 1 auto;
+          min-width: 0;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        .workout-logging-dashboard .workout-name-row--stacked .workout-muscles-inline {
+          display: block;
           width: 100%;
-          order: 10;
+          max-width: 100%;
+          white-space: normal;
+          overflow: visible;
+          text-overflow: unset;
+          margin-top: var(--space-1);
         }
 
         .workout-time {
@@ -2543,68 +3115,60 @@ const WorkoutLoggingDashboard = () => {
           }
         }
 
-        @media (max-width: 1024px) {
-          .header-control-bar {
-            top: var(--space-4);
-            left: 50%;
-            transform: translateX(-50%);
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: var(--space-3);
-          }
-
-          .header-actions {
-            gap: var(--space-3);
-          }
-
-          .dashboard-content {
-            padding: var(--space-16) var(--space-4) var(--space-6);
-          }
-        }
-
         @media (max-width: 768px) {
-          .dashboard-layout-pc {
+          .workout-logging-dashboard {
+            overflow-x: clip;
+          }
+
+          .workout-logging-dashboard .btn-icon-mobile {
+            width: 88px;
+            height: 88px;
+          }
+
+          .workout-logging-dashboard .btn-icon-mobile__hero {
+            width: 2.5rem;
+            height: 2.5rem;
+          }
+
+          .workout-logging-dashboard .dashboard-layout-pc {
             display: none;
           }
 
-          .header-control-bar {
-            left: var(--space-2);
-            right: var(--space-2);
-            transform: none;
-            max-width: 100%;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: var(--space-2);
-            padding: var(--space-2);
+          .workout-logging-dashboard .mobile-header-reveal {
+            display: inline-flex;
           }
 
-          .header-actions {
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: var(--space-2);
-          }
-
-          .btn-secondary-header,
-          .btn-primary-header {
-            padding: var(--space-2) var(--space-3);
-            font-size: var(--text-sm);
+          .workout-logging-dashboard .header-actions-reveal {
             min-width: 0;
+            width: 100%;
+            max-width: 100%;
           }
 
-          .header-content {
-            flex-direction: column;
-            gap: var(--space-4);
-            align-items: flex-start;
-            padding: var(--space-6) 4px 0 4px;
+          .workout-logging-dashboard .header-content--food-log {
+            padding: var(--space-2) var(--space-2);
+            gap: var(--space-2);
           }
 
-          .dashboard-content {
-            padding: var(--space-16) var(--space-3) var(--space-6);
+          .workout-logging-dashboard .btn-primary-header {
+            min-width: min(268px, 88vw);
+            height: 64px;
+            font-size: var(--text-lg);
+            padding: 0 var(--space-4);
           }
 
-          .dashboard-layout-mobile {
-            padding: 0 var(--space-2);
+          .workout-logging-dashboard .dashboard-content {
+            padding: var(--space-2) var(--space-1) var(--space-5);
+          }
+
+          .workout-logging-dashboard .dashboard-layout-mobile {
+            padding: 0;
+            padding-bottom: calc(3.75rem + env(safe-area-inset-bottom, 0px));
+            gap: var(--space-3);
             box-sizing: border-box;
+            width: 100%;
+            max-width: 100%;
+            min-width: 0;
+            overflow-x: clip;
           }
 
           .dashboard-layout-mobile .workout-log-section {
@@ -2615,57 +3179,176 @@ const WorkoutLoggingDashboard = () => {
             grid-template-columns: repeat(2, 1fr);
           }
 
-          .workout-mobile-muscle-toggle {
+          .workout-logging-dashboard .workout-mobile-muscle-toggle {
+            position: fixed;
+            bottom: calc(var(--space-4) + env(safe-area-inset-bottom, 0px) + 40px);
+            right: var(--space-3);
+            left: auto;
+            z-index: 90;
             display: inline-flex;
-            padding: var(--space-2) var(--space-4);
-            font-size: var(--text-sm);
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border-primary);
-            border-radius: var(--radius-md);
+            align-items: center;
+            justify-content: center;
+            padding: var(--space-2) var(--space-3);
+            max-width: 6.25rem;
+            min-height: 42px;
+            font-size: var(--text-base);
+            font-weight: var(--font-weight-semibold);
+            letter-spacing: 0.02em;
+            background: var(--workoutlog-card-bg);
+            border: 1px solid rgba(128, 128, 128, 0.55);
+            border-radius: var(--radius-lg);
             color: var(--text-primary);
             cursor: pointer;
-            margin-bottom: var(--space-3);
-            position: relative;
-            z-index: 20;
-            pointer-events: auto;
+            margin: 0;
+            box-shadow: var(--shadow-md);
+            -webkit-tap-highlight-color: transparent;
           }
 
           .workout-muscle-sidebar-overlay {
             position: fixed;
             inset: 0;
-            background: rgba(0, 0, 0, 0.4);
-            z-index: 999;
+            background: rgba(0, 0, 0, 0.45);
+            z-index: 998;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 280ms ease;
           }
 
-          .muscle-progress-sidebar--mobile {
-            display: none;
+          .workout-muscle-sidebar-overlay.workout-muscle-sidebar-overlay--open {
+            opacity: 1;
+            pointer-events: auto;
+          }
+
+          .workout-logging-dashboard .muscle-progress-sidebar--mobile {
+            display: flex;
+            flex-direction: column;
             position: fixed;
             top: 0;
             right: 0;
-            width: min(280px, 85vw);
+            width: min(300px, 88vw);
             height: 100vh;
-            z-index: 1000;
+            height: 100dvh;
+            z-index: 999;
             transform: translateX(100%);
-            transition: transform 0.2s ease;
+            transition: transform 280ms cubic-bezier(0.22, 1, 0.36, 1);
+            will-change: transform;
             border-radius: 0;
+            border-top-left-radius: var(--radius-lg);
+            border-bottom-left-radius: var(--radius-lg);
             border-left: 1px solid var(--border-primary);
+            background: var(--workoutlog-card-bg);
+            box-sizing: border-box;
+            padding: var(--space-4);
+            padding-top: calc(var(--space-4) + env(safe-area-inset-top, 0px));
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
           }
 
-          .muscle-progress-sidebar--mobile-open {
-            display: flex;
+          .workout-logging-dashboard .muscle-progress-sidebar--mobile-open {
             transform: translateX(0);
+          }
+
+          .workout-logging-dashboard .muscle-progress-stack--mobile {
+            gap: var(--space-4);
           }
 
           .workout-muscle-sidebar-close {
             position: absolute;
-            top: var(--space-2);
+            top: calc(var(--space-2) + env(safe-area-inset-top, 0px));
             right: var(--space-2);
-            padding: var(--space-2);
-            background: transparent;
-            border: none;
-            font-size: var(--text-xl);
-            color: var(--text-secondary);
-            cursor: pointer;
+            z-index: 2;
+          }
+
+          .workout-muscle-sidebar-close.wk-track-close-btn {
+            font-size: 0;
+          }
+
+          .workout-logging-dashboard .workout-log-item-mobile-wrap {
+            position: relative;
+            overflow: hidden;
+            border-radius: var(--radius-md);
+            margin-bottom: var(--space-3);
+            border: 2px solid rgba(255, 255, 255, 0.11);
+            box-sizing: border-box;
+          }
+
+          [data-theme='light'] .workout-logging-dashboard .workout-log-item-mobile-wrap {
+            border-color: rgba(15, 23, 42, 0.12);
+          }
+
+          .workout-logging-dashboard .workout-set-logs-content > .workout-log-item-mobile-wrap:last-child {
+            margin-bottom: 0;
+          }
+
+          .workout-logging-dashboard .workout-log-item-delete-bg {
+            position: absolute;
+            inset: 2px;
+            background: var(--accent-danger);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: var(--space-4);
+            pointer-events: none;
+            border-radius: inherit;
+          }
+
+          .workout-logging-dashboard .workout-log-item-delete-bg__icon {
+            width: 1.5rem;
+            height: 1.5rem;
+            flex-shrink: 0;
+          }
+
+          .workout-logging-dashboard .workout-log-item.mobile {
+            touch-action: pan-y;
+            transition: transform 160ms var(--ease-out-cubic), opacity 160ms var(--ease-out-cubic);
+            margin-bottom: 0;
+            background: var(--bg-tertiary);
+            border-radius: var(--radius-md);
+            padding: var(--space-4) var(--space-3);
+          }
+
+          .workout-logging-dashboard .workout-log-item.mobile.is-deleting {
+            opacity: 0.55;
+            filter: grayscale(0.25);
+          }
+
+          .workout-logging-dashboard .workout-log-line--mobile-one-line {
+            display: flex;
+            flex-wrap: nowrap;
+            gap: var(--space-2);
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            width: 100%;
+            padding-bottom: var(--space-1);
+            scrollbar-width: none;
+          }
+
+          .workout-logging-dashboard .workout-log-line--mobile-one-line::-webkit-scrollbar {
+            display: none;
+          }
+
+          .workout-logging-dashboard .workout-log-line--mobile-one-line .workout-log-detail {
+            flex: 0 0 auto;
+            min-width: 0;
+          }
+
+          .workout-logging-dashboard .workout-set-totals {
+            flex-wrap: nowrap !important;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            gap: var(--space-2) !important;
+            font-size: 0.7rem;
+            padding-bottom: var(--space-1);
+          }
+
+          .workout-logging-dashboard .workout-set-totals .metric-item {
+            flex: 0 0 auto;
+            min-width: 0;
+          }
+
+          .workout-logging-dashboard .workout-set-totals .metric-value {
+            font-size: 0.85rem;
           }
 
           .workout-modal-mobile,
@@ -2682,22 +3365,46 @@ const WorkoutLoggingDashboard = () => {
             align-items: flex-start;
           }
 
-          .modal-content.workout-creator-modal {
-            max-width: 100%;
+          /* Match WorkoutLogger workout-selection-modal mobile panel + overlay */
+          .workout-logging-dashboard .modal-content.workout-creator-modal {
             width: 100%;
-            max-height: 88vh;
+            max-width: 100%;
+            height: 90vh;
+            max-height: 90vh;
+            margin: 0;
+            border-radius: var(--radius-lg);
+            border: 2px solid var(--border-primary);
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            overflow: hidden;
           }
 
-          .mobile-actions {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: var(--space-3);
-            width: 100%;
-            max-width: 100%;
-            margin-top: var(--space-2);
-            margin-bottom: var(--space-3);
-            position: relative;
-            z-index: 1;
+          .workout-logging-dashboard .modal-backdrop.modal-backdrop--workout-creator-mobile {
+            padding: var(--space-4);
+            align-items: center;
+            justify-content: center;
+            box-sizing: border-box;
+          }
+
+          .workout-creator-modal--mobile .modal-header.workout-creator-modal-header {
+            padding: var(--space-4);
+            flex-shrink: 0;
+          }
+
+          .workout-creator-modal--mobile .modal-body.workout-creator-modal-body {
+            flex: 1 1 auto;
+            min-height: 0;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+          }
+
+          .workout-creator-modal--mobile .workout-creator-modal-close.wk-track-close-btn {
+            width: 2.25rem;
+            height: 2.25rem;
+            border-radius: var(--radius-md);
+            font-size: 0;
           }
 
           .btn-icon-delete {
@@ -2712,84 +3419,142 @@ const WorkoutLoggingDashboard = () => {
             border-color: var(--accent-primary);
           }
 
-          .workout-set-group,
-          .quick-workout-set-group {
-            padding: var(--space-2) var(--space-3);
+          .workout-logging-dashboard .workout-set-block {
             margin-bottom: var(--space-3);
           }
 
-          .workout-set-header {
+          .workout-logging-dashboard .workout-set-group,
+          .workout-logging-dashboard .quick-workout-set-group {
+            padding: var(--space-3) var(--space-3) 0;
+            margin-bottom: 0;
+          }
+
+          .workout-logging-dashboard .quick-workout-set-group {
+            margin-bottom: var(--space-3);
+          }
+
+          .workout-logging-dashboard .workout-set-header {
             gap: var(--space-2);
-            flex-wrap: wrap;
-          }
-
-          .workout-set-summary {
-            gap: var(--space-2);
-          }
-
-          .workout-set-totals {
-            gap: var(--space-2);
-            font-size: var(--text-xs);
-          }
-
-          .workout-log-item.mobile {
-            gap: var(--space-2);
-            padding: var(--space-2);
-          }
-
-          .workout-analytics-button-dashboard--mobile-hide {
-            display: none !important;
-          }
-
-          .workout-set-summary {
             flex-wrap: nowrap;
-            gap: var(--space-2);
+            align-items: flex-start;
           }
 
-          .workout-set-summary .workout-set-totals {
-            order: 1;
+          .workout-logging-dashboard .workout-name-row {
             flex: 1;
-            flex-wrap: nowrap;
+            flex-direction: column;
+            align-items: flex-start;
             gap: var(--space-2);
-            justify-content: flex-start;
+            flex-wrap: nowrap;
             min-width: 0;
           }
 
-          .workout-set-summary .workout-set-totals .metric-item {
-            flex-shrink: 0;
+          .workout-logging-dashboard .workout-name,
+          .workout-logging-dashboard .workout-name-button {
+            margin-bottom: 0;
+            white-space: normal;
+            word-break: break-word;
+            font-size: var(--text-2xl);
+            line-height: 1.25;
           }
 
-          .workout-set-summary .btn-add-set {
-            order: 2;
-          }
-
-          .workout-set-summary .workout-collapse-toggle {
-            order: 3;
-          }
-
-          .workout-set-summary .workout-collapse-toggle {
-            margin-left: 0;
-          }
-
-          .workout-log-line {
-            display: flex;
-            flex-wrap: nowrap;
-            gap: var(--space-2);
-            overflow-x: auto;
-          }
-
-          .workout-log-detail {
-            flex-shrink: 0;
-          }
-
-          .workout-log-detail .metric-label-small,
-          .workout-log-detail .metric-value-small {
+          .workout-logging-dashboard .workout-muscles-inline {
+            margin-top: 0;
+            order: 0;
+            width: 100%;
             font-size: var(--text-xs);
+            line-height: 1.35;
+          }
+
+          .workout-logging-dashboard .workout-set-summary {
+            display: grid;
+            grid-template-columns: auto minmax(0, 1fr);
+            grid-template-rows: auto auto;
+            align-items: center;
+            column-gap: var(--space-2);
+            row-gap: var(--space-2);
+            padding: var(--space-2) 0;
+          }
+
+          .workout-logging-dashboard .workout-set-summary .workout-collapse-toggle {
+            grid-column: 1;
+            grid-row: 1;
+            align-self: center;
+          }
+
+          .workout-logging-dashboard .workout-set-summary .workout-collapse-toggle:hover,
+          .workout-logging-dashboard .workout-set-summary .workout-collapse-toggle:focus,
+          .workout-logging-dashboard .workout-set-summary .workout-collapse-toggle:focus-visible {
+            color: var(--text-secondary);
+            background: transparent;
+            outline: none;
+            box-shadow: none;
+          }
+
+          .workout-logging-dashboard .workout-set-summary .workout-collapse-icon {
+            width: 30px;
+            height: 30px;
+          }
+
+          .workout-logging-dashboard .workout-set-summary .workout-set-totals {
+            grid-column: 2;
+            grid-row: 1;
+            width: 100%;
+            min-width: 0;
+            flex: none;
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            gap: var(--space-1);
+            justify-content: space-between;
+            font-size: 0.65rem;
+          }
+
+          .workout-logging-dashboard .workout-set-summary .workout-set-totals .metric-item {
+            min-width: 0;
+            flex: 1 1 0;
+          }
+
+          .workout-logging-dashboard .workout-set-summary .btn-add-set {
+            grid-column: 1 / -1;
+            grid-row: 2;
+            width: 100%;
+            margin-left: 0;
+            margin-top: 0;
+            box-sizing: border-box;
+          }
+
+          .workout-logging-dashboard .workout-log-item.mobile {
+            gap: var(--space-2);
+            width: 100%;
+            box-sizing: border-box;
+          }
+
+          .workout-logging-dashboard .workout-log-line {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-2);
+            padding-left: 0;
+            width: 100%;
+          }
+
+          .workout-logging-dashboard .workout-log-detail {
+            flex-shrink: 0;
+            min-width: 0;
+          }
+
+          .workout-logging-dashboard .workout-log-detail .metric-label-small,
+          .workout-logging-dashboard .workout-log-detail .metric-value-small {
+            font-size: var(--text-xs);
+          }
+
+          .workout-logging-dashboard .custom-calendar-popup {
+            min-width: min(320px, calc(100vw - var(--space-4)));
+            max-width: calc(100vw - var(--space-4));
           }
         }
 
         @media (min-width: 769px) {
-          .dashboard-layout-mobile {
+          .workout-logging-dashboard .dashboard-layout-mobile {
             display: none;
           }
         }
@@ -2811,7 +3576,7 @@ const WorkoutLoggingDashboard = () => {
 
         .modal-content {
           background: var(--bg-primary);
-          border: 2px solid white;
+          border: 2px solid var(--border-primary);
           border-radius: var(--radius-lg);
           box-shadow: var(--shadow-xl);
           max-width: 90vw;
@@ -2824,6 +3589,16 @@ const WorkoutLoggingDashboard = () => {
         .workout-creator-modal {
           width: 1200px;
           animation: panelLift 0.25s var(--ease-out-cubic);
+        }
+
+        .modal-header.workout-creator-modal-header {
+          background: transparent;
+          padding: var(--space-3) var(--space-5);
+          border-bottom: 1px solid var(--border-primary);
+        }
+
+        .workout-creator-modal-body {
+          padding: 0;
         }
 
         .modal-body {
@@ -2859,6 +3634,11 @@ const WorkoutLoggingDashboard = () => {
           transition: color 0.2s ease;
         }
 
+        .modal-close-button.wk-track-close-btn {
+          font-size: 0;
+          padding: 0;
+        }
+
         .modal-close-button:hover {
           color: var(--text-primary);
         }
@@ -2871,26 +3651,38 @@ const WorkoutLoggingDashboard = () => {
         }
 
         .close-button {
-          width: 36px;
-          height: 36px;
+          width: 44px;
+          height: 44px;
           border: none;
           border-radius: var(--radius-full);
-          background: linear-gradient(145deg, var(--accent-danger), #FF8A8A);
-          color: #0B0D12;
+          background: transparent;
+          color: var(--text-secondary);
           cursor: pointer;
-          font-size: var(--text-lg);
+          font-size: var(--text-2xl);
           font-weight: var(--font-weight-bold);
-          transition: transform 0.3s ease, box-shadow 0.3s ease;
+          transition: transform 0.2s ease, color 0.2s ease;
           display: flex;
           align-items: center;
           justify-content: center;
-          box-shadow: 0 16px 36px rgba(0, 0, 0, 0.35);
+          box-shadow: none;
+        }
+
+        .close-button.wk-track-close-btn {
+          width: 2.25rem;
+          height: 2.25rem;
+          border-radius: var(--radius-md);
+          font-size: 0;
+          font-weight: normal;
         }
 
         .close-button:hover {
-          color: #ffffff;
-          transform: translateY(-4px);
-          box-shadow: 0 24px 50px rgba(255, 107, 107, 0.35);
+          color: var(--text-primary);
+          transform: translateY(-2px);
+          box-shadow: none;
+        }
+
+        .close-button.wk-track-close-btn:hover {
+          transform: none;
         }
 
         @media (min-width: 768px) {
@@ -2900,70 +3692,15 @@ const WorkoutLoggingDashboard = () => {
           }
         }
 
-        .workout-name-row {
-          display: flex;
-          align-items: center;
-          gap: var(--space-2);
-          flex-wrap: wrap;
+        .workout-logging-dashboard .workout-name-button {
+          background: none;
+          border: none;
+          padding: 0;
+          cursor: pointer;
+          font: inherit;
+          color: inherit;
+          text-align: left;
         }
-
-        .workout-muscles-inline {
-          font-size: var(--text-xs);
-          color: var(--text-secondary);
-        }
-
-        .workout-set-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 0;
-        }
-
-        .workout-details {
-          flex: 1;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          text-align: center;
-        }
-
-        .workout-name-row {
-          display: flex;
-          flex-direction: row;
-          align-items: center;
-          justify-content: space-between;
-          gap: var(--space-4);
-          flex: 1;
-        }
-
-  .workout-name {
-    font-weight: var(--font-weight-bold);
-    color: var(--text-primary);
-    font-size: clamp(1.4rem, 1.9vw, 2rem);
-    line-height: 1.1;
-    margin: 0;
-    white-space: nowrap;
-  }
-
-  .workout-name-button {
-    background: none;
-    border: none;
-    padding: 0;
-    cursor: pointer;
-    font: inherit;
-    color: inherit;
-    text-align: left;
-  }
-
-  .workout-muscles-inline {
-    font-size: var(--text-sm);
-    color: var(--text-secondary);
-    display: inline-flex;
-    align-items: center;
-    gap: var(--space-4);
-    margin-top: var(--space-4);
-  }
 
   .main-content-sections {
            display: flex;
@@ -2971,6 +3708,9 @@ const WorkoutLoggingDashboard = () => {
            gap: var(--space-3);
            margin-bottom: var(--space-6);
            margin-top: var(--space-4);
+           width: 100%;
+           min-width: 0;
+           box-sizing: border-box;
          }
 
         .workout-set-summary {
@@ -2985,7 +3725,7 @@ const WorkoutLoggingDashboard = () => {
         }
 
         .workout-collapse-toggle {
-          padding: var(--space-2);
+          padding: var(--space-3);
           border: none;
           border-radius: var(--radius-md);
           background: transparent;
@@ -2994,18 +3734,35 @@ const WorkoutLoggingDashboard = () => {
           display: flex;
           align-items: center;
           justify-content: center;
+          -webkit-tap-highlight-color: transparent;
         }
 
         .workout-collapse-toggle:hover,
-        .workout-collapse-toggle:focus {
-          color: var(--accent-primary);
+        .workout-collapse-toggle:focus,
+        .workout-collapse-toggle:focus-visible {
+          color: var(--text-secondary);
+          background: transparent;
           outline: none;
+          box-shadow: none;
         }
 
-        .collapse-triangle-icon {
-          width: 20px;
-          height: 20px;
+        .workout-collapse-icon {
+          width: 28px;
+          height: 28px;
           display: block;
+          flex-shrink: 0;
+        }
+
+        @media (min-width: 769px) {
+          .workout-logging-dashboard .workout-set-summary .workout-collapse-toggle {
+            margin-left: 10px;
+            padding: var(--space-4);
+          }
+
+          .workout-logging-dashboard .workout-set-summary .workout-collapse-icon {
+            width: 44px;
+            height: 44px;
+          }
         }
       `}</style>
     </div>

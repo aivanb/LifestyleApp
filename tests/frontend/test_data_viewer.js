@@ -208,7 +208,7 @@ describe('DataFilters Component', () => {
     );
 
     // Select field
-    const fieldSelect = screen.getByRole('combobox');
+    const fieldSelect = screen.getByLabelText('Filter field');
     fireEvent.change(fieldSelect, { target: { value: 'name' } });
 
     // Enter value
@@ -235,14 +235,14 @@ describe('DataFilters Component', () => {
     );
 
     // Add a filter first
-    const fieldSelect = screen.getByRole('combobox');
+    const fieldSelect = screen.getByLabelText('Filter field');
     fireEvent.change(fieldSelect, { target: { value: 'name' } });
     const valueInput = screen.getByPlaceholderText('Filter value...');
     fireEvent.change(valueInput, { target: { value: 'test' } });
     fireEvent.click(screen.getByText('Add'));
 
     // Filter should be displayed
-    expect(screen.getByText(/name: test/)).toBeInTheDocument();
+    expect(screen.getByText(/name = test/)).toBeInTheDocument();
 
     // Remove filter
     const removeButton = screen.getByTitle('Remove filter');
@@ -344,7 +344,7 @@ describe('DataViewer Page', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText('Database Viewer')).toBeInTheDocument();
+      expect(screen.getByText(/Access Level: user/)).toBeInTheDocument();
     });
   });
 

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
 import { PlusIcon, XMarkIcon, InformationCircleIcon } from '@heroicons/react/24/outline';
+import { WORKOUT_TRACKER_CLOSE_BTN_CSS } from '../constants/workoutTrackerCloseButtonCss';
 import { getMuscleDescription } from '../utils/muscleDescriptions';
 
 const WorkoutAdder = ({ onWorkoutAdded }) => {
@@ -9,6 +10,7 @@ const WorkoutAdder = ({ onWorkoutAdded }) => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isCreating, setIsCreating] = useState(false);
+  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' && window.innerWidth <= 768);
   
   const [formData, setFormData] = useState({
     workout_name: '',
@@ -114,6 +116,12 @@ const WorkoutAdder = ({ onWorkoutAdded }) => {
 
   useEffect(() => {
     loadMuscles();
+  }, []);
+
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
   }, []);
 
   useEffect(() => {
@@ -244,8 +252,6 @@ const WorkoutAdder = ({ onWorkoutAdded }) => {
 
   return (
     <div className="workout-adder-container">
-      <h2 className="workout-adder-header">Add New Workout</h2>
-
       {error && (
         <div className="workout-adder-error-message">
           {error}
@@ -283,11 +289,36 @@ const WorkoutAdder = ({ onWorkoutAdded }) => {
                   backgroundColor: 'var(--bg-primary)',
                   border: '1px solid var(--border-color)',
                   borderRadius: 'var(--border-radius)',
-                         minWidth: '800px'
+                  ...(isMobile
+                    ? {
+                        position: 'fixed',
+                        left: 'max(0.75rem, env(safe-area-inset-left, 0px))',
+                        right: 'max(0.75rem, env(safe-area-inset-right, 0px))',
+                        top: 'min(18vh, 120px)',
+                        width: 'auto',
+                        minWidth: 0,
+                        maxWidth: 'none',
+                        maxHeight: 'min(72vh, 560px)',
+                        marginTop: 0,
+                        overflowY: 'auto',
+                        WebkitOverflowScrolling: 'touch',
+                        zIndex: 10050,
+                      }
+                    : { minWidth: '800px' }),
                 }}
               >
-                       <div className="workout-adder-icon-grid" style={{ gridTemplateColumns: 'repeat(20, 1fr)', gap: '6px', padding: '10px' }}>
-                  {availableIcons.map(icon => (
+                       <div
+                         className="workout-adder-icon-grid"
+                         style={{
+                           gridTemplateColumns: isMobile ? 'repeat(8, minmax(0, 1fr))' : 'repeat(20, 1fr)',
+                           gap: isMobile ? '8px' : '6px',
+                           padding: '10px',
+                         }}
+                       >
+                  {availableIcons.map(icon => {
+                    const pick = isMobile ? 42 : 30;
+                    const fontPx = isMobile ? 22 : 18;
+                    return (
                     <button
                       key={icon}
                       type="button"
@@ -302,11 +333,11 @@ const WorkoutAdder = ({ onWorkoutAdded }) => {
                       }`}
                       style={{
                         backgroundColor: selectedIcon === icon ? 'var(--accent-light)' : 'transparent',
-                               minWidth: '30px',
-                               minHeight: '30px',
-                               width: '30px',
-                               height: '30px',
-                               fontSize: '18px',
+                               minWidth: `${pick}px`,
+                               minHeight: `${pick}px`,
+                               width: `${pick}px`,
+                               height: `${pick}px`,
+                               fontSize: `${fontPx}px`,
                                borderRadius: '4px',
                                border: selectedIcon === icon ? '2px solid var(--accent-primary)' : '1px solid var(--border-color)',
                                transition: 'all 0.2s ease'
@@ -314,7 +345,7 @@ const WorkoutAdder = ({ onWorkoutAdded }) => {
                     >
                       {icon}
                     </button>
-                  ))}
+                  );})}
                 </div>
               </div>
             )}
@@ -389,7 +420,7 @@ const WorkoutAdder = ({ onWorkoutAdded }) => {
             value={formData.notes}
             onChange={handleInputChange}
             className="workout-adder-form-input"
-                 rows="8"
+                 rows={isMobile ? 5 : 8}
             placeholder="Additional notes about the workout"
           />
             </div>
@@ -397,158 +428,310 @@ const WorkoutAdder = ({ onWorkoutAdded }) => {
 
           {/* Right Side - Muscle Selection (40%) */}
           <div className="workout-adder-right-section">
-        {/* Muscles - collapsible on mobile */}
-        <details className="workout-adder-muscles-details" open>
-          <summary className="workout-adder-muscles-summary">Muscle Activation Ratings</summary>
-        <div className="workout-adder-form-group">
-          <div className="workout-adder-muscles-header workout-adder-muscles-header--inside">
-                 <div className="muscles-title-with-tooltip">
-                   <h3 className="muscles-section-title">Muscle Activation Ratings</h3>
-                   <button
-                     type="button"
-                     className="muscle-instructions-tooltip-trigger"
-                     onClick={() => setShowMuscleInstructionsTooltip(!showMuscleInstructionsTooltip)}
-                     title="Click for activation rating guidelines"
-                   >
-                     <InformationCircleIcon style={{ width: '20px', height: '20px' }} />
-                   </button>
-            </div>
-                 
-                 {showMuscleInstructionsTooltip && (
-                   <div className="muscle-instructions-tooltip">
-                     <div className="muscles-instructions">
-                       <p><strong>How to set activation ratings:</strong></p>
-                       <ul>
-                         <li><strong>Primary muscles:</strong> 80-100 (main movers)</li>
-                         <li><strong>Secondary muscles:</strong> 40-79 (assisting muscles)</li>
-                         <li><strong>Stabilizers:</strong> 10-39 (supporting muscles)</li>
-                         <li><strong>Minimal activation:</strong> 0-9 (barely involved)</li>
-                       </ul>
-                       <p><strong>Examples:</strong></p>
-                       <ul>
-                         <li><strong>Bench Press:</strong> Chest (100), Triceps (75), Front Delts (40)</li>
-                         <li><strong>Squats:</strong> Quads (100), Hamstrings (90), Glutes (95), Abs (20)</li>
-                       </ul>
-                     </div>
-                   </div>
-                 )}
-          </div>
-          
-          <div className="workout-adder-muscles-list">
-                {formData.muscles.map((muscle, index) => {
-                  // Get muscle name for description
-                  const muscleName = muscle.muscle ? Object.values(muscles)
-                    .flat()
-                    .find(m => m.muscles_id === parseInt(muscle.muscle))?.muscle_name : null;
-                  
-                  return (
-              <div key={index} className="workout-adder-muscle-item" style={{ borderColor: 'var(--border-color)' }}>
-                      <div className="workout-adder-muscle-header">
-                        <div className="workout-adder-muscle-select-container">
-                <select
-                  value={muscle.muscle}
-                  onChange={(e) => updateMuscle(index, 'muscle', e.target.value)}
-                  className="workout-adder-form-input workout-adder-muscle-select"
-                  style={{
-                    fontFamily: 'var(--font-primary)',
-                    fontSize: 'var(--text-base)',
-                    fontWeight: 'var(--font-weight-normal)',
-                    color: 'var(--text-primary)',
-                    backgroundColor: 'var(--bg-secondary)',
-                    border: '1px solid var(--border-color)',
-                    borderRadius: 'var(--border-radius)',
-                              padding: 'var(--spacing-sm) var(--spacing-md)',
-                              flex: 1
-                  }}
-                  required
-                >
-                  <option value="">Select muscle</option>
-                  {Object.entries(muscles).map(([groupName, groupMuscles]) => (
-                    <optgroup key={groupName} label={groupName}>
-                      {groupMuscles.map(muscleOption => (
-                        <option key={muscleOption.muscles_id} value={muscleOption.muscles_id}>
-                                    {muscleOption.muscle_name.charAt(0).toUpperCase() + muscleOption.muscle_name.slice(1)}
-                        </option>
-                      ))}
-                    </optgroup>
-                  ))}
-                </select>
-                          {muscleName && (
-                            <button 
+        {/* Muscles: always visible (mobile + desktop) */}
+        {isMobile ? (
+          <div className="workout-adder-muscles-details workout-adder-muscles-details--mobile-expanded">
+            <div className="workout-adder-form-group">
+              <div className="workout-adder-muscles-header workout-adder-muscles-header--inside">
+                     <div className="muscles-title-with-tooltip">
+                       <h3 className="muscles-section-title">Muscle Activation Ratings</h3>
+                       <button
+                         type="button"
+                         className="muscle-instructions-tooltip-trigger"
+                         onClick={() => setShowMuscleInstructionsTooltip(!showMuscleInstructionsTooltip)}
+                         title="Click for activation rating guidelines"
+                       >
+                         <InformationCircleIcon style={{ width: '20px', height: '20px' }} />
+                       </button>
+                </div>
+                     
+                     {showMuscleInstructionsTooltip && (
+                       <div className="muscle-instructions-tooltip">
+                         <div className="muscles-instructions">
+                           <p><strong>How to set activation ratings:</strong></p>
+                           <ul>
+                             <li><strong>Primary muscles:</strong> 80-100 (main movers)</li>
+                             <li><strong>Secondary muscles:</strong> 40-79 (assisting muscles)</li>
+                             <li><strong>Stabilizers:</strong> 10-39 (supporting muscles)</li>
+                             <li><strong>Minimal activation:</strong> 0-9 (barely involved)</li>
+                           </ul>
+                           <p><strong>Examples:</strong></p>
+                           <ul>
+                             <li><strong>Bench Press:</strong> Chest (100), Triceps (75), Front Delts (40)</li>
+                             <li><strong>Squats:</strong> Quads (100), Hamstrings (90), Glutes (95), Abs (20)</li>
+                           </ul>
+                         </div>
+                       </div>
+                     )}
+              </div>
+              
+              <div className="workout-adder-muscles-list">
+                    {formData.muscles.map((muscle, index) => {
+                      const muscleName = muscle.muscle ? Object.values(muscles)
+                        .flat()
+                        .find(m => m.muscles_id === parseInt(muscle.muscle))?.muscle_name : null;
+                      
+                      return (
+                        <div key={index} className="workout-adder-muscle-item" style={{ borderColor: 'var(--border-color)' }}>
+                          <div className="workout-adder-muscle-header">
+                            <div className="workout-adder-muscle-select-container">
+                              <select
+                                value={muscle.muscle}
+                                onChange={(e) => updateMuscle(index, 'muscle', e.target.value)}
+                                className="workout-adder-form-input workout-adder-muscle-select"
+                                style={{
+                                  fontFamily: 'var(--font-primary)',
+                                  fontSize: 'var(--text-base)',
+                                  fontWeight: 'var(--font-weight-normal)',
+                                  color: 'var(--text-primary)',
+                                  backgroundColor: 'var(--bg-secondary)',
+                                  border: '1px solid var(--border-color)',
+                                  borderRadius: 'var(--border-radius)',
+                                  padding: 'var(--spacing-sm) var(--spacing-md)',
+                                  flex: 1,
+                                }}
+                                required
+                              >
+                                <option value="">Select muscle</option>
+                                {Object.entries(muscles).map(([groupName, groupMuscles]) => (
+                                  <optgroup key={groupName} label={groupName}>
+                                    {groupMuscles.map(muscleOption => (
+                                      <option key={muscleOption.muscles_id} value={muscleOption.muscles_id}>
+                                        {muscleOption.muscle_name.charAt(0).toUpperCase() + muscleOption.muscle_name.slice(1)}
+                                      </option>
+                                    ))}
+                                  </optgroup>
+                                ))}
+                              </select>
+                              {muscleName && (
+                                <button
+                                  type="button"
+                                  className="muscle-description-icon"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleMuscleClick(muscleName);
+                                  }}
+                                  title="Click to view muscle description"
+                                >
+                                  <InformationCircleIcon style={{ width: '22px', height: '22px' }} />
+                                </button>
+                              )}
+                            </div>
+                            <button
                               type="button"
-                              className="muscle-description-icon"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleMuscleClick(muscleName);
-                              }}
-                              title="Click to view muscle description"
+                              onClick={() => removeMuscle(index)}
+                              className="workout-adder-remove-muscle-button wk-track-close-btn"
+                              aria-label="Remove muscle"
                             >
-                              <InformationCircleIcon style={{ width: '22px', height: '22px' }} />
+                              <XMarkIcon className="wk-track-close-icon" strokeWidth={2} aria-hidden />
                             </button>
-                          )}
+                          </div>
+                          
+                          <div className="workout-adder-muscle-controls">
+                            <div className="workout-adder-muscle-slider-wrapper">
+                              <input
+                                type="range"
+                                min="0"
+                                max="100"
+                                value={muscle.activation_rating}
+                                onChange={(e) => updateMuscle(index, 'activation_rating', parseInt(e.target.value))}
+                                className="workout-adder-muscle-slider"
+                                style={{ background: getSliderBackground(muscle.activation_rating) }}
+                              />
+                            </div>
+                            <div className="muscle-rating-stepper">
+                              <button
+                                type="button"
+                                className="stepper-button stepper-decrease"
+                                onClick={() => updateMuscle(index, 'activation_rating', Math.max(0, parseInt(muscle.activation_rating) - 1))}
+                              >
+                                −
+                              </button>
+                              <input
+                                type="number"
+                                min="0"
+                                max="100"
+                                value={muscle.activation_rating}
+                                onChange={(e) => updateMuscle(index, 'activation_rating', parseInt(e.target.value))}
+                                className="workout-adder-form-input workout-adder-muscle-rating-input stepper-input"
+                                required
+                              />
+                              <button
+                                type="button"
+                                className="stepper-button stepper-increase"
+                                onClick={() => updateMuscle(index, 'activation_rating', Math.min(100, parseInt(muscle.activation_rating) + 1))}
+                              >
+                                +
+                              </button>
+                            </div>
+                          </div>
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => removeMuscle(index)}
-                          className="workout-adder-remove-muscle-button"
-                        >
-                          <XMarkIcon className="h-5 w-5" />
-                        </button>
-                      </div>
-                
-                <div className="workout-adder-muscle-controls">
-                  <div className="workout-adder-muscle-slider-wrapper">
-                    <input
-                      type="range"
-                      min="0"
-                      max="100"
-                      value={muscle.activation_rating}
-                      onChange={(e) => updateMuscle(index, 'activation_rating', parseInt(e.target.value))}
-                      className="workout-adder-muscle-slider"
-                      style={{ background: getSliderBackground(muscle.activation_rating) }}
-                    />
-                  </div>
-                    <div className="muscle-rating-stepper">
-                      <button
-                        type="button"
-                        className="stepper-button stepper-decrease"
-                        onClick={() => updateMuscle(index, 'activation_rating', Math.max(0, parseInt(muscle.activation_rating) - 1))}
-                      >
-                        −
-                      </button>
-                  <input
-                    type="number"
-                    min="0"
-                    max="100"
-                    value={muscle.activation_rating}
-                        onChange={(e) => updateMuscle(index, 'activation_rating', parseInt(e.target.value))}
-                        className="workout-adder-form-input workout-adder-muscle-rating-input stepper-input"
-                    required
-                  />
+                      );
+                    })}
+              
                 <button
                   type="button"
-                        className="stepper-button stepper-increase"
-                        onClick={() => updateMuscle(index, 'activation_rating', Math.min(100, parseInt(muscle.activation_rating) + 1))}
-                >
-                        +
-                </button>
-              </div>
-                    </div>
-                  </div>
-                );
-                })}
-            
-            <button
-              type="button"
-              onClick={addMuscle}
-              className="workout-adder-add-muscle-button"
+                  onClick={addMuscle}
+                  className="workout-adder-add-muscle-button"
                 >
                   <PlusIcon style={{ width: '20px', height: '20px' }} />
-              <span>Add Muscle</span>
-            </button>
+                  <span>Add Muscle</span>
+                </button>
+              </div>
+            </div>
           </div>
-        </div>
-        </details>
+        ) : (
+          <div className="workout-adder-muscles-details workout-adder-muscles-details--desktop">
+            <div className="workout-adder-form-group">
+              <div className="workout-adder-muscles-header workout-adder-muscles-header--inside">
+                     <div className="muscles-title-with-tooltip">
+                       <h3 className="muscles-section-title">Muscle Activation Ratings</h3>
+                       <button
+                         type="button"
+                         className="muscle-instructions-tooltip-trigger"
+                         onClick={() => setShowMuscleInstructionsTooltip(!showMuscleInstructionsTooltip)}
+                         title="Click for activation rating guidelines"
+                       >
+                         <InformationCircleIcon style={{ width: '20px', height: '20px' }} />
+                       </button>
+                </div>
+                     
+                     {showMuscleInstructionsTooltip && (
+                       <div className="muscle-instructions-tooltip">
+                         <div className="muscles-instructions">
+                           <p><strong>How to set activation ratings:</strong></p>
+                           <ul>
+                             <li><strong>Primary muscles:</strong> 80-100 (main movers)</li>
+                             <li><strong>Secondary muscles:</strong> 40-79 (assisting muscles)</li>
+                             <li><strong>Stabilizers:</strong> 10-39 (supporting muscles)</li>
+                             <li><strong>Minimal activation:</strong> 0-9 (barely involved)</li>
+                           </ul>
+                           <p><strong>Examples:</strong></p>
+                           <ul>
+                             <li><strong>Bench Press:</strong> Chest (100), Triceps (75), Front Delts (40)</li>
+                             <li><strong>Squats:</strong> Quads (100), Hamstrings (90), Glutes (95), Abs (20)</li>
+                           </ul>
+                         </div>
+                       </div>
+                     )}
+              </div>
+              
+              <div className="workout-adder-muscles-list">
+                    {formData.muscles.map((muscle, index) => {
+                      const muscleName = muscle.muscle ? Object.values(muscles)
+                        .flat()
+                        .find(m => m.muscles_id === parseInt(muscle.muscle))?.muscle_name : null;
+                      
+                      return (
+                        <div key={index} className="workout-adder-muscle-item" style={{ borderColor: 'var(--border-color)' }}>
+                          <div className="workout-adder-muscle-header">
+                            <div className="workout-adder-muscle-select-container">
+                              <select
+                                value={muscle.muscle}
+                                onChange={(e) => updateMuscle(index, 'muscle', e.target.value)}
+                                className="workout-adder-form-input workout-adder-muscle-select"
+                                style={{
+                                  fontFamily: 'var(--font-primary)',
+                                  fontSize: 'var(--text-base)',
+                                  fontWeight: 'var(--font-weight-normal)',
+                                  color: 'var(--text-primary)',
+                                  backgroundColor: 'var(--bg-secondary)',
+                                  border: '1px solid var(--border-color)',
+                                  borderRadius: 'var(--border-radius)',
+                                  padding: 'var(--spacing-sm) var(--spacing-md)',
+                                  flex: 1,
+                                }}
+                                required
+                              >
+                                <option value="">Select muscle</option>
+                                {Object.entries(muscles).map(([groupName, groupMuscles]) => (
+                                  <optgroup key={groupName} label={groupName}>
+                                    {groupMuscles.map(muscleOption => (
+                                      <option key={muscleOption.muscles_id} value={muscleOption.muscles_id}>
+                                        {muscleOption.muscle_name.charAt(0).toUpperCase() + muscleOption.muscle_name.slice(1)}
+                                      </option>
+                                    ))}
+                                  </optgroup>
+                                ))}
+                              </select>
+                              {muscleName && (
+                                <button
+                                  type="button"
+                                  className="muscle-description-icon"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleMuscleClick(muscleName);
+                                  }}
+                                  title="Click to view muscle description"
+                                >
+                                  <InformationCircleIcon style={{ width: '22px', height: '22px' }} />
+                                </button>
+                              )}
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => removeMuscle(index)}
+                              className="workout-adder-remove-muscle-button wk-track-close-btn"
+                              aria-label="Remove muscle"
+                            >
+                              <XMarkIcon className="wk-track-close-icon" strokeWidth={2} aria-hidden />
+                            </button>
+                          </div>
+                          
+                          <div className="workout-adder-muscle-controls">
+                            <div className="workout-adder-muscle-slider-wrapper">
+                              <input
+                                type="range"
+                                min="0"
+                                max="100"
+                                value={muscle.activation_rating}
+                                onChange={(e) => updateMuscle(index, 'activation_rating', parseInt(e.target.value))}
+                                className="workout-adder-muscle-slider"
+                                style={{ background: getSliderBackground(muscle.activation_rating) }}
+                              />
+                            </div>
+                            <div className="muscle-rating-stepper">
+                              <button
+                                type="button"
+                                className="stepper-button stepper-decrease"
+                                onClick={() => updateMuscle(index, 'activation_rating', Math.max(0, parseInt(muscle.activation_rating) - 1))}
+                              >
+                                −
+                              </button>
+                              <input
+                                type="number"
+                                min="0"
+                                max="100"
+                                value={muscle.activation_rating}
+                                onChange={(e) => updateMuscle(index, 'activation_rating', parseInt(e.target.value))}
+                                className="workout-adder-form-input workout-adder-muscle-rating-input stepper-input"
+                                required
+                              />
+                              <button
+                                type="button"
+                                className="stepper-button stepper-increase"
+                                onClick={() => updateMuscle(index, 'activation_rating', Math.min(100, parseInt(muscle.activation_rating) + 1))}
+                              >
+                                +
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+              
+                <button
+                  type="button"
+                  onClick={addMuscle}
+                  className="workout-adder-add-muscle-button"
+                >
+                  <PlusIcon style={{ width: '20px', height: '20px' }} />
+                  <span>Add Muscle</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
           </div>
         </div>
       </form>
@@ -565,9 +748,10 @@ const WorkoutAdder = ({ onWorkoutAdded }) => {
             style={{
               width: '18px',
               height: '18px',
-              accentColor: 'var(--accent-color)',
-              border: '1px solid var(--border-color)',
-              borderRadius: 'var(--border-radius-sm)'
+              accentColor: '#2563eb',
+              backgroundColor: '#ffffff',
+              border: '1px solid #d1d5db',
+              borderRadius: 'var(--radius-sm)',
             }}
           />
           <label htmlFor="make_public" className="workout-adder-form-label">Make this workout public</label>
@@ -590,10 +774,12 @@ const WorkoutAdder = ({ onWorkoutAdded }) => {
             <div className="muscle-description-header">
               <h2 className="muscle-description-title">{activeMuscleDescription}</h2>
               <button
-                className="muscle-description-close"
+                type="button"
+                className="muscle-description-close wk-track-close-btn"
                 onClick={() => setActiveMuscleDescription(null)}
+                aria-label="Close"
               >
-                ×
+                <XMarkIcon className="wk-track-close-icon" strokeWidth={2} aria-hidden />
               </button>
             </div>
             <div className="muscle-description-content">
@@ -611,7 +797,7 @@ const WorkoutAdder = ({ onWorkoutAdded }) => {
         </div>
       )}
       
-      <style jsx="true">{`
+      <style jsx="true">{`${WORKOUT_TRACKER_CLOSE_BTN_CSS}
         .workout-adder-container {
           padding: var(--space-6);
           background: var(--bg-primary);
@@ -879,6 +1065,7 @@ const WorkoutAdder = ({ onWorkoutAdded }) => {
           border-radius: var(--radius-md);
           box-shadow: var(--shadow-lg);
            min-width: 800px;
+          box-sizing: border-box;
         }
 
         .workout-adder-icon-grid {
@@ -888,6 +1075,7 @@ const WorkoutAdder = ({ onWorkoutAdded }) => {
           padding: var(--space-4);
           max-height: 400px;
           overflow-y: auto;
+          box-sizing: border-box;
         }
 
         .workout-adder-icon-button {
@@ -1215,21 +1403,29 @@ const WorkoutAdder = ({ onWorkoutAdded }) => {
         .workout-adder-checkbox {
           width: 18px;
           height: 18px;
-          accent-color: var(--accent-primary);
-          border: 1px solid var(--border-primary);
+          min-width: 18px;
+          min-height: 18px;
+          box-sizing: border-box;
+          accent-color: #2563eb;
+          border: 1px solid #d1d5db;
           border-radius: var(--radius-sm);
+          background: #ffffff;
+        }
+
+        .workout-adder-checkbox:checked {
+          border-color: #2563eb;
         }
 
         .workout-adder-submit-button {
           width: 100%;
           padding: var(--space-2) var(--space-4);
           background: var(--accent-primary);
-          color: var(--text-on-primary);
+          color: var(--bg-primary);
           border: 2px solid var(--accent-primary);
           border-radius: var(--radius-md);
           font-family: var(--font-primary);
           font-size: var(--text-sm);
-          font-weight: var(--font-weight-medium);
+          font-weight: var(--font-weight-bold);
           cursor: pointer;
           transition: all 0.2s var(--ease-out-cubic);
           height: 40px;
@@ -1239,6 +1435,7 @@ const WorkoutAdder = ({ onWorkoutAdded }) => {
         .workout-adder-submit-button:hover:not(:disabled) {
           background: var(--accent-dark);
           border-color: var(--accent-dark);
+          color: var(--bg-primary);
         }
 
         .workout-adder-submit-button:disabled {
@@ -1247,27 +1444,35 @@ const WorkoutAdder = ({ onWorkoutAdded }) => {
         }
 
         @media (max-width: 768px) {
+          .workout-adder-form-layout {
+            flex-direction: column;
+          }
+
+          .workout-adder-left-section,
+          .workout-adder-right-section {
+            flex: 1 1 auto;
+            max-width: 100%;
+            width: 100%;
+          }
+
+          .workout-adder-right-section {
+            order: 0;
+          }
+
           .workout-adder-muscles-details {
             width: 100%;
           }
 
-          .workout-adder-muscles-summary {
-            list-style: none;
-            cursor: pointer;
-            padding: var(--space-2) var(--space-3);
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border-primary);
-            border-radius: var(--radius-sm);
-            font-weight: var(--font-weight-medium);
-            font-size: var(--text-sm);
+          .workout-adder-muscles-details--mobile-expanded .workout-adder-muscles-header--inside {
+            display: flex;
           }
 
-          .workout-adder-muscles-summary::-webkit-details-marker {
+          .workout-adder-muscles-summary {
             display: none;
           }
 
           .workout-adder-muscles-header--inside {
-            display: none;
+            display: flex;
           }
 
           .workout-adder-remove-muscle-button {
@@ -1299,14 +1504,59 @@ const WorkoutAdder = ({ onWorkoutAdded }) => {
             font-size: var(--text-base);
           }
 
+          textarea.workout-adder-form-input {
+            min-height: 120px;
+            resize: vertical;
+          }
+
           .workout-adder-muscle-row {
             flex-wrap: wrap;
             gap: var(--space-2);
           }
 
+          .workout-adder-muscle-item {
+            border: none;
+            background: var(--bg-secondary);
+            padding: var(--space-3);
+            border-radius: var(--radius-md);
+          }
+
+          .workout-adder-muscle-select-container {
+            min-width: 0;
+            flex: 1;
+          }
+
+          .workout-adder-muscle-select-container .workout-adder-muscle-select {
+            flex: 1 1 auto;
+            min-width: 0;
+            max-width: calc(100% - 52px);
+          }
+
+          .workout-adder-remove-muscle-button.wk-track-close-btn {
+            flex-shrink: 0;
+            font-size: 0;
+          }
+
           .workout-adder-muscle-rating-cell {
             min-width: 0;
             flex: 1 1 100%;
+          }
+
+          .workout-adder-submit-button {
+            color: var(--bg-primary);
+            font-size: var(--text-lg);
+            font-weight: var(--font-weight-bold);
+            min-height: 48px;
+            height: auto;
+            padding: var(--space-3) var(--space-4);
+          }
+
+          .workout-adder-icon-dropdown-menu {
+            min-width: 0 !important;
+          }
+
+          .workout-adder-icon-grid {
+            max-height: min(58vh, 480px) !important;
           }
 
           .muscle-rating-stepper,

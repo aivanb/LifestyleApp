@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ComposedChart, Bar, Line } from 'recharts';
 import { XMarkIcon, ChartBarIcon } from '@heroicons/react/24/outline';
 import api from '../services/api';
+import { WORKOUT_TRACKER_CLOSE_BTN_CSS } from '../constants/workoutTrackerCloseButtonCss';
 
 const WorkoutAnalytics = ({ workout, isOpen, onClose }) => {
   const [workoutLogs, setWorkoutLogs] = useState([]);
@@ -167,6 +169,18 @@ const WorkoutAnalytics = ({ workout, isOpen, onClose }) => {
     };
   }, [workoutLogs]);
 
+  const lastWeightAndReps = useMemo(() => {
+    if (!workoutLogs.length) return null;
+    const lastLog = workoutLogs[workoutLogs.length - 1];
+    const lastWeight = parseFloat(lastLog.weight || 0);
+    const lastReps = parseInt(lastLog.reps, 10);
+
+    return {
+      lastWeight: Number.isFinite(lastWeight) && lastWeight > 0 ? lastWeight : null,
+      lastReps: Number.isFinite(lastReps) && lastReps > 0 ? lastReps : null,
+    };
+  }, [workoutLogs]);
+
   // Prepare graph data - group by date
   const graphData = useMemo(() => {
     if (!workoutLogs.length) return [];
@@ -202,45 +216,106 @@ const WorkoutAnalytics = ({ workout, isOpen, onClose }) => {
       .sort((a, b) => new Date(a.date) - new Date(b.date));
   }, [workoutLogs]);
 
-  if (!isOpen) return null;
+  if (!isOpen || typeof document === 'undefined') return null;
 
   const workoutName = workout?.workout_name || 'Workout';
 
-  return (
-    <div className="analytics-modal-overlay" onClick={onClose}>
-      <div className="analytics-modal-content" onClick={(e) => e.stopPropagation()}>
+  const modalTree = (
+    <div className="analytics-modal-overlay" onClick={onClose} role="presentation">
+      <div
+        className="analytics-modal-content"
+        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="analytics-modal-title"
+      >
         <div className="analytics-modal-header">
-          <div className="analytics-modal-title">
+          <div className="analytics-modal-title" id="analytics-modal-title">
             <ChartBarIcon className="analytics-icon" />
             <span>{workoutName} Analytics</span>
           </div>
-          <button className="analytics-close-button" onClick={onClose}>
-            <XMarkIcon className="w-6 h-6" />
+          <button type="button" className="wk-track-close-btn analytics-close-button--in-content" onClick={onClose} aria-label="Close analytics">
+            <XMarkIcon className="wk-track-close-icon" strokeWidth={2} aria-hidden />
           </button>
         </div>
-        
+
         <div className="analytics-modal-body">
           {loading ? (
             <div className="analytics-loading">Loading analytics...</div>
           ) : (
             <>
               {/* Time Information */}
-              <div className="analytics-info-section">
-                <div className="analytics-info-item">
-                  <span className="analytics-info-label">Last Logged:</span>
-                  <span className="analytics-info-value">
-                    {timeSinceLastLogged || 'Never'}
-                  </span>
-                </div>
-                {weightDifference && (
-                  <div className="analytics-info-item">
-                    <span className="analytics-info-label">Weight Change:</span>
-                    <span 
-                      className={`analytics-info-value analytics-weight-difference ${weightDifference.isPositive ? 'positive' : 'negative'}`}
-                    >
-                      {weightDifference.isPositive ? '+' : ''}{weightDifference.difference.toFixed(1)} lbs
-                    </span>
-                  </div>
+              <div className={`analytics-info-section${isMobile ? ' analytics-info-section--mobile' : ''}`}>
+                {isMobile ? (
+                  <>
+                    <div className={`analytics-info-row${!weightDifference ? ' analytics-info-row--single' : ''}`}>
+                      <div className="analytics-info-item">
+                        <span className="analytics-info-label">Last Logged:</span>
+                        <span className="analytics-info-value">
+                          {timeSinceLastLogged || 'Never'}
+                        </span>
+                      </div>
+                      {weightDifference ? (
+                        <div className="analytics-info-item">
+                          <span className="analytics-info-label">Weight Change:</span>
+                          <span
+                            className={`analytics-info-value analytics-weight-difference ${weightDifference.isPositive ? 'positive' : 'negative'}`}
+                          >
+                            {weightDifference.isPositive ? '+' : ''}{weightDifference.difference.toFixed(1)} lbs
+                          </span>
+                        </div>
+                      ) : null}
+                    </div>
+                    <div className="analytics-info-row">
+                      <div className="analytics-info-item">
+                        <span className="analytics-info-label">Last Weight:</span>
+                        <span className="analytics-info-value">
+                          {lastWeightAndReps?.lastWeight != null
+                            ? `${lastWeightAndReps.lastWeight.toFixed(1)} lbs`
+                            : '—'}
+                        </span>
+                      </div>
+                      <div className="analytics-info-item">
+                        <span className="analytics-info-label">Last Reps:</span>
+                        <span className="analytics-info-value">
+                          {lastWeightAndReps?.lastReps != null ? `${lastWeightAndReps.lastReps}` : '—'}
+                        </span>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="analytics-info-item">
+                      <span className="analytics-info-label">Last Logged:</span>
+                      <span className="analytics-info-value">
+                        {timeSinceLastLogged || 'Never'}
+                      </span>
+                    </div>
+                    <div className="analytics-info-item">
+                      <span className="analytics-info-label">Last Weight:</span>
+                      <span className="analytics-info-value">
+                        {lastWeightAndReps?.lastWeight != null
+                          ? `${lastWeightAndReps.lastWeight.toFixed(1)} lbs`
+                          : '—'}
+                      </span>
+                    </div>
+                    <div className="analytics-info-item">
+                      <span className="analytics-info-label">Last Reps:</span>
+                      <span className="analytics-info-value">
+                        {lastWeightAndReps?.lastReps != null ? `${lastWeightAndReps.lastReps}` : '—'}
+                      </span>
+                    </div>
+                    {weightDifference && (
+                      <div className="analytics-info-item">
+                        <span className="analytics-info-label">Weight Change:</span>
+                        <span
+                          className={`analytics-info-value analytics-weight-difference ${weightDifference.isPositive ? 'positive' : 'negative'}`}
+                        >
+                          {weightDifference.isPositive ? '+' : ''}{weightDifference.difference.toFixed(1)} lbs
+                        </span>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
 
@@ -284,27 +359,66 @@ const WorkoutAnalytics = ({ workout, isOpen, onClose }) => {
               {/* Graph */}
               {graphData.length > 0 ? (
                 <div className={`analytics-graph-section ${isMobile ? 'analytics-graph-section--mobile' : ''}`}>
-                  <ResponsiveContainer width="100%" height={isMobile ? 280 : 400}>
-                    <ComposedChart data={graphData} margin={isMobile ? { top: 6, right: 0, left: 0, bottom: 6 } : undefined}>
+                  <div
+                    className="analytics-graph-chart-host"
+                    tabIndex={-1}
+                    style={
+                      isMobile
+                        ? { width: '100%', height: 300, minHeight: 300, flexShrink: 0 }
+                        : { width: '100%', height: 420, minHeight: 420, flexShrink: 0 }
+                    }
+                  >
+                    <ResponsiveContainer width="100%" height={isMobile ? '100%' : 420} debounce={80}>
+                    <ComposedChart
+                      data={graphData}
+                      margin={
+                        isMobile
+                          ? { top: 8, right: 2, left: 2, bottom: 48 }
+                          : { top: 16, right: 24, left: 16, bottom: 96 }
+                      }
+                    >
                       <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis 
-                        dataKey="date" 
-                        tick={{ fontSize: isMobile ? 10 : 12 }}
+                      <XAxis
+                        dataKey="date"
+                        angle={-55}
+                        textAnchor="end"
+                        interval="preserveStartEnd"
+                        tick={{
+                          fontSize: isMobile ? 9 : 11,
+                          fill: 'var(--text-tertiary)',
+                        }}
+                        height={isMobile ? 44 : 48}
                         tickFormatter={(value) => {
                           const date = new Date(value);
                           return `${date.getMonth() + 1}/${date.getDate()}`;
                         }}
                       />
-                      <YAxis 
+                      <YAxis
                         yAxisId="weight"
-                        tick={{ fontSize: isMobile ? 10 : 12 }}
-                        label={!isMobile ? { value: 'Weight (lbs)', angle: -90, position: 'insideLeft' } : undefined}
+                        width={isMobile ? 30 : 52}
+                        tick={{
+                          fontSize: isMobile ? 9 : 11,
+                          fill: 'var(--text-tertiary)',
+                          angle: -90,
+                          textAnchor: 'middle',
+                          dx: isMobile ? -2 : -6,
+                        }}
+                        tickMargin={isMobile ? 4 : 8}
+                        label={!isMobile ? { value: 'Weight (lbs)', angle: -90, position: 'insideLeft', offset: 8, style: { fill: 'var(--text-secondary)', fontSize: 12 } } : undefined}
                       />
-                      <YAxis 
+                      <YAxis
                         yAxisId="count"
                         orientation="right"
-                        tick={{ fontSize: isMobile ? 10 : 12 }}
-                        label={!isMobile ? { value: 'Times Logged', angle: 90, position: 'insideRight' } : undefined}
+                        width={isMobile ? 28 : 52}
+                        tick={{
+                          fontSize: isMobile ? 9 : 11,
+                          fill: 'var(--text-tertiary)',
+                          angle: 90,
+                          textAnchor: 'middle',
+                          dx: isMobile ? 2 : 6,
+                        }}
+                        tickMargin={isMobile ? 4 : 8}
+                        label={!isMobile ? { value: 'Times Logged', angle: 90, position: 'insideRight', offset: 8, style: { fill: 'var(--text-secondary)', fontSize: 12 } } : undefined}
                       />
                       <Tooltip 
                         formatter={(value, name) => {
@@ -318,7 +432,18 @@ const WorkoutAnalytics = ({ workout, isOpen, onClose }) => {
                           return date.toLocaleDateString();
                         }}
                       />
-                      <Legend />
+                      <Legend
+                        verticalAlign={isMobile ? 'bottom' : 'bottom'}
+                        align="center"
+                        wrapperStyle={{
+                          fontSize: isMobile ? '14px' : '13px',
+                          paddingTop: isMobile ? 6 : 10,
+                          paddingBottom: isMobile ? 0 : 4,
+                          lineHeight: 1.35,
+                          width: '100%',
+                        }}
+                        iconSize={isMobile ? 12 : 12}
+                      />
                       <Line 
                         yAxisId="weight"
                         type="monotone" 
@@ -346,6 +471,7 @@ const WorkoutAnalytics = ({ workout, isOpen, onClose }) => {
                       />
                     </ComposedChart>
                   </ResponsiveContainer>
+                  </div>
                 </div>
               ) : (
                 <div className="analytics-no-data">
@@ -356,20 +482,26 @@ const WorkoutAnalytics = ({ workout, isOpen, onClose }) => {
           )}
         </div>
       </div>
-      
-      <style>{`
+    </div>
+  );
+
+  return createPortal(
+    <>
+      {modalTree}
+      <style>{`${WORKOUT_TRACKER_CLOSE_BTN_CSS}
         .analytics-modal-overlay {
           position: fixed;
           top: 0;
           left: 0;
           right: 0;
           bottom: 0;
-          background: rgba(0, 0, 0, 0.8);
+          background: rgba(0, 0, 0, 0.82);
           display: flex;
           align-items: center;
           justify-content: center;
-          z-index: 2000;
+          z-index: 10000;
           padding: var(--space-4);
+          box-sizing: border-box;
         }
 
         .analytics-modal-content {
@@ -382,6 +514,9 @@ const WorkoutAnalytics = ({ workout, isOpen, onClose }) => {
           max-height: 90vh;
           display: flex;
           flex-direction: column;
+          min-height: 0;
+          position: relative;
+          z-index: 1;
         }
 
         .analytics-modal-header {
@@ -389,8 +524,8 @@ const WorkoutAnalytics = ({ workout, isOpen, onClose }) => {
           justify-content: space-between;
           align-items: center;
           padding: var(--space-6);
-          border-bottom: 2px solid var(--border-primary);
-          background: var(--bg-secondary);
+          border-bottom: 1px solid var(--border-primary);
+          background: transparent;
         }
 
         .analytics-modal-title {
@@ -408,25 +543,44 @@ const WorkoutAnalytics = ({ workout, isOpen, onClose }) => {
           color: var(--accent-primary);
         }
 
-        .analytics-close-button {
-          background: none;
-          border: none;
-          cursor: pointer;
-          color: var(--text-secondary);
-          transition: color 0.3s ease;
-          padding: var(--space-2);
-          border-radius: var(--radius-md);
+        .analytics-close-button--in-content {
+          flex-shrink: 0;
         }
 
-        .analytics-close-button:hover {
-          color: var(--text-primary);
-          background: var(--bg-hover);
+        .analytics-close-button--in-content:hover {
+          transform: none;
         }
 
         .analytics-modal-body {
           padding: var(--space-6);
           overflow-y: auto;
-          flex: 1;
+          flex: 1 1 auto;
+          min-height: 0;
+        }
+
+        .analytics-graph-chart-host {
+          width: 100%;
+          height: 420px;
+          min-height: 420px;
+          box-sizing: border-box;
+          user-select: none;
+          -webkit-user-select: none;
+          outline: none !important;
+        }
+
+        .analytics-graph-chart-host * {
+          user-select: none;
+          -webkit-user-select: none;
+        }
+
+        .analytics-graph-chart-host:focus,
+        .analytics-graph-chart-host:focus-visible,
+        .analytics-graph-chart-host .recharts-wrapper,
+        .analytics-graph-chart-host .recharts-wrapper:focus,
+        .analytics-graph-chart-host .recharts-surface,
+        .analytics-graph-chart-host .recharts-surface:focus {
+          outline: none !important;
+          box-shadow: none !important;
         }
 
         .analytics-loading {
@@ -437,15 +591,65 @@ const WorkoutAnalytics = ({ workout, isOpen, onClose }) => {
 
         .analytics-info-section {
           display: flex;
-          gap: var(--space-6);
+          gap: 0;
           margin-bottom: var(--space-6);
           padding: 0;
+          align-items: stretch;
         }
 
         .analytics-info-item {
           display: flex;
           flex-direction: column;
           gap: var(--space-1);
+        }
+
+        .analytics-info-item:not(:last-child) {
+          border-right: 3px solid rgba(255, 255, 255, 0.38);
+          padding-right: var(--space-6);
+          margin-right: var(--space-6);
+        }
+
+        [data-theme='light'] .analytics-info-item:not(:last-child) {
+          border-right: 3px solid #e2e8f0;
+        }
+
+        .analytics-info-section.analytics-info-section--mobile {
+          flex-direction: column;
+          align-items: stretch;
+          gap: var(--space-4);
+        }
+
+        .analytics-info-section--mobile .analytics-info-row {
+          display: flex;
+          flex-direction: row;
+          align-items: stretch;
+          gap: 0;
+          width: 100%;
+          border-bottom: none;
+          padding-bottom: 0;
+          margin-bottom: 0;
+        }
+
+        .analytics-info-section--mobile .analytics-info-row .analytics-info-item {
+          flex: 1;
+          min-width: 0;
+          border-right: none;
+          padding-right: var(--space-3);
+          margin-right: var(--space-3);
+        }
+
+        .analytics-info-section--mobile .analytics-info-row .analytics-info-item:last-child {
+          border-right: none;
+          padding-right: 0;
+          margin-right: 0;
+        }
+
+        .analytics-info-row--single .analytics-info-item {
+          flex: 1 1 100%;
+          max-width: 100%;
+          border-right: none;
+          padding-right: 0;
+          margin-right: 0;
         }
 
         .analytics-info-label {
@@ -471,7 +675,8 @@ const WorkoutAnalytics = ({ workout, isOpen, onClose }) => {
         .analytics-date-range-section {
           margin-bottom: var(--space-6);
           display: flex;
-          justify-content: center;
+          justify-content: flex-end;
+          width: 100%;
         }
 
         .analytics-date-range-controls {
@@ -479,18 +684,33 @@ const WorkoutAnalytics = ({ workout, isOpen, onClose }) => {
           gap: var(--space-4);
           align-items: center;
           flex-wrap: wrap;
-          justify-content: center;
+          justify-content: flex-end;
+          width: 100%;
         }
 
         .analytics-date-range-select {
-          padding: var(--space-3) var(--space-4);
-          border: 2px solid var(--border-primary);
+          padding: var(--space-2) var(--space-3);
+          border: 1px solid var(--border-primary);
           border-radius: var(--radius-md);
-          background: var(--bg-secondary);
+          background: var(--bg-tertiary);
           color: var(--text-primary);
           font-size: var(--text-sm);
           font-weight: var(--font-weight-medium);
           cursor: pointer;
+          line-height: 1.4;
+        }
+
+        .analytics-date-range-select option {
+          background: var(--bg-tertiary);
+          color: var(--text-primary);
+        }
+
+        [data-theme='dark'] .analytics-date-range-select {
+          color-scheme: dark;
+        }
+
+        [data-theme='light'] .analytics-date-range-select {
+          color-scheme: light;
         }
 
         .analytics-custom-date-inputs {
@@ -526,18 +746,100 @@ const WorkoutAnalytics = ({ workout, isOpen, onClose }) => {
         }
 
         @media (max-width: 768px) {
+          .analytics-modal-overlay {
+            padding: max(var(--space-4), env(safe-area-inset-top, 0px)) var(--space-4) max(var(--space-4), env(safe-area-inset-bottom, 0px));
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.82);
+            min-height: 100vh;
+            min-height: 100dvh;
+            box-sizing: border-box;
+          }
+
           .analytics-modal-content {
-            padding-left: var(--space-1);
-            padding-right: var(--space-1);
+            width: 100%;
+            max-width: 100%;
+            max-height: min(92dvh, calc(100dvh - 2 * var(--space-4) - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)));
+            height: auto;
+            flex: 0 1 auto;
+            min-height: 0;
+            border-radius: var(--radius-lg);
+            border: 2px solid rgba(255, 255, 255, 0.14);
+            box-shadow: var(--shadow-xl);
+            overflow-x: hidden;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+          }
+
+          [data-theme='light'] .analytics-modal-content {
+            border-color: rgba(15, 23, 42, 0.14);
+          }
+
+          .analytics-modal-header {
+            padding: var(--space-4) var(--space-3);
+            flex-shrink: 0;
           }
 
           .analytics-modal-body {
-            padding: var(--space-4) var(--space-1);
+            padding: var(--space-4) var(--space-3);
+            flex: 1 1 auto;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+            overflow: visible;
+            -webkit-overflow-scrolling: touch;
           }
 
-          .analytics-graph-section--mobile .recharts-wrapper {
-            margin-left: 0;
+          .analytics-info-section,
+          .analytics-date-range-section {
+            padding-left: 0;
+            padding-right: 0;
+            flex-shrink: 0;
+          }
+
+          .analytics-info-section:not(.analytics-info-section--mobile) {
+            flex-direction: column;
+            gap: 0;
+          }
+
+          .analytics-info-section:not(.analytics-info-section--mobile) .analytics-info-item:not(:last-child) {
+            border-right: none;
+            padding-right: 0;
             margin-right: 0;
+            border-bottom: 1px solid var(--border-primary);
+            padding-bottom: var(--space-3);
+            margin-bottom: var(--space-3);
+          }
+
+          .analytics-graph-section--mobile {
+            margin: var(--space-3) calc(-1 * var(--space-3)) 0;
+            width: calc(100% + 2 * var(--space-3));
+            max-width: none;
+            flex: 0 0 auto;
+            overflow: visible;
+            min-height: 300px;
+          }
+
+          .analytics-graph-section--mobile .analytics-graph-chart-host {
+            height: 300px;
+            min-height: 300px;
+            width: 100%;
+            flex-shrink: 0;
+            position: relative;
+            overflow: hidden;
+          }
+
+          .analytics-graph-section--mobile .recharts-responsive-container {
+            width: 100% !important;
+            height: 100% !important;
+            min-height: 300px !important;
+          }
+
+          .analytics-no-data,
+          .analytics-loading {
+            padding-left: 0;
+            padding-right: 0;
           }
         }
 
@@ -548,7 +850,8 @@ const WorkoutAnalytics = ({ workout, isOpen, onClose }) => {
           font-style: italic;
         }
       `}</style>
-    </div>
+    </>,
+    document.body
   );
 };
 

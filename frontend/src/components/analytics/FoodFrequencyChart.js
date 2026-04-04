@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
+import { PieChart, Pie, Cell, Tooltip } from 'recharts';
+import AnalyticsSizedChart from './AnalyticsSizedChart';
 import AnalyticsChartBase from './AnalyticsChartBase';
 import api from '../../services/api';
 import { ANALYTICS_SERIES } from './analyticsChartColors';
@@ -23,7 +24,7 @@ const Doughnut = ({ data, title, dataKey = 'name', valueKey = 'percentage' }) =>
       ) : (
         <div className="doughnut-row">
           <div className="doughnut-pie-only">
-            <ResponsiveContainer width="100%" height={300}>
+            <AnalyticsSizedChart height={300}>
               <PieChart margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
                 <Pie
                   data={chartData}
@@ -42,7 +43,7 @@ const Doughnut = ({ data, title, dataKey = 'name', valueKey = 'percentage' }) =>
                 </Pie>
                 <Tooltip contentStyle={TOOLTIP_STYLE} formatter={(value) => [`${value}%`, 'Share']} />
               </PieChart>
-            </ResponsiveContainer>
+            </AnalyticsSizedChart>
           </div>
           <ul className="doughnut-legend-list" aria-label={`${title} legend`}>
             {chartData.map((entry, index) => (
@@ -83,6 +84,8 @@ const Doughnut = ({ data, title, dataKey = 'name', valueKey = 'percentage' }) =>
         }
         .doughnut-pie-only {
           flex: 0 0 260px;
+          width: 260px;
+          max-width: 100%;
           height: 300px;
         }
         .doughnut-legend-list {
@@ -118,6 +121,25 @@ const Doughnut = ({ data, title, dataKey = 'name', valueKey = 'percentage' }) =>
         .doughnut-legend-pct {
           flex-shrink: 0;
           color: var(--text-secondary);
+        }
+
+        @media (max-width: 768px) {
+          .doughnut-row {
+            flex-direction: column;
+            align-items: stretch;
+            gap: var(--space-4);
+          }
+          .doughnut-pie-only {
+            flex: none;
+            width: 100%;
+            height: 280px;
+            min-height: 280px;
+          }
+          .doughnut-wrap {
+            max-width: 100%;
+            padding-left: 0;
+            padding-right: 0;
+          }
         }
       `}</style>
     </div>

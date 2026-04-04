@@ -157,21 +157,34 @@ export const CircularProgressBar = ({
  * - Current/target/remaining values
  * - Customizable width and height
  */
-export const LinearProgressBar = ({ 
-  current, 
-  target, 
-  label, 
+export const LinearProgressBar = ({
+  current,
+  target,
+  label,
   unit = '',
   color = 'var(--accent-primary)',
   height = 12,
   showValues = true,
-  showRemaining = true
+  showRemaining = true,
+  /** When `explicit`, the bar and optional % use `color` only. */
+  colorMode = 'percentage',
+  /** When true (e.g. muscle not on today’s split), bar uses `color` instead of percentage bands. */
+  outOfSplit = false,
+  layout = 'default',
+  showPercentage = true,
+  showLabelSeparatorDot = true,
 }) => {
   const percentage = target > 0 ? (current / target) * 100 : 0;
   const remaining = Math.max(target - current, 0);
   // Color based on progress percentage (not macro type).
   // Red-pink (0-20%, 170%-n%), yellow (21-80%, 120-169%), green (81-119%)
   const getProgressColor = () => {
+    if (outOfSplit) {
+      return color;
+    }
+    if (colorMode === 'explicit') {
+      return color;
+    }
     if ((percentage >= 0 && percentage <= 20) || percentage >= 170) {
       return '#ff6b9d';
     }
@@ -184,6 +197,85 @@ export const LinearProgressBar = ({
     return color;
   };
 
+  const barColor = getProgressColor();
+
+  if (layout === 'stacked') {
+    return (
+      <div className="linear-progress linear-progress--stacked">
+        <div className="progress-stacked-label-wrap">
+          <span className="progress-label progress-label--fade-edge">{label}</span>
+        </div>
+        {showValues && (
+          <div className="progress-values-stacked">
+            <span className="progress-current">
+              {Math.round(current)}
+              {unit}
+            </span>
+            <span className="progress-separator">/</span>
+            <span className="progress-target">
+              {Math.round(target)}
+              {unit}
+            </span>
+            {showRemaining && remaining > 0 && (
+              <span className="progress-remaining-inline">
+                {' '}
+                ({Math.round(remaining)}
+                {unit} left)
+              </span>
+            )}
+          </div>
+        )}
+        <div className="progress-track" style={{ height: `${height}px` }}>
+          <div
+            className="progress-fill"
+            style={{
+              width: `${Math.min(percentage, 100)}%`,
+              backgroundColor: barColor,
+              height: `${height}px`,
+            }}
+          />
+        </div>
+        <style>{`
+          .linear-progress--stacked {
+            width: 100%;
+          }
+          .progress-stacked-label-wrap {
+            margin-bottom: var(--space-1);
+            min-width: 0;
+            max-width: 100%;
+          }
+          .linear-progress--stacked .progress-label--fade-edge {
+            display: block;
+            font-size: var(--text-sm);
+            font-weight: var(--font-weight-medium);
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            overflow: hidden;
+            white-space: nowrap;
+            max-width: 100%;
+            -webkit-mask-image: linear-gradient(90deg, #000 0%, #000 calc(100% - 1.5rem), transparent 100%);
+            mask-image: linear-gradient(90deg, #000 0%, #000 calc(100% - 1.5rem), transparent 100%);
+          }
+          .progress-values-stacked {
+            display: flex;
+            align-items: baseline;
+            flex-wrap: wrap;
+            gap: 0 var(--space-1);
+            font-size: var(--text-sm);
+            margin-bottom: var(--space-2);
+            color: var(--text-primary);
+          }
+          .linear-progress--stacked .progress-remaining-inline {
+            color: var(--text-tertiary);
+            font-style: italic;
+            font-size: var(--text-xs);
+          }
+        `}</style>
+      </div>
+    );
+  }
+
   return (
     <div className="linear-progress">
       <div className="progress-header">
@@ -191,7 +283,9 @@ export const LinearProgressBar = ({
           <span className="progress-label">{label}</span>
           {showValues && (
             <>
-              <span className="progress-separator progress-separator--dot">•</span>
+              {showLabelSeparatorDot && (
+                <span className="progress-separator progress-separator--dot">•</span>
+              )}
               <div className="progress-values">
                 <span className="progress-current">
                   {Math.round(current)}{unit}
@@ -212,8 +306,8 @@ export const LinearProgressBar = ({
             </>
           )}
         </div>
-        {showValues && (
-            <span className="progress-percentage" style={{ color: getProgressColor() }}>
+        {showValues && showPercentage && (
+            <span className="progress-percentage" style={{ color: barColor }}>
               {Math.round(percentage)}%
             </span>
         )}
@@ -227,7 +321,7 @@ export const LinearProgressBar = ({
           className="progress-fill"
           style={{
             width: `${percentage}%`,
-            backgroundColor: getProgressColor(),
+            backgroundColor: barColor,
             height: `${height}px`
           }}
         />

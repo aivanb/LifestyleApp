@@ -217,17 +217,16 @@ const MusclePriority = ({ onPrioritiesUpdated, showHeader = true, enableTooltips
         }
 
         .muscle-group-card {
-          background: var(--bg-secondary);
-          border: 1px solid var(--border-primary);
+          background: var(--profile-card-bg, var(--bg-secondary));
+          border: 1px solid var(--profile-card-border, var(--border-primary));
           border-radius: var(--radius-lg);
           margin-bottom: var(--space-4);
-          box-shadow: 0 24px 55px rgba(0, 0, 0, 0.4);
-          transition: transform 0.25s var(--ease-out-cubic), box-shadow 0.25s var(--ease-out-cubic);
+          box-shadow: var(--shadow-md);
+          transition: border-color 0.2s var(--ease-out-cubic);
         }
 
         .muscle-group-card:hover {
-          transform: translateY(-3px);
-          box-shadow: 0 30px 60px rgba(0, 0, 0, 0.45);
+          border-color: var(--profile-card-border, var(--border-primary));
         }
 
         .muscle-group-header {
@@ -282,7 +281,7 @@ const MusclePriority = ({ onPrioritiesUpdated, showHeader = true, enableTooltips
         .priority-input-container {
           display: flex;
           align-items: center;
-          border: 1px solid var(--border-primary);
+          border: 1px solid var(--input-border);
           border-radius: var(--radius-md);
           background: var(--bg-tertiary);
           overflow: hidden;
@@ -294,7 +293,7 @@ const MusclePriority = ({ onPrioritiesUpdated, showHeader = true, enableTooltips
           display: flex;
           align-items: center;
           justify-content: center;
-          background: var(--bg-secondary);
+          background: var(--bg-tertiary);
           border: none;
           color: var(--text-primary);
           font-family: var(--font-primary);
@@ -319,8 +318,8 @@ const MusclePriority = ({ onPrioritiesUpdated, showHeader = true, enableTooltips
           text-align: center;
           padding: 0;
           border: none;
-          border-left: 1px solid var(--border-primary);
-          border-right: 1px solid var(--border-primary);
+          border-left: 1px solid var(--input-border);
+          border-right: 1px solid var(--input-border);
           background: var(--bg-tertiary);
           color: var(--text-primary);
           font-family: var(--font-primary);
@@ -398,16 +397,20 @@ const MusclePriority = ({ onPrioritiesUpdated, showHeader = true, enableTooltips
           display: flex;
           align-items: center;
           justify-content: space-between;
-          padding: var(--space-3) var(--space-4);
+          padding: var(--space-4) var(--space-5);
           background: var(--bg-tertiary);
           color: var(--text-primary);
           border: none;
-          border-radius: 0;
+          border-radius: 0 0 var(--radius-md) var(--radius-md);
           font-family: var(--font-primary);
-          font-size: var(--text-sm);
-          font-weight: var(--font-weight-medium);
+          font-size: var(--text-base);
+          font-weight: var(--font-weight-semibold);
           cursor: pointer;
           transition: all 0.2s var(--ease-out-cubic);
+        }
+
+        .muscle-group-toggle-button:hover {
+          background: var(--bg-hover);
         }
 
         .toggle-icon {
@@ -417,8 +420,57 @@ const MusclePriority = ({ onPrioritiesUpdated, showHeader = true, enableTooltips
 
         .individual-muscles-container {
           padding: var(--space-6);
-          background: var(--bg-secondary);
+          background: var(--profile-card-bg, var(--bg-secondary));
+          border-top: none;
+          min-height: 0;
+        }
+
+        .individual-muscles-wrapper.is-expanded > .individual-muscles-container {
           border-top: 1px solid var(--border-primary);
+        }
+
+        .individual-muscles-wrapper {
+          display: grid;
+          grid-template-rows: 0fr;
+          min-height: 0;
+          max-height: 0;
+          opacity: 0;
+          visibility: hidden;
+          pointer-events: none;
+          overflow: hidden;
+          transition:
+            grid-template-rows 0.42s cubic-bezier(0.4, 0, 0.2, 1),
+            max-height 0.42s cubic-bezier(0.4, 0, 0.2, 1),
+            opacity 0.38s cubic-bezier(0.4, 0, 0.2, 1),
+            visibility 0s linear 0.42s;
+        }
+
+        .individual-muscles-wrapper.is-expanded {
+          grid-template-rows: 1fr;
+          max-height: 2000px;
+          opacity: 1;
+          visibility: visible;
+          pointer-events: auto;
+          transition:
+            grid-template-rows 0.42s cubic-bezier(0.4, 0, 0.2, 1),
+            max-height 0.42s cubic-bezier(0.4, 0, 0.2, 1),
+            opacity 0.38s cubic-bezier(0.4, 0, 0.2, 1),
+            visibility 0s;
+        }
+
+        .individual-muscles-wrapper > .individual-muscles-container {
+          overflow: hidden;
+          min-height: 0;
+        }
+
+        .btn.btn-primary {
+          background: #79b5fb;
+          border-color: #79b5fb;
+          color: #040508;
+        }
+
+        .btn.btn-primary:hover:not(:disabled) {
+          filter: brightness(0.95);
         }
 
         .individual-muscle-item {
@@ -720,12 +772,6 @@ const MusclePriority = ({ onPrioritiesUpdated, showHeader = true, enableTooltips
             <button
                   onClick={() => toggleGroup(majorGroupName)}
                   className="muscle-group-toggle-button flex items-center justify-between"
-                  onMouseEnter={(e) => {
-                    e.target.style.backgroundColor = 'var(--bg-hover)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.target.style.backgroundColor = 'var(--bg-tertiary)';
-                  }}
                 >
                   <span>Individual Muscles</span>
                   {expandedGroups[majorGroupName] ? (
@@ -741,7 +787,10 @@ const MusclePriority = ({ onPrioritiesUpdated, showHeader = true, enableTooltips
               )}
             </button>
             
-                {expandedGroups[majorGroupName] && (
+                <div
+                  className={`individual-muscles-wrapper ${expandedGroups[majorGroupName] ? 'is-expanded' : ''}`}
+                  aria-hidden={!expandedGroups[majorGroupName]}
+                >
                   <div className="individual-muscles-container">
                     {groupMuscles.map(muscleLog => (
                       <div key={muscleLog.muscle_log_id} className="individual-muscle-item">
@@ -811,8 +860,8 @@ const MusclePriority = ({ onPrioritiesUpdated, showHeader = true, enableTooltips
                     </div>
                   </div>
                 ))}
-              </div>
-            )}
+                  </div>
+                </div>
           </div>
             </div>
           );

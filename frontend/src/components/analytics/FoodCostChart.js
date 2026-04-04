@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, BarChart, Bar } from 'recharts';
 import AnalyticsChartBase from './AnalyticsChartBase';
+import AnalyticsSizedChart from './AnalyticsSizedChart';
+import { useAnalyticsCartesianMargin } from './analyticsChartMargins';
 import api from '../../services/api';
 
 const FoodCostChart = ({ dateRangeParams = {} }) => {
+  const margin = useAnalyticsCartesianMargin();
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [analysisType, setAnalysisType] = useState('average');
@@ -70,9 +73,9 @@ const FoodCostChart = ({ dateRangeParams = {} }) => {
       {loading ? (
         <div className="chart-loading">Loading...</div>
       ) : data.length > 0 ? (
-        <ResponsiveContainer width="100%" height={300}>
+        <AnalyticsSizedChart height={300}>
           {analysisType === 'brand_density' ? (
-            <BarChart data={data}>
+            <BarChart data={data} margin={margin}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="brand" />
               <YAxis />
@@ -82,7 +85,7 @@ const FoodCostChart = ({ dateRangeParams = {} }) => {
               <Bar dataKey="calorie_density" fill="#4ADE80" name="Calorie Density" />
             </BarChart>
           ) : (
-            <LineChart data={data}>
+            <LineChart data={data} margin={margin}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey={analysisType === 'cost_vs_metadata' ? 'date' : 'period'} />
               <YAxis />
@@ -91,7 +94,7 @@ const FoodCostChart = ({ dateRangeParams = {} }) => {
               <Line type="monotone" dataKey={analysisType === 'cost_vs_metadata' ? 'cost' : 'cost'} stroke="#5AA6FF" strokeWidth={2} name="Cost" />
             </LineChart>
           )}
-        </ResponsiveContainer>
+        </AnalyticsSizedChart>
       ) : (
         <div className="chart-no-data">No data available</div>
       )}

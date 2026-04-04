@@ -186,25 +186,15 @@ def run_frontend_tests():
     return run_command(cmd, cwd=FRONTEND_DIR, check=False)
 
 def run_e2e_tests():
-    """Run Playwright E2E tests."""
+    """Run end-to-end tests (Playwright removed)."""
     print("\n" + "="*80)
     print("RUNNING E2E TESTS")
     print("="*80 + "\n")
-    
-    # Check if Playwright is installed
-    if not (PROJECT_ROOT / "node_modules" / "@playwright").exists():
-        print("Installing Playwright...")
-        if not run_command(["npm", "install"], cwd=PROJECT_ROOT, check=False):
-            print("Warning: npm install failed")
-        
-        print("Installing Playwright browsers...")
-        if not run_command(["npx", "playwright", "install"], cwd=PROJECT_ROOT, check=False):
-            print("Warning: Playwright browser installation failed")
-    
-    # Run Playwright tests
-    # Note: Playwright config should handle starting servers
-    cmd = ["npx", "playwright", "test", "--reporter=list"]
-    return run_command(cmd, cwd=PROJECT_ROOT, check=False)
+
+    # Playwright E2E tests and config files have been removed from the repo.
+    # Keep this function so `run_tests.py --all/--e2e` doesn't break other test runs.
+    print("[INFO] No Playwright E2E tests are present in this repository.")
+    return True
 
 def main():
     parser = argparse.ArgumentParser(description="Run tests for Tracking App")

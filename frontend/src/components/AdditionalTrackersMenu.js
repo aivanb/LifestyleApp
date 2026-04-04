@@ -9,8 +9,10 @@ import {
   XMarkIcon
 } from '@heroicons/react/24/outline';
 import api from '../services/api';
+import { useTheme } from '../contexts/ThemeContext';
 
 const AdditionalTrackersMenu = () => {
+  const { theme } = useTheme();
   const [streaks, setStreaks] = useState({});
   const [loading, setLoading] = useState(true);
   const [activeModal, setActiveModal] = useState(null);
@@ -870,7 +872,7 @@ const AdditionalTrackersMenu = () => {
   const generateLastNDays = (maxDays = 180) => {
     const days = [];
     const today = new Date();
-    for (let i = 0; i <= maxDays; i++) {
+    for (let i = 0; i < maxDays; i++) {
       const date = new Date(today);
       date.setDate(today.getDate() - i);
       const y = date.getFullYear();
@@ -881,27 +883,30 @@ const AdditionalTrackersMenu = () => {
     return days.reverse();
   };
 
+  const getHeatmapRows = () => (isMobileView ? 3 : 5);
+
   const generateHeatmapData = () => {
     const maxDays = isMobileView ? 30 : 180;
     const days = generateLastNDays(maxDays);
-    const weeks = Math.ceil(days.length / 5); // 5 rows instead of 7
+    const rows = getHeatmapRows();
+    const remainder = days.length % rows;
+    const padCount = remainder === 0 ? 0 : rows - remainder;
+    const padded = [...Array(padCount).fill(null), ...days];
+    const weeks = padded.length / rows;
     const heatmap = [];
-    
+
     for (let week = 0; week < weeks; week++) {
       const weekData = [];
-      for (let day = 0; day < 5; day++) { // 5 rows
-        const idx = week * 5 + day;
-        if (idx < days.length) {
-          weekData.push(days[idx]);
-        } else {
-          weekData.push(null);
-        }
+      for (let day = 0; day < rows; day++) {
+        weekData.push(padded[week * rows + day]);
       }
       heatmap.push(weekData);
     }
-    
+
     return { heatmap, days };
   };
+
+  const firstDateInWeekColumn = (week) => week.find((d) => d != null) || '';
 
   const getMonthLabel = (weekStartDate) => {
     if (!weekStartDate) return '';
@@ -933,7 +938,7 @@ const AdditionalTrackersMenu = () => {
 
     if (!graphDataForTracker || !graphDataForTracker.dates) {
     return (
-        <div style={{ marginTop: 'var(--space-4)', marginLeft: '-24px', marginRight: '-24px', padding: 'var(--space-4)', background: 'var(--bg-tertiary)', borderRadius: 'var(--radius-md)', width: 'calc(100% + 48px)' }}>
+        <div className="at-chart-panel">
           <div style={{ height: '120px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-tertiary)', fontFamily: 'var(--font-primary)' }}>
             No data available
           </div>
@@ -944,8 +949,9 @@ const AdditionalTrackersMenu = () => {
     // Filter out hidden fields
     const activeMetrics = metricKeys.filter(key => !hiddenFields[trackerId]?.includes(key));
 
-    const graphHeight = 120;
-    const padding = { top: 10, right: 10, bottom: 30, left: 40 };
+    const isMobileChart = isMobileView;
+    const graphHeight = isMobileChart ? 190 : 120;
+    const padding = { top: 12, right: 10, bottom: 34, left: isMobileChart ? 54 : 40 };
 
     // Calculate min and max values only from active (non-hidden) metrics for tighter Y-axis scaling
     const allActiveValues = activeMetrics
@@ -978,9 +984,16 @@ const AdditionalTrackersMenu = () => {
       return padding.left + ((index / total) * effectiveWidth);
     };
 
+    const formatAxisValue = (value) => {
+      if (!Number.isFinite(value)) return '0';
+      if (finalRange < 1) return value.toFixed(2);
+      if (finalRange < 10) return value.toFixed(1);
+      return value.toFixed(0);
+    };
+
     return (
-      <div style={{ marginTop: 'var(--space-4)', marginLeft: '-24px', marginRight: '-24px', padding: 'var(--space-4)', background: 'var(--bg-tertiary)', borderRadius: 'var(--radius-md)', width: 'calc(100% + 48px)' }}>
-        <svg width={svgWidth} height={graphHeight + padding.top + padding.bottom} viewBox={`0 0 ${svgWidth} ${graphHeight + padding.top + padding.bottom}`} style={{ maxWidth: '100%', height: 'auto' }}>
+      <div className="at-chart-panel">
+        <svg width={svgWidth} height={graphHeight + padding.top + padding.bottom} viewBox={`0 0 ${svgWidth} ${graphHeight + padding.top + padding.bottom}`} style={{ width: '100%', maxWidth: '100%', height: 'auto', display: 'block' }}>
           <defs>
             <filter id="shadow">
               <feDropShadow dx="0" dy="1" stdDeviation="2" opacity="0.2"/>
@@ -991,17 +1004,19 @@ const AdditionalTrackersMenu = () => {
           {[0.25, 0.5, 0.75, 1.0].map((fraction, idx) => {
             const value = paddedMin + (finalRange * fraction);
             const y = getYValue(value);
+            const x = isMobileChart ? 16 : 5;
             return (
               <text
                 key={`y-label-${idx}`}
-                x={5}
+                x={x}
                 y={y + 4}
-                fontSize="10"
+                fontSize={isMobileChart ? "16" : "10"}
                 fill="var(--text-secondary)"
                 fontFamily="var(--font-primary)"
-                textAnchor="start"
+                textAnchor={isMobileChart ? 'middle' : 'start'}
+                transform={isMobileChart ? `rotate(-90 ${x} ${y + 4})` : undefined}
               >
-                {Math.round(value)}
+                {formatAxisValue(value)}
               </text>
             );
           })}
@@ -1015,7 +1030,7 @@ const AdditionalTrackersMenu = () => {
                 key={`x-label-${idx}`}
                 x={x}
                 y={graphHeight + padding.top + padding.bottom - 5}
-                fontSize="9"
+                fontSize={isMobileChart ? "15" : "9"}
                 fill="var(--text-secondary)"
                 fontFamily="var(--font-primary)"
                 textAnchor="middle"
@@ -1130,7 +1145,7 @@ const AdditionalTrackersMenu = () => {
                     d={segment.path}
                     fill="none"
                     stroke={color}
-                    strokeWidth="2"
+                    strokeWidth={isMobileChart ? "4" : "2"}
                     strokeDasharray={segment.isDashed ? "5,5" : "0"}
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -1241,7 +1256,7 @@ const AdditionalTrackersMenu = () => {
               style={{
                 width: '100%',
                 padding: 'var(--space-2)',
-                background: 'var(--bg-tertiary)',
+                background: 'transparent',
                 border: '1px solid var(--border-primary)',
                 borderRadius: 'var(--radius-md)',
                 cursor: 'pointer',
@@ -1260,7 +1275,7 @@ const AdditionalTrackersMenu = () => {
             {expandedTables[trackerId] && (
               <div style={{ marginTop: 'var(--space-2)', overflowX: 'auto', maxHeight: '200px', overflowY: 'auto' }}>
                 <table style={{ width: '100%', fontSize: 'var(--text-xs)', borderCollapse: 'collapse', fontFamily: 'var(--font-primary)' }}>
-                  <thead style={{ position: 'sticky', top: 0, background: 'var(--bg-secondary)', borderBottom: '1px solid var(--border-primary)' }}>
+                  <thead style={{ position: 'sticky', top: 0, background: 'transparent', borderBottom: '1px solid var(--border-primary)' }}>
                     <tr>
                       <th style={{ padding: 'var(--space-1)', textAlign: 'left', color: 'var(--text-primary)', fontWeight: 'bold' }}>Date</th>
                       {activeMetrics.filter(key => graphDataForTracker[key]?.some(v => v != null && v > 0)).map((metricKey) => {
@@ -1842,16 +1857,25 @@ const AdditionalTrackersMenu = () => {
   // Only show loading screen on initial load, not when date ranges change
   if (!initialLoadComplete) {
     return (
-      <div className="loading-container" style={{ 
-        display: 'flex', 
-        alignItems: 'center', 
-        justifyContent: 'center',
-        minHeight: '400px'
-      }}>
-        <div 
-          className="animate-spin rounded-full h-16 w-16 border-b-2" 
-          style={{ borderColor: 'var(--accent-primary)' }}
-        />
+      <div
+        className={`additional-trackers-page additional-trackers-page--loading${
+          theme === 'light' ? ' additional-trackers-page--light' : ' additional-trackers-page--dark'
+        }`}
+      >
+        <div
+          className="loading-container"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            minHeight: '400px',
+          }}
+        >
+          <div
+            className="animate-spin rounded-full h-16 w-16 border-b-2"
+            style={{ borderColor: 'var(--accent-primary)' }}
+          />
+        </div>
       </div>
     );
   }
@@ -1860,15 +1884,14 @@ const AdditionalTrackersMenu = () => {
 
   return (
     <>
+    <div
+      className={`additional-trackers-page${
+        theme === 'light' ? ' additional-trackers-page--light' : ' additional-trackers-page--dark'
+      }`}
+    >
     <div className="additional-trackers-container">
       {/* Heatmap Section - Moved to top */}
-      <div style={{ 
-        background: 'var(--bg-secondary)', 
-        border: '1px solid var(--border-primary)',
-        borderRadius: 'var(--radius-lg)',
-        padding: 'var(--space-6)',
-        marginBottom: 'var(--space-8)'
-      }}>
+      <div className="at-trackers-main-card">
         {/* GitHub-style heatmap */}
         <div style={{ display: 'flex', justifyContent: 'center', gap: '3px' }}>
           {/* Main heatmap - vertical columns */}
@@ -1879,11 +1902,11 @@ const AdditionalTrackersMenu = () => {
                   {/* Month label at top */}
                   {weekIdx === 0 ? (
                     <div style={{ height: '18px', fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', fontFamily: 'var(--font-primary)' }}>
-                      {getMonthLabel(week[0])}
+                      {getMonthLabel(firstDateInWeekColumn(week))}
           </div>
-                  ) : getMonthLabel(week[0]) !== getMonthLabel(heatmapDataStructure.heatmap[weekIdx - 1][0]) ? (
+                  ) : getMonthLabel(firstDateInWeekColumn(week)) !== getMonthLabel(firstDateInWeekColumn(heatmapDataStructure.heatmap[weekIdx - 1])) ? (
                     <div style={{ height: '18px', fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', fontFamily: 'var(--font-primary)' }}>
-                      {getMonthLabel(week[0])}
+                      {getMonthLabel(firstDateInWeekColumn(week))}
                     </div>
                   ) : (
                     <div style={{ height: '18px' }} />
@@ -1951,14 +1974,7 @@ const AdditionalTrackersMenu = () => {
             return (
               <div
                 key={tracker.id}
-                style={{ 
-                  backgroundColor: 'var(--bg-secondary)', 
-                  border: '1px solid var(--border-primary)',
-                  borderRadius: 'var(--radius-lg)',
-                  padding: '24px',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
-                }}
+                className="at-tracker-card"
               >
                 <div onClick={() => handleTrackerClick(tracker)}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: 'var(--space-3)' }}>
@@ -1972,13 +1988,9 @@ const AdditionalTrackersMenu = () => {
                       }}
                     />
                     <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontSize: 'var(--text-xl)', fontWeight: 'var(--font-weight-bold)', color: '#60a5fa', fontFamily: 'var(--font-primary)' }}>
-                      {streak}
+                      <div className="at-streak-value">{streak}</div>
+                      <div className="at-streak-label">day streak</div>
                     </div>
-                      <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-tertiary)', fontFamily: 'var(--font-primary)' }}>
-                      day streak
-                    </div>
-                  </div>
                 </div>
 
                   <div style={{ marginBottom: 'var(--space-3)' }}>
@@ -2015,7 +2027,7 @@ const AdditionalTrackersMenu = () => {
                             fontSize: 'var(--text-xs)',
                             fontFamily: 'var(--font-primary)',
                             color: 'var(--text-primary)',
-                            background: 'var(--bg-secondary)',
+                            background: 'var(--at-tracker-control-bg)',
                             border: 'none',
                             borderRadius: 'var(--radius-md)',
                             cursor: 'pointer',
@@ -2054,7 +2066,7 @@ const AdditionalTrackersMenu = () => {
                               fontSize: 'var(--text-xs)',
             fontFamily: 'var(--font-primary)', 
                 color: 'var(--text-primary)', 
-                              background: 'var(--bg-secondary)',
+                              background: 'var(--at-tracker-control-bg)',
                               border: 'none',
                               borderRadius: 'var(--radius-md)'
                             }}
@@ -2078,7 +2090,7 @@ const AdditionalTrackersMenu = () => {
                               fontSize: 'var(--text-xs)',
                 fontFamily: 'var(--font-primary)', 
                 color: 'var(--text-primary)', 
-                              background: 'var(--bg-secondary)',
+                              background: 'var(--at-tracker-control-bg)',
                               border: 'none',
                               borderRadius: 'var(--radius-md)'
                             }}
@@ -2098,10 +2110,117 @@ const AdditionalTrackersMenu = () => {
           })}
       </div>
     </div>
+    </div>
 
       {activeModal && renderModalContent()}
 
       <style>{`
+        .additional-trackers-page {
+          width: 100%;
+          max-width: none;
+          margin: 0 auto;
+          padding: var(--space-5) var(--space-5) var(--space-8);
+          font-family: var(--font-primary);
+          min-height: 100vh;
+          min-height: 100dvh;
+          box-sizing: border-box;
+        }
+        .additional-trackers-page--loading {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          min-height: 40vh;
+        }
+        .additional-trackers-page--dark {
+          --home-shell-tint: rgba(255, 255, 255, 0.045);
+          --home-shell-strong: rgba(255, 255, 255, 0.11);
+          --home-card-bg: #171c24;
+          --home-card-border: transparent;
+          --home-muscle-btn-bg: #121820;
+          --at-tracker-control-bg: var(--home-muscle-btn-bg);
+          background-color: #040508;
+          background-image:
+            linear-gradient(var(--home-shell-tint) 1px, transparent 1px),
+            linear-gradient(90deg, var(--home-shell-tint) 1px, transparent 1px),
+            linear-gradient(var(--home-shell-strong) 1px, transparent 1px),
+            linear-gradient(90deg, var(--home-shell-strong) 1px, transparent 1px);
+          background-size: 20px 20px, 20px 20px, 80px 80px, 80px 80px;
+          color: var(--text-primary);
+        }
+        .additional-trackers-page--light {
+          --home-shell-tint: rgba(0, 0, 0, 0.04);
+          --home-shell-strong: rgba(0, 0, 0, 0.1);
+          --home-card-bg: #ffffff;
+          --home-card-border: transparent;
+          --home-muscle-btn-bg: #f0f1f5;
+          --at-tracker-control-bg: var(--home-muscle-btn-bg);
+          background-color: #e8eaf2;
+          background-image:
+            linear-gradient(var(--home-shell-tint) 1px, transparent 1px),
+            linear-gradient(90deg, var(--home-shell-tint) 1px, transparent 1px),
+            linear-gradient(var(--home-shell-strong) 1px, transparent 1px),
+            linear-gradient(90deg, var(--home-shell-strong) 1px, transparent 1px);
+          background-size: 20px 20px, 20px 20px, 80px 80px, 80px 80px;
+          color: var(--text-primary);
+        }
+        .additional-trackers-container {
+          width: 100%;
+          max-width: none;
+          box-sizing: border-box;
+        }
+        .at-trackers-main-card {
+          background: var(--home-card-bg);
+          border: 1px solid var(--home-card-border);
+          border-radius: var(--radius-lg);
+          padding: var(--space-5);
+          margin-bottom: var(--space-8);
+          box-shadow: var(--shadow-md);
+          --at-card-pad: var(--space-5);
+        }
+        .at-tracker-card {
+          --at-card-pad: var(--space-5);
+          background: var(--home-card-bg);
+          border: 1px solid var(--home-card-border);
+          border-radius: var(--radius-lg);
+          padding: var(--space-5);
+          box-shadow: var(--shadow-md);
+          cursor: pointer;
+          transition: box-shadow 0.2s ease;
+          min-width: 0;
+          -webkit-tap-highlight-color: transparent;
+          touch-action: manipulation;
+        }
+        .at-tracker-card:focus,
+        .at-tracker-card:focus-visible,
+        .at-tracker-card:active {
+          outline: none;
+        }
+        .at-streak-value {
+          font-size: var(--text-xl);
+          font-weight: var(--font-weight-bold);
+          color: var(--accent-primary);
+          font-family: var(--font-primary);
+        }
+        .at-streak-label {
+          font-size: var(--text-xs);
+          color: var(--text-tertiary);
+          font-family: var(--font-primary);
+        }
+        .at-chart-panel {
+          margin-top: var(--space-4);
+          margin-left: calc(-1 * var(--at-card-pad));
+          margin-right: calc(-1 * var(--at-card-pad));
+          width: calc(100% + 2 * var(--at-card-pad));
+          padding: var(--space-4);
+          background: transparent;
+          border-radius: 0;
+          box-sizing: border-box;
+        }
+        @media (min-width: 900px) {
+          .additional-trackers-page {
+            padding-bottom: max(var(--space-12), 5rem);
+          }
+        }
         .modal-backdrop {
           position: fixed;
           top: 0;
@@ -2261,13 +2380,18 @@ const AdditionalTrackersMenu = () => {
         }
 
         @media (max-width: 768px) {
-          .additional-trackers-container {
-            padding: var(--space-1) !important;
+          .additional-trackers-page {
+            padding: var(--space-4) var(--space-3) max(var(--space-12), 4rem);
           }
 
-          .additional-trackers-container > div:first-of-type {
-            padding: var(--space-2) var(--space-1) !important;
-            margin-bottom: var(--space-3) !important;
+          .additional-trackers-container {
+            padding: 0 !important;
+          }
+
+          .at-trackers-main-card {
+            padding: var(--space-5) var(--space-4) !important;
+            margin-bottom: var(--space-5) !important;
+            --at-card-pad: var(--space-5);
           }
 
           .tracker-grid {
@@ -2276,11 +2400,18 @@ const AdditionalTrackersMenu = () => {
             margin-bottom: var(--space-4) !important;
           }
 
-          .tracker-grid > div {
-            padding: var(--space-2) var(--space-1) !important;
+          .at-tracker-card {
+            --at-card-pad: var(--space-3);
+            padding: var(--space-2) var(--space-3) !important;
             width: 100%;
             max-width: 100%;
             box-sizing: border-box;
+          }
+          .at-streak-value {
+            font-size: var(--text-2xl);
+          }
+          .at-streak-label {
+            font-size: var(--text-sm);
           }
 
           .additional-trackers-container .recharts-wrapper {

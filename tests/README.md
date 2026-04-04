@@ -13,8 +13,7 @@ tests/
 │       └── test_*.py
 ├── frontend/         # Frontend component and unit tests
 │   └── test_*.js     # React component and page tests
-└── e2e/             # End-to-end user flow tests
-    └── *.spec.js     # Playwright E2E tests
+└── e2e/             # End-to-end user flow tests (currently removed)
 
 Note: Additional tests also exist in backend/apps/*/tests.py (standard Django location)
 ```
@@ -57,11 +56,7 @@ npm test -- --watchAll=false --ci
 # Option 1: Using test runner (recommended)
 python run_tests.py --e2e
 
-# Option 2: Using Playwright directly
-npx playwright test
-
-# Option 3: Run specific test file
-npx playwright test tests/e2e/test_workout_tracker_e2e.spec.js
+# Playwright E2E tests were removed from this repo.
 ```
 
 ### Check Dependencies

@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 import api from '../../services/api';
+import AnalyticsSizedChart from './AnalyticsSizedChart';
 import { METRIC_OPTIONS } from './WorkoutAnalyticsControlsCard';
 import { ANALYTICS_COLORS } from './analyticsChartColors';
+import { useAnalyticsCartesianMargin } from './analyticsChartMargins';
 
 const TOOLTIP_STYLE = { color: '#1a1a1a', fontWeight: 500 };
-const CHART_MARGIN = { top: 24, right: 48, left: 24, bottom: 24 };
 
 const WorkoutProgressionChart = ({
   dateRangeParams = {},
@@ -18,6 +19,7 @@ const WorkoutProgressionChart = ({
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const cartesianMargin = useAnalyticsCartesianMargin();
   const metricLabel = comparisonMetric ? (METRIC_OPTIONS.find((m) => m.key === comparisonMetric)?.label || comparisonMetric) : '';
 
   useEffect(() => {
@@ -44,11 +46,16 @@ const WorkoutProgressionChart = ({
   }, [workoutId, progressionType, comparisonMetric, metricOffset, dateRangeParams]);
 
   const hasMetric = Boolean(comparisonMetric && data.some((d) => d[comparisonMetric] != null));
+  const chartMargin = {
+    ...cartesianMargin,
+    right: hasMetric ? 56 : 32,
+  };
 
   const titleBlock = title ? <div className="workout-progression-chart-title">{title}</div> : null;
   const chartStyles = (
     <style>{`
       .workout-progression-chart-title {
+        font-family: var(--font-primary);
         font-size: var(--text-lg);
         font-weight: var(--font-weight-bold);
         color: var(--text-primary);
@@ -87,8 +94,8 @@ const WorkoutProgressionChart = ({
   return (
     <div className="workout-progression-chart">
       {titleBlock}
-      <ResponsiveContainer width="100%" height={360}>
-        <LineChart data={data} margin={{ ...CHART_MARGIN, right: hasMetric ? 56 : 32 }}>
+      <AnalyticsSizedChart height={360} debounce={50} className="analytics-chart-body">
+        <LineChart data={data} margin={chartMargin}>
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey="date" />
           <YAxis yAxisId="left" orientation="left" />
@@ -117,7 +124,7 @@ const WorkoutProgressionChart = ({
             />
           )}
         </LineChart>
-      </ResponsiveContainer>
+      </AnalyticsSizedChart>
       {chartStyles}
     </div>
   );

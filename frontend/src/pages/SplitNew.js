@@ -2,6 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeftIcon } from '@heroicons/react/24/solid';
 import SplitCreator from '../components/SplitCreator';
+import { useTheme } from '../contexts/ThemeContext';
 
 /**
  * SplitNew Page
@@ -10,9 +11,10 @@ import SplitCreator from '../components/SplitCreator';
  */
 const SplitNew = () => {
   const navigate = useNavigate();
+  const { theme } = useTheme();
 
   return (
-    <div className="split-new-page">
+    <div className={`split-new-page split-new-page--shell${theme === 'light' ? ' split-new-page--shell-light' : ''}`}>
       <div className="page-actions">
         <button
           type="button"
@@ -28,12 +30,41 @@ const SplitNew = () => {
 
       <style>{`
         .split-new-page {
+          flex: 1;
           width: 100%;
           max-width: none;
           margin: 0;
           padding: var(--space-4);
           font-size: var(--text-lg);
           font-family: var(--font-primary);
+          box-sizing: border-box;
+          min-height: 100dvh;
+          min-height: 100svh;
+          overflow-x: hidden;
+          padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px));
+        }
+
+        .split-new-page--shell {
+          --profile-shell-tint: rgba(255, 255, 255, 0.045);
+          --profile-shell-strong: rgba(255, 255, 255, 0.11);
+          --profile-card-bg: #171c24;
+          --profile-card-border: #2a3140;
+          background-color: #040508;
+          background-image:
+            linear-gradient(var(--profile-shell-tint) 1px, transparent 1px),
+            linear-gradient(90deg, var(--profile-shell-tint) 1px, transparent 1px),
+            linear-gradient(var(--profile-shell-strong) 1px, transparent 1px),
+            linear-gradient(90deg, var(--profile-shell-strong) 1px, transparent 1px);
+          background-size: 20px 20px, 20px 20px, 80px 80px, 80px 80px;
+          background-position: 0 0, 0 0, 0 0, 0 0;
+        }
+
+        .split-new-page--shell-light {
+          --profile-shell-tint: rgba(0, 0, 0, 0.04);
+          --profile-shell-strong: rgba(0, 0, 0, 0.1);
+          --profile-card-bg: #ffffff;
+          --profile-card-border: #d8dce8;
+          background-color: #e8eaf2;
         }
 
         .page-actions {
@@ -43,11 +74,10 @@ const SplitNew = () => {
         }
 
         .nav-back-btn {
-          padding: var(--space-3) var(--space-4);
-          background: var(--bg-tertiary);
-          border: 1px solid var(--border-primary);
+          padding: var(--space-3);
+          background: transparent;
+          border: none;
           color: var(--text-primary);
-          border-radius: var(--radius-md);
           cursor: pointer;
           transition: all 0.2s var(--ease-out-cubic);
           display: inline-flex;
@@ -56,19 +86,19 @@ const SplitNew = () => {
         }
 
         .nav-back-icon {
-          width: 22px;
-          height: 22px;
+          width: 30px;
+          height: 30px;
         }
 
         .nav-back-btn:hover {
-          background: var(--bg-hover);
-          border-color: var(--border-secondary);
+          color: var(--accent-primary);
         }
 
         @media (max-width: 768px) {
           .split-new-page {
-            padding-left: 0;
-            padding-right: 0;
+            padding: var(--space-3);
+            padding-top: calc(var(--space-3) + env(safe-area-inset-top, 0px));
+            padding-bottom: calc(110px + env(safe-area-inset-bottom, 0px));
           }
 
           .split-new-page .page-actions {

@@ -155,10 +155,11 @@ const WorkoutAnalyticsControlsCard = ({
       </div>
       <style>{`
         .workout-controls-card {
-          background: var(--bg-secondary);
+          font-family: var(--font-primary);
+          background: var(--profile-card-bg, var(--bg-secondary));
           border-radius: var(--radius-lg);
-          padding: var(--space-6);
-          box-shadow: var(--shadow-lg);
+          padding: var(--space-5);
+          box-shadow: var(--shadow-md);
           margin-bottom: var(--space-6);
         }
         .workout-controls-top {
@@ -183,12 +184,13 @@ const WorkoutAnalyticsControlsCard = ({
         }
         .workout-controls-row .chart-select,
         .workout-search {
-          padding: var(--space-2) var(--space-3);
-          border: 2px solid var(--border-primary);
+          font-family: var(--font-primary);
+          padding: var(--space-3) var(--space-4);
+          border: 1px solid var(--input-border);
           border-radius: var(--radius-md);
-          background: var(--bg-primary);
+          background: var(--bg-tertiary);
           color: var(--text-primary);
-          font-size: var(--text-sm);
+          font-size: var(--text-base);
         }
         .workout-search { max-width: 200px; }
         .offset-checkbox-wrap {
@@ -198,13 +200,48 @@ const WorkoutAnalyticsControlsCard = ({
           cursor: pointer;
           user-select: none;
           font-size: var(--text-sm);
-          color: var(--text-secondary);
+          color: var(--text-primary);
         }
         .offset-checkbox {
-          width: 1.1rem;
-          height: 1.1rem;
-          accent-color: var(--accent-primary);
+          appearance: none;
+          -webkit-appearance: none;
+          width: 1.125rem;
+          height: 1.125rem;
+          margin: 0;
+          flex-shrink: 0;
+          border: 1px solid var(--input-border);
+          border-radius: var(--radius-sm);
+          background: var(--bg-tertiary);
           cursor: pointer;
+          transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+        }
+        .offset-checkbox:hover {
+          border-color: var(--accent-primary);
+        }
+        .offset-checkbox:focus-visible {
+          outline: 2px solid var(--accent-primary);
+          outline-offset: 2px;
+        }
+        .offset-checkbox:checked {
+          background: var(--accent-primary);
+          border-color: var(--accent-primary);
+          box-shadow: inset 0 0 0 2px var(--profile-card-bg, var(--bg-secondary));
+        }
+
+        @media (min-width: 769px) {
+          .workout-controls-card {
+            min-height: var(--analytics-controls-strip-min-height, 5rem);
+            padding: var(--space-3) var(--space-4);
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: stretch;
+          }
+
+          .workout-controls-top {
+            align-items: center;
+          }
         }
       `}</style>
     </div>

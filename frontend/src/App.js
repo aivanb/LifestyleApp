@@ -22,7 +22,12 @@ import ProtectedRoute from './components/ProtectedRoute';
 function AppMain() {
   const location = useLocation();
   const isAuthPage = location.pathname === '/login' || location.pathname === '/register';
-  const isFullBleedPage = location.pathname === '/profile' || location.pathname === '/home';
+  const isFullBleedPage =
+    location.pathname === '/profile' ||
+    location.pathname === '/home' ||
+    location.pathname === '/analytics' ||
+    location.pathname.startsWith('/personalization') ||
+    location.pathname.startsWith('/additional-trackers');
   const mainClass = [
     'main-content',
     isAuthPage ? '' : 'main-content--with-bottom-nav',

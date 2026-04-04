@@ -1,12 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 import AnalyticsChartBase from './AnalyticsChartBase';
+import AnalyticsSizedChart from './AnalyticsSizedChart';
+import { useAnalyticsCartesianMargin } from './analyticsChartMargins';
 import api from '../../services/api';
+import { useTheme } from '../../contexts/ThemeContext';
 import { ANALYTICS_SERIES } from './analyticsChartColors';
 
+/** Dark outline between stacked segments (Recharts bar paths). */
+const macroStackStroke = (theme) => (theme === 'light' ? '#0f172a' : '#030406');
+
 const MacroSplitChart = ({ dateRangeParams = {} }) => {
+  const { theme } = useTheme();
+  const margin = useAnalyticsCartesianMargin();
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
+  const barStroke = macroStackStroke(theme);
 
   useEffect(() => {
     const loadData = async () => {
@@ -30,18 +39,39 @@ const MacroSplitChart = ({ dateRangeParams = {} }) => {
       {loading ? (
         <div className="chart-loading">Loading...</div>
       ) : data.length > 0 ? (
-        <ResponsiveContainer width="100%" height={300}>
-          <BarChart data={data} margin={{ top: 24, right: 24, left: 24, bottom: 24 }}>
+        <AnalyticsSizedChart height={300}>
+          <BarChart data={data} margin={margin}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="date" />
             <YAxis />
             <Tooltip contentStyle={{ color: '#1a1a1a', fontWeight: 500 }} />
             <Legend />
-            <Bar dataKey="fat" fill={ANALYTICS_SERIES[1]} name="Fat (g)" stackId="macro" />
-            <Bar dataKey="carbohydrates" fill={ANALYTICS_SERIES[2]} name="Carbs (g)" stackId="macro" />
-            <Bar dataKey="protein" fill={ANALYTICS_SERIES[0]} name="Protein (g)" stackId="macro" />
+            <Bar
+              dataKey="fat"
+              fill={ANALYTICS_SERIES[1]}
+              name="Fat (g)"
+              stackId="macro"
+              stroke={barStroke}
+              strokeWidth={1.25}
+            />
+            <Bar
+              dataKey="carbohydrates"
+              fill={ANALYTICS_SERIES[2]}
+              name="Carbs (g)"
+              stackId="macro"
+              stroke={barStroke}
+              strokeWidth={1.25}
+            />
+            <Bar
+              dataKey="protein"
+              fill={ANALYTICS_SERIES[0]}
+              name="Protein (g)"
+              stackId="macro"
+              stroke={barStroke}
+              strokeWidth={1.25}
+            />
           </BarChart>
-        </ResponsiveContainer>
+        </AnalyticsSizedChart>
       ) : (
         <div className="chart-no-data">No data available</div>
       )}

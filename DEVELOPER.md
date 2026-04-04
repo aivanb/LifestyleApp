@@ -137,7 +137,7 @@ TrackingApp/
 - `GET /api/analytics/date-bounds/?section=workouts|foods` - First valid date and today for custom range default
 - Workout and food chart endpoints accept shared date range: `range` (1week|2weeks|1month|6months|1year|custom) and for custom `date_from`, `date_to`. Default: 2weeks.
 - `GET /api/analytics/workouts/progression/?range=...&workout_id=<id>&progression_type=...&metrics=...&metric_offset=0` - Workout progression (workout_id optional: omit for all-workouts sum per day; progression_type: avg_weight_reps Epley 1RM|avg_weight_sets|avg_weight|max_weight; optional single metric)
-- `GET /api/analytics/workouts/sets-per-day/?range=...` - Total sets and attribute sets per day (layered bar)
+- `GET /api/analytics/workouts/sets-per-day/?range=...` - Total sets and attribute sets per day (layered bar); API remains available; `/analytics` workout section does not mount this chart (progression + activation only)
 - `GET /api/analytics/workouts/activation-progress/?range=...` - Activation progress vs expected (area line chart)
 - `GET /api/analytics/foods/metadata-progress/`, `timing/`, `macro-split/`, `frequency/`, `cost/` - All accept `range=...`. Food timing: average metadata at each hour over range. Macro split: totals (g) per day. Food frequency: `entry_type=both` returns `food_groups` and `brands` with name, count, percentage for doughnut charts.
 - Legacy endpoints (not used by dashboard): body-measurement-progression, rest-time-analysis, attributes-analysis, steps-cardio-distance, radar-chart, workout-tracking-heatmap, health weight-progression, health metrics-radial

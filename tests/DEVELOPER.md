@@ -12,8 +12,7 @@ tests/
 │   └── test_*.py     # Unit and integration tests
 ├── frontend/         # React frontend tests
 │   └── test_*.js    # Component and unit tests
-└── e2e/             # End-to-end tests
-    └── *.spec.js    # Playwright E2E tests
+└── e2e/             # End-to-end tests (currently removed)
 ```
 
 ## Backend Testing Strategy
@@ -310,9 +309,7 @@ npm test -- --coverage                    # With coverage
 # Using test runner (recommended)
 python run_tests.py --e2e
 
-# Using Playwright directly
-npx playwright test                      # All E2E tests
-npx playwright test tests/e2e/test_workout_tracker_e2e.spec.js  # Specific test
+# Playwright E2E tests were removed from this repo.
 ```
 
 ### Test Discovery

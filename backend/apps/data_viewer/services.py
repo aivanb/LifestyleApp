@@ -55,6 +55,12 @@ class DataAccessService:
         'django_admin_log', 'django_content_type', 'django_migrations',
         'django_session', 'auth_user'
     }
+
+    # Application tables that should be admin-only (not visible to 'user'/'guest')
+    ADMIN_ONLY_TABLES = {
+        'access_levels',
+        'invite_key',
+    }
     
     # Tables that support make_public field
     TABLES_WITH_PUBLIC_FLAG = {'foods', 'workouts'}
@@ -192,6 +198,10 @@ class DataAccessService:
         if table_name in self.INTERNAL_TABLES:
             if self.access_level != 'admin':
                 return False, f"Access denied: '{table_name}' is an internal table"
+
+        # Check if table is admin-only
+        if table_name in self.ADMIN_ONLY_TABLES and self.access_level != 'admin':
+            return False, f"Access denied: '{table_name}' is an admin-only table"
         
         # Check if table exists
         try:
@@ -377,11 +387,23 @@ class DataAccessService:
             if value is None or value == '' or value == 'null':
                 filter_kwargs[f"{field_name}__isnull"] = True
             # Handle range queries
-            elif isinstance(value, dict) and 'min' in value:
-                if value.get('min') is not None:
-                    filter_kwargs[f"{field_name}__gte"] = value['min']
-                if value.get('max') is not None:
-                    filter_kwargs[f"{field_name}__lte"] = value['max']
+            elif isinstance(value, dict):
+                # Supported operators:
+                # - min/max -> gte/lte (inclusive ranges)
+                # - gt/lt   -> gt/lt   (strict comparisons)
+                has_supported_operator = any(k in value for k in ['min', 'max', 'gt', 'lt'])
+                if has_supported_operator:
+                    if 'min' in value and value.get('min') is not None:
+                        filter_kwargs[f"{field_name}__gte"] = value['min']
+                    if 'max' in value and value.get('max') is not None:
+                        filter_kwargs[f"{field_name}__lte"] = value['max']
+                    if 'gt' in value and value.get('gt') is not None:
+                        filter_kwargs[f"{field_name}__gt"] = value['gt']
+                    if 'lt' in value and value.get('lt') is not None:
+                        filter_kwargs[f"{field_name}__lt"] = value['lt']
+                else:
+                    # Fall back to exact match for complex/dict field types (e.g., JSONField).
+                    filter_kwargs[field_name] = value
             # Handle contains queries for text fields
             elif isinstance(field, (models.CharField, models.TextField)):
                 filter_kwargs[f"{field_name}__icontains"] = value
@@ -490,6 +512,10 @@ class DataAccessService:
                 # Skip internal tables for non-admin users
                 if table_name in self.INTERNAL_TABLES and self.access_level != 'admin':
                     continue
+
+                # Skip admin-only tables for non-admin users
+                if table_name in self.ADMIN_ONLY_TABLES and self.access_level != 'admin':
+                    continue
                 
                 available_tables.append({
                     'name': table_name,
@@ -547,6 +573,10 @@ class DataAccessService:
             
             # Get field information
             for field in model._meta.get_fields():
+                # Keep schema aligned with what get_table_data serializes (no reverse relations / m2m)
+                if field.many_to_many or field.one_to_many:
+                    continue
+
                 field_info = {
                     'name': field.name,
                     'type': field.get_internal_type(),

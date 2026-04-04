@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 import AnalyticsChartBase from './AnalyticsChartBase';
+import AnalyticsSizedChart from './AnalyticsSizedChart';
+import { useAnalyticsCartesianMargin } from './analyticsChartMargins';
 import api from '../../services/api';
 import { ANALYTICS_COLORS } from './analyticsChartColors';
 
 const FoodTimingChart = ({ dateRangeParams = {} }) => {
+  const margin = useAnalyticsCartesianMargin();
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [metadataType, setMetadataType] = useState('calories');
@@ -48,8 +51,8 @@ const FoodTimingChart = ({ dateRangeParams = {} }) => {
       {loading ? (
         <div className="chart-loading">Loading...</div>
       ) : data.length > 0 ? (
-        <ResponsiveContainer width="100%" height={300}>
-          <BarChart data={data} margin={{ top: 24, right: 24, left: 24, bottom: 24 }}>
+        <AnalyticsSizedChart height={300}>
+          <BarChart data={data} margin={margin}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="hour" />
             <YAxis />
@@ -57,7 +60,7 @@ const FoodTimingChart = ({ dateRangeParams = {} }) => {
             <Legend />
             <Bar dataKey="value" fill={ANALYTICS_COLORS.primary} name={metadataType} />
           </BarChart>
-        </ResponsiveContainer>
+        </AnalyticsSizedChart>
       ) : (
         <div className="chart-no-data">No data available</div>
       )}

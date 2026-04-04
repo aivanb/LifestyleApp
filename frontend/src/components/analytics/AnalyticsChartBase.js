@@ -8,13 +8,20 @@ const AnalyticsChartBase = ({ title, children, controls }) => {
     <div className="analytics-chart">
       {title ? <h3>{title}</h3> : null}
       {controls && <div className="chart-controls">{controls}</div>}
-      {children}
+      <div className="analytics-chart-body">{children}</div>
       <style>{`
         .analytics-chart {
           width: 100%;
+          min-width: 0;
+        }
+
+        .analytics-chart-body {
+          width: 100%;
+          min-width: 0;
         }
 
         .analytics-chart h3 {
+          font-family: var(--font-primary);
           font-size: var(--text-lg);
           font-weight: var(--font-weight-bold);
           color: var(--text-primary);
