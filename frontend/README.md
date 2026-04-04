@@ -57,7 +57,7 @@ src/
 
 ### Main Components
 - **Navbar**: Navigation with user menu and logout
-- **Profile**: User profile management
+- **Profile**: User profile management (icon-only log out, left-aligned with the profile column; rank badge on the right when shown)
 - **FoodLog**: Food logging interface
 - **WorkoutTracker**: Workout tracking interface (logging UI shares `/home`-style page shell; set “attributes” on a log are limited to drop sets, partials, assisted sets, negatives, and rest pause—see `src/constants/workoutLoggingAttributes.js`)
 - **AdditionalTrackers**: Health metrics tracking

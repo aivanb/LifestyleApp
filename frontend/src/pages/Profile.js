@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-// import { useAuth } from '../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
 import { ArrowLeftIcon } from '@heroicons/react/24/solid';
+import { ArrowRightOnRectangleIcon } from '@heroicons/react/24/outline';
 import { useTheme } from '../contexts/ThemeContext';
 
 /**
@@ -293,7 +295,8 @@ function buildCalendarDays(viewMonth) {
 }
 
 const Profile = () => {
-  // const { logout } = useAuth();
+  const { logout } = useAuth();
+  const navigate = useNavigate();
   const { theme, setTheme } = useTheme();
   const [profileData, setProfileData] = useState(null);
   const [unitsCatalog, setUnitsCatalog] = useState([]);
@@ -336,6 +339,12 @@ const Profile = () => {
       console.error('Profile update error:', err);
     }
   };
+
+  const handleLogout = async () => {
+    await logout();
+    navigate('/login', { replace: true });
+  };
+
   const overallRank = calculateOverallRank(metrics);
   const overallRankColor = getFitnessRankColor(overallRank);
   const overallRankBorderColor = useMemo(
@@ -381,8 +390,18 @@ const Profile = () => {
       {view === 'info' ? (
         <div className="profile-info-layout">
           <div className="profile-info-stack">
-            {overallRank != null && (
-              <div className="profile-rank-row">
+            <div className="profile-rank-row">
+              <button
+                type="button"
+                className="profile-logout-btn"
+                data-testid="profile-logout"
+                onClick={() => void handleLogout()}
+                aria-label="Log out"
+                title="Log out"
+              >
+                <ArrowRightOnRectangleIcon className="profile-logout-icon" aria-hidden />
+              </button>
+              {overallRank != null && (
                 <button
                   type="button"
                   data-testid="rank-badge"
@@ -402,8 +421,8 @@ const Profile = () => {
                   </span>
                   <span className="rank-text">{overallRank.toUpperCase()}</span>
                 </button>
-              </div>
-            )}
+              )}
+            </div>
             <div className="profile-info-primary">
               <PersonalInfoSection
                 profileData={profileData}
@@ -498,10 +517,51 @@ const Profile = () => {
           gap: var(--space-6);
         }
 
+        /* Logout start-aligned with personal info; rank badge stays on the right. */
         .profile-rank-row {
           display: flex;
-          justify-content: flex-end;
+          flex-direction: row;
+          align-items: center;
+          justify-content: space-between;
+          gap: var(--space-3);
           width: 100%;
+        }
+
+        /* Icon control: same surface treatment as profile-theme-btn */
+        .profile-logout-btn {
+          flex-shrink: 0;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          padding: var(--space-3);
+          min-width: 48px;
+          min-height: 48px;
+          box-sizing: border-box;
+          border-radius: var(--radius-md);
+          border: 1px solid var(--input-border);
+          background: var(--bg-tertiary);
+          color: var(--text-primary);
+          cursor: pointer;
+          position: relative;
+          z-index: 1;
+          /* Offset below rank row while stack keeps full gap above personal info */
+          transform: translateY(20px);
+          transition: background 0.2s var(--ease-out-cubic), border-color 0.2s;
+        }
+
+        .profile-logout-btn:hover {
+          border-color: var(--accent-primary);
+        }
+
+        .profile-logout-btn:focus-visible {
+          outline: 2px solid var(--accent-primary);
+          outline-offset: 2px;
+        }
+
+        .profile-logout-icon {
+          width: 24px;
+          height: 24px;
+          flex-shrink: 0;
         }
 
         .profile-info-primary {

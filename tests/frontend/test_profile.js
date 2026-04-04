@@ -407,11 +407,10 @@ describe('Profile Component', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText('Logout')).toBeInTheDocument();
+      expect(screen.getByTestId('profile-logout')).toBeInTheDocument();
     });
 
-    // Click logout button
-    fireEvent.click(screen.getByText('Logout'));
+    fireEvent.click(screen.getByTestId('profile-logout'));
 
     // Note: The actual logout functionality is tested in AuthContext tests
     // This test just ensures the button is present and clickable
