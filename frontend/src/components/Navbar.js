@@ -382,10 +382,12 @@ const Navbar = () => {
         .nav-hub-icon--mobile {
           width: 36px;
           height: 36px;
-          color: #7dd3fc;
           display: block;
         }
-        .nav-hub-arc-link--active .nav-hub-icon--mobile {
+        :global([data-theme="dark"]) .nav-hub-icon--mobile {
+          color: #7dd3fc;
+        }
+        :global([data-theme="dark"]) .nav-hub-arc-link--active .nav-hub-icon--mobile {
           color: #e0f2fe;
         }
 
@@ -434,10 +436,13 @@ const Navbar = () => {
         .nav-hub-icon--desktop {
           width: 42px;
           height: 42px;
-          color: #7dd3fc;
           display: block;
         }
-        .nav-hub-link--active .nav-hub-icon--desktop {
+        /* Desktop fan SVGs: whole selector global so NavLink’s <a> isn’t lost to styled-jsx scoping */
+        :global([data-theme="dark"] .nav-hub-link--desktop .nav-hub-icon--desktop) {
+          color: #7dd3fc;
+        }
+        :global([data-theme="dark"] .nav-hub-link--active.nav-hub-link--desktop .nav-hub-icon--desktop) {
           color: #e0f2fe;
         }
 
@@ -476,6 +481,37 @@ const Navbar = () => {
             bottom: 12px;
             height: 5px;
           }
+        }
+
+        /* Light theme: darker hub “menu” bar + fan icon rings for contrast on pale grids */
+        :global([data-theme="light"]) .nav-hub-trigger::after {
+          background: #0f172a;
+          opacity: 0.92;
+        }
+        :global([data-theme="light"]) .nav-hub-arc-icon-wrap {
+          border-color: rgba(15, 23, 42, 0.22);
+          box-shadow: 0 8px 20px rgba(15, 23, 42, 0.12);
+        }
+        :global([data-theme="light"]) .nav-hub-link-icon-wrap--desktop {
+          border-color: rgba(15, 23, 42, 0.22);
+          background: var(--bg-secondary);
+          box-shadow: var(--shadow-sm);
+        }
+        :global([data-theme="light"]) .nav-hub-link--active .nav-hub-link-icon-wrap--desktop {
+          background: var(--bg-tertiary);
+        }
+        /* Light mode: mobile unchanged; desktop uses fully global chain (see dark theme above) */
+        :global([data-theme="light"]) .nav-hub-icon--mobile {
+          color: var(--accent-primary);
+        }
+        :global([data-theme="light"] .nav-hub-link--desktop .nav-hub-icon--desktop) {
+          color: var(--accent-primary);
+        }
+        :global([data-theme="light"]) .nav-hub-arc-link--active .nav-hub-icon--mobile {
+          color: #1d4ed8;
+        }
+        :global([data-theme="light"] .nav-hub-link--active.nav-hub-link--desktop .nav-hub-icon--desktop) {
+          color: #1d4ed8;
         }
 
       `}</style>

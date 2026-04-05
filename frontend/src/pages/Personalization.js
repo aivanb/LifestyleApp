@@ -19,7 +19,13 @@ const Personalization = () => {
   const [error, setError] = useState('');
   const [editingBodyComposition, setEditingBodyComposition] = useState(false);
   const [editingMacroGoals, setEditingMacroGoals] = useState(false);
-  const bodyCompositionGoalKeys = ['weight_goal', 'lean_mass_goal', 'fat_mass_goal', 'cost_goal'];
+  const bodyCompositionGoalKeys = [
+    'weight_goal',
+    'lean_mass_goal',
+    'fat_mass_goal',
+    'cost_goal',
+    'tokens_goal',
+  ];
   const primaryMacroGoalKeys = ['calories_goal', 'carbohydrates_goal', 'protein_goal', 'fat_goal', 'sodium_goal'];
   const knownMacroGoalKeys = [
     'calories_goal',
@@ -106,6 +112,7 @@ const Personalization = () => {
       lean_mass_goal: 'kg',
       fat_mass_goal: 'kg',
       cost_goal: '$',
+      tokens_goal: 'tokens',
 
       // Macros + nutrition
       calories_goal: 'kcal',
@@ -838,7 +845,8 @@ const BodyCompositionForm = ({ goals, onSave, formatGoalLabel, bodyCompositionGo
     weight_goal: goals?.weight_goal || '',
     lean_mass_goal: goals?.lean_mass_goal || '',
     fat_mass_goal: goals?.fat_mass_goal || '',
-    cost_goal: goals?.cost_goal || ''
+    cost_goal: goals?.cost_goal || '',
+    tokens_goal: goals?.tokens_goal ?? '',
   });
 
   const handleChange = (e) => {
@@ -859,7 +867,7 @@ const BodyCompositionForm = ({ goals, onSave, formatGoalLabel, bodyCompositionGo
             <span className="profile-field-label">{formatGoalLabel(key)}</span>
             <input
               type="number"
-              step={key === 'cost_goal' ? '0.01' : '0.1'}
+              step={key === 'cost_goal' ? '0.01' : key === 'tokens_goal' ? '1' : '0.1'}
               name={key}
               value={formData[key]}
               onChange={handleChange}

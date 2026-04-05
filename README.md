@@ -134,7 +134,7 @@ DEBUG=False                    # Set True for development only
 
 ### Optional Features
 
-- **AI Food Parsing**: Add an OpenAI API key to enable natural language food logging
+- **AI Food Parsing**: Add an OpenAI API key to enable natural language food logging (the parser splits your text into items and keeps only what you state; it does not look up existing foods in the database)
 - **Voice Transcription**: Install Vosk for offline voice processing
 - **Email Notifications**: Configure SMTP settings (coming soon)
 
@@ -168,9 +168,9 @@ cd ../backend && python manage.py migrate
 
 ### Track Your First Meal
 1. Go to "Food Log"
-2. Search for a food (e.g., "chicken breast")
-3. Enter the amount
-4. Click "Log Food"
+2. Select the day on the calendar (entries use that local date plus the time on each card)
+3. Search for a food or pick from recent items; saved **meals** also appear in the logger (highlighted in blue) and log every food in the meal
+4. Enter servings or a meal multiplier, then tap **Add** / **Log meal**
 5. View your daily totals on the dashboard
 
 ### Use Voice Commands

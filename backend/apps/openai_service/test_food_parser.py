@@ -16,7 +16,7 @@ from apps.users.models import AccessLevel
 from apps.foods.models import Food
 from apps.logging.models import FoodLog
 from apps.openai_service.food_parser import FoodParserService
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, patch.object
 from decimal import Decimal
 import json
 
@@ -300,15 +300,19 @@ class FoodParserIntegrationTest(TestCase):
         log = FoodLog.objects.filter(user=self.user, food_id=food_id).first()
         self.assertIsNotNone(log)
     
-    def test_existing_food_lookup(self):
-        """Test that existing foods are found correctly"""
-        processed = self.parser._process_single_food({
-            'name': 'Chicken Breast',
-            'metadata': {}
-        })
-        
-        self.assertEqual(processed['source'], 'food_exact')
-        self.assertEqual(processed['food_object'], self.existing_food)
+    def test_process_single_food_uses_metadata_generation_pipeline(self):
+        """Parsed foods go through generate_missing_metadata (same as Food Creator), then persist."""
+        p = self.parser
+        complete = p._ensure_complete_metadata(p._get_default_metadata({}))
+        with patch.object(p, 'generate_missing_metadata', return_value=complete) as mock_gen:
+            processed = p._process_single_food({
+                'name': 'Zucchini Integration Test 999',
+                'metadata': {'brand': 'Farm'},
+            })
+        mock_gen.assert_called_once()
+        self.assertEqual(processed['source'], 'food_new')
+        self.assertIsNotNone(processed['food_object'])
+        self.assertIn('Zucchini', processed['food_object'].food_name)
     
     @patch('apps.openai_service.food_parser.OpenAIService')
     def test_food_log_creation(self, mock_openai):

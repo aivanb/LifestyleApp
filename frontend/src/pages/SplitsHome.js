@@ -174,9 +174,14 @@ const SplitsHome = () => {
             padding: 0;
           }
 
+          .splits-home-page .split-creator .split-creator-split-card-wrap,
           .splits-home-page .split-creator .split-creator-split-card {
             max-width: 100%;
             box-sizing: border-box;
+          }
+
+          .splits-home-page .split-creator .split-creator-split-card-wrap {
+            width: 100%;
           }
         }
       `}</style>

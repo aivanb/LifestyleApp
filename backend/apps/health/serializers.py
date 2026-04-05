@@ -153,6 +153,17 @@ class HealthMetricsLogSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['health_metrics_id', 'user', 'created_at']
 
+    def validate_date_time(self, value):
+        if not value or (isinstance(value, str) and value.strip() == ''):
+            raise serializers.ValidationError('Date is required')
+        if isinstance(value, str):
+            try:
+                from datetime import datetime
+                datetime.strptime(value[:10], '%Y-%m-%d')
+            except ValueError:
+                raise serializers.ValidationError('Invalid date format. Use YYYY-MM-DD')
+        return value
+
     def validate_resting_heart_rate(self, value):
         if value is not None and value <= 0:
             raise serializers.ValidationError("Resting heart rate must be greater than 0")

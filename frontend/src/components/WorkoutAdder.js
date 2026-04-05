@@ -358,7 +358,6 @@ const WorkoutAdder = ({ onWorkoutAdded }) => {
             onChange={handleInputChange}
             className="workout-adder-form-input"
             required
-            placeholder="Enter workout name"
           />
                </div>
         </div>
@@ -373,7 +372,6 @@ const WorkoutAdder = ({ onWorkoutAdded }) => {
             value={formData.equipment_brand}
             onChange={handleInputChange}
             className="workout-adder-form-input"
-            placeholder="e.g., Rogue, Eleiko"
           />
         </div>
 
@@ -407,7 +405,6 @@ const WorkoutAdder = ({ onWorkoutAdded }) => {
             value={formData.location}
             onChange={handleInputChange}
             className="workout-adder-form-input"
-            placeholder="e.g., Home gym, Commercial gym"
           />
         </div>
 
@@ -421,7 +418,6 @@ const WorkoutAdder = ({ onWorkoutAdded }) => {
             onChange={handleInputChange}
             className="workout-adder-form-input"
                  rows={isMobile ? 5 : 8}
-            placeholder="Additional notes about the workout"
           />
             </div>
         </div>

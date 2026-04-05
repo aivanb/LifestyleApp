@@ -11,6 +11,7 @@ const MusclePriority = ({ onPrioritiesUpdated, showHeader = true, enableTooltips
   const [isUpdating, setIsUpdating] = useState(false);
   const [expandedGroups, setExpandedGroups] = useState({});
   const [activeMuscleDescription, setActiveMuscleDescription] = useState(null);
+  const [priorityDrafts, setPriorityDrafts] = useState({});
   
   // Define major muscle groups and their sub-muscles
   const majorMuscleGroups = {
@@ -68,17 +69,24 @@ const MusclePriority = ({ onPrioritiesUpdated, showHeader = true, enableTooltips
     }
   };
 
+  const clampPriority = (n) => {
+    const x = Number(n);
+    if (!Number.isFinite(x)) return 1;
+    return Math.max(1, Math.min(100, Math.round(x)));
+  };
+
   const updatePriority = (muscleLogId, newPriority, isMajorGroup = false, majorGroupName = '') => {
+    const p = clampPriority(newPriority);
     setMusclePriorities(prev => 
       prev.map(muscleLog => {
         if (isMajorGroup && majorGroupName && majorMuscleGroups[majorGroupName]) {
           // Update all sub-muscles in the major group
           if (majorMuscleGroups[majorGroupName].includes(muscleLog.muscle_name)) {
-            return { ...muscleLog, priority: newPriority };
+            return { ...muscleLog, priority: p };
           }
         } else if (muscleLog.muscle_log_id === muscleLogId) {
           // Update individual muscle - this will automatically update the group average
-          return { ...muscleLog, priority: newPriority };
+          return { ...muscleLog, priority: p };
         }
         return muscleLog;
       })
@@ -730,7 +738,14 @@ const MusclePriority = ({ onPrioritiesUpdated, showHeader = true, enableTooltips
                           <button
                             type="button"
                             className="priority-step-button"
-                            onClick={() => updatePriority(null, Math.max(1, majorGroupPriority - 1), true, majorGroupName)}
+                            onClick={() => {
+                              setPriorityDrafts((d) => {
+                                const n = { ...d };
+                                delete n[`m:${majorGroupName}`];
+                                return n;
+                              });
+                              updatePriority(null, Math.max(1, majorGroupPriority - 1), true, majorGroupName);
+                            }}
                           >
                             −
                           </button>
@@ -738,15 +753,39 @@ const MusclePriority = ({ onPrioritiesUpdated, showHeader = true, enableTooltips
                             type="number"
                             min="1"
                             max="100"
-                            value={majorGroupPriority}
-                            onChange={(e) => updatePriority(null, parseInt(e.target.value) || 1, true, majorGroupName)}
+                            value={
+                              `m:${majorGroupName}` in priorityDrafts
+                                ? priorityDrafts[`m:${majorGroupName}`]
+                                : String(majorGroupPriority)
+                            }
+                            onChange={(e) =>
+                              setPriorityDrafts((d) => ({
+                                ...d,
+                                [`m:${majorGroupName}`]: e.target.value,
+                              }))
+                            }
+                            onBlur={(e) => {
+                              updatePriority(null, clampPriority(e.target.value), true, majorGroupName);
+                              setPriorityDrafts((d) => {
+                                const n = { ...d };
+                                delete n[`m:${majorGroupName}`];
+                                return n;
+                              });
+                            }}
                             className="priority-input"
-                            readOnly
+                            aria-label={`${majorGroupName} priority`}
                           />
                           <button
                             type="button"
                             className="priority-step-button"
-                            onClick={() => updatePriority(null, Math.min(100, majorGroupPriority + 1), true, majorGroupName)}
+                            onClick={() => {
+                              setPriorityDrafts((d) => {
+                                const n = { ...d };
+                                delete n[`m:${majorGroupName}`];
+                                return n;
+                              });
+                              updatePriority(null, Math.min(100, majorGroupPriority + 1), true, majorGroupName);
+                            }}
                           >
                             +
                           </button>
@@ -757,7 +796,14 @@ const MusclePriority = ({ onPrioritiesUpdated, showHeader = true, enableTooltips
                             min="1"
                             max="100"
                             value={majorGroupPriority}
-                            onChange={(e) => updatePriority(null, parseInt(e.target.value), true, majorGroupName)}
+                            onChange={(e) => {
+                              setPriorityDrafts((d) => {
+                                const n = { ...d };
+                                delete n[`m:${majorGroupName}`];
+                                return n;
+                              });
+                              updatePriority(null, parseInt(e.target.value, 10), true, majorGroupName);
+                            }}
                             className="priority-slider"
                             style={{ background: getSliderBackground(majorGroupPriority) }}
                           />
@@ -824,7 +870,15 @@ const MusclePriority = ({ onPrioritiesUpdated, showHeader = true, enableTooltips
                           <button
                             type="button"
                             className="priority-step-button"
-                            onClick={() => updatePriority(muscleLog.muscle_log_id, Math.max(1, muscleLog.priority - 1))}
+                            onClick={() => {
+                              const k = `i:${muscleLog.muscle_log_id}`;
+                              setPriorityDrafts((d) => {
+                                const n = { ...d };
+                                delete n[k];
+                                return n;
+                              });
+                              updatePriority(muscleLog.muscle_log_id, Math.max(1, muscleLog.priority - 1));
+                            }}
                           >
                             −
                           </button>
@@ -832,15 +886,40 @@ const MusclePriority = ({ onPrioritiesUpdated, showHeader = true, enableTooltips
                             type="number"
                             min="1"
                             max="100"
-                            value={muscleLog.priority}
-                            onChange={(e) => updatePriority(muscleLog.muscle_log_id, parseInt(e.target.value) || 1)}
+                            value={
+                              `i:${muscleLog.muscle_log_id}` in priorityDrafts
+                                ? priorityDrafts[`i:${muscleLog.muscle_log_id}`]
+                                : String(muscleLog.priority)
+                            }
+                            onChange={(e) =>
+                              setPriorityDrafts((d) => ({
+                                ...d,
+                                [`i:${muscleLog.muscle_log_id}`]: e.target.value,
+                              }))
+                            }
+                            onBlur={(e) => {
+                              updatePriority(muscleLog.muscle_log_id, clampPriority(e.target.value));
+                              setPriorityDrafts((d) => {
+                                const n = { ...d };
+                                delete n[`i:${muscleLog.muscle_log_id}`];
+                                return n;
+                              });
+                            }}
                             className="priority-input"
-                            readOnly
+                            aria-label={`${muscleLog.muscle_name} priority`}
                           />
                           <button
                             type="button"
                             className="priority-step-button"
-                            onClick={() => updatePriority(muscleLog.muscle_log_id, Math.min(100, muscleLog.priority + 1))}
+                            onClick={() => {
+                              const k = `i:${muscleLog.muscle_log_id}`;
+                              setPriorityDrafts((d) => {
+                                const n = { ...d };
+                                delete n[k];
+                                return n;
+                              });
+                              updatePriority(muscleLog.muscle_log_id, Math.min(100, muscleLog.priority + 1));
+                            }}
                           >
                             +
                           </button>
@@ -851,7 +930,15 @@ const MusclePriority = ({ onPrioritiesUpdated, showHeader = true, enableTooltips
                             min="1"
                             max="100"
                             value={muscleLog.priority}
-                            onChange={(e) => updatePriority(muscleLog.muscle_log_id, parseInt(e.target.value))}
+                            onChange={(e) => {
+                              const k = `i:${muscleLog.muscle_log_id}`;
+                              setPriorityDrafts((d) => {
+                                const n = { ...d };
+                                delete n[k];
+                                return n;
+                              });
+                              updatePriority(muscleLog.muscle_log_id, parseInt(e.target.value, 10));
+                            }}
                             className="priority-slider"
                             style={{ background: getSliderBackground(muscleLog.priority) }}
                           />

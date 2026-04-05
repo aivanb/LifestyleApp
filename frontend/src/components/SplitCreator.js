@@ -372,6 +372,11 @@ const SplitCreator = ({
     setError('');
     setSuccess('');
 
+    const editingId =
+      editorMode && editorKind === 'edit' && selectedSplit?.splits_id != null
+        ? selectedSplit.splits_id
+        : null;
+
     try {
       // Backend expects `start_date` to be a valid date or null/omitted.
       // An empty string triggers DRF DateField validation errors (400).
@@ -390,23 +395,53 @@ const SplitCreator = ({
         }))
       };
 
-      const response = await api.createSplit(splitData);
-      if (response.data.success) {
-        setSuccess('Split created successfully!');
-        setFormData({
-          split_name: '',
-          start_date: '',
-          split_days: []
-        });
-        
-        if (onSplitCreated) onSplitCreated();
-        loadData(); // Reload splits
+      if (editingId) {
+        const response = await api.updateSplit(editingId, splitData);
+        if (response.data.success) {
+          setSuccess('Split updated successfully!');
+          loadData();
+          if (onSplitCreated) onSplitCreated();
+          if (isSplitsPage) {
+            navigate('/personalization/splits');
+          }
+        }
+      } else {
+        const response = await api.createSplit(splitData);
+        if (response.data.success) {
+          setSuccess('Split created successfully!');
+          setFormData({
+            split_name: '',
+            start_date: '',
+            split_days: []
+          });
+
+          if (onSplitCreated) onSplitCreated();
+          loadData();
+          if (isSplitsPage) {
+            navigate('/personalization/splits');
+          }
+        }
       }
     } catch (err) {
-      console.error('Error creating split:', err);
-      setError('Failed to create split');
+      console.error('Error saving split:', err);
+      setError(editingId != null ? 'Failed to update split' : 'Failed to create split');
     } finally {
       setIsCreating(false);
+    }
+  };
+
+  const handleDeleteSplit = async (e, split) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!split?.splits_id) return;
+    if (!window.confirm(`Delete split "${split.split_name}"? This cannot be undone.`)) return;
+    try {
+      await api.deleteSplit(split.splits_id);
+      setSuccess('Split deleted.');
+      loadData();
+    } catch (err) {
+      console.error('Error deleting split:', err);
+      setError('Failed to delete split');
     }
   };
 
@@ -987,8 +1022,11 @@ const SplitCreator = ({
           ) : (
             <div className="split-creator-split-list">
               {sortedSplits.map((split) => (
-                <button
+                <div
                   key={split.splits_id}
+                  className={`split-creator-split-card-wrap ${split.splits_id === latestActiveSplitId ? 'split-creator-split-card-wrap--latest' : ''}`}
+                >
+                <button
                   type="button"
                   className={`split-creator-split-card ${split.splits_id === latestActiveSplitId ? 'split-creator-split-card--latest' : ''} ${openCalendarKey === `split-start-${split.splits_id}` ? 'split-creator-split-card--calendar-open' : ''}`}
                   onClick={() => navigate(`/personalization/splits/${split.splits_id}/edit`, { state: { split } })}
@@ -1101,6 +1139,16 @@ const SplitCreator = ({
                     )}
                   </div>
                 </button>
+                <button
+                  type="button"
+                  className="split-creator-split-card-delete"
+                  aria-label={`Delete ${split.split_name}`}
+                  title="Delete split"
+                  onClick={(e) => handleDeleteSplit(e, split)}
+                >
+                  <XMarkIcon className="split-creator-split-card-delete-icon" aria-hidden />
+                </button>
+                </div>
               ))}
             </div>
           )}
@@ -1492,12 +1540,20 @@ const SplitCreator = ({
           gap: var(--space-4);
         }
 
+        .split-creator-split-card-wrap {
+          display: flex;
+          flex-direction: row;
+          align-items: stretch;
+          gap: var(--space-2);
+        }
+
         .split-creator-split-card {
           display: block;
-          width: 100%;
+          flex: 1;
+          min-width: 0;
           text-align: left;
           cursor: pointer;
-          background: #121722;
+          background: var(--profile-card-bg, var(--bg-secondary));
           border: 1px solid var(--profile-card-border, var(--border-primary));
           border-radius: var(--radius-lg);
           padding: var(--space-4);
@@ -1512,12 +1568,60 @@ const SplitCreator = ({
         .split-creator-split-card--latest {
           border: 3px solid var(--accent-secondary);
           box-shadow: none;
-          background: #121722;
         }
 
         .split-creator-split-card--latest:hover {
           border-color: var(--accent-secondary);
           box-shadow: none;
+        }
+
+        .split-creator-split-card-delete {
+          flex-shrink: 0;
+          align-self: stretch;
+          width: 44px;
+          min-width: 44px;
+          max-width: 44px;
+          min-height: 0;
+          border-radius: var(--radius-md);
+          border: 1px solid var(--profile-card-border, var(--border-primary));
+          background: var(--profile-card-bg, var(--bg-secondary));
+          color: var(--text-secondary);
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: color 0.2s var(--ease-out-cubic), border-color 0.2s, background 0.2s;
+        }
+
+        .split-creator-split-card-delete:hover {
+          color: var(--accent-danger);
+          border-color: var(--accent-danger);
+          background: var(--accent-danger-alpha);
+        }
+
+        .split-creator-split-card-delete-icon {
+          width: 20px;
+          height: 20px;
+        }
+
+        @media (max-width: 768px) {
+          .split-creator-split-card-wrap {
+            width: 100%;
+          }
+          .split-creator-split-card {
+            flex: 1 1 0;
+            min-width: 0;
+          }
+          .split-creator-split-card-delete {
+            flex: 0 0 15%;
+            width: 15%;
+            max-width: 15%;
+            min-width: 0;
+          }
+          .split-creator-split-card-delete-icon {
+            width: 18px;
+            height: 18px;
+          }
         }
 
         .split-creator-split-card__header {

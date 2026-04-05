@@ -177,7 +177,7 @@ const DataViewer = () => {
   };
 
   return (
-    <div className="data-viewer animate-fade-in">
+    <div className="data-viewer animate-fade-in" data-page="data-viewer">
       <div
         className="card data-viewer-access-level-card"
         style={{ background: 'var(--data-viewer-card-bg)', borderColor: 'var(--accent-primary)' }}
@@ -203,7 +203,7 @@ const DataViewer = () => {
       </div>
 
       {error && (
-        <div className="card animate-slide-in-up" style={{ background: 'rgba(239, 68, 68, 0.1)', borderColor: 'var(--accent-danger)' }}>
+        <div className="card animate-slide-in-up data-viewer-error-card">
           <div className="flex items-center gap-3">
             <svg className="icon" viewBox="0 0 20 20" fill="var(--accent-danger)">
               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
@@ -410,10 +410,16 @@ const DataViewer = () => {
           --data-viewer-shell-tint: rgba(0, 0, 0, 0.04);
           --data-viewer-shell-strong: rgba(0, 0, 0, 0.1);
           --data-viewer-card-bg: #ffffff;
+          --data-viewer-card-border: rgba(15, 23, 42, 0.12);
         }
 
         :global([data-theme="light"]) .data-viewer::before {
           background-color: #e8eaf2;
+        }
+
+        .data-viewer-error-card {
+          background: var(--accent-danger-alpha);
+          border-color: var(--accent-danger);
         }
 
         .data-viewer .card {
@@ -600,6 +606,10 @@ const DataViewer = () => {
             z-index: 999;
           }
 
+          :global([data-theme="light"]) .data-viewer-tables-overlay {
+            background: rgba(15, 23, 42, 0.28);
+          }
+
           .data-viewer-tables-col {
             position: fixed;
             bottom: 0;
@@ -614,6 +624,10 @@ const DataViewer = () => {
             margin: 0;
             border-radius: var(--radius-lg) var(--radius-lg) 0 0;
             box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
+          }
+
+          :global([data-theme="light"]) .data-viewer-tables-col {
+            box-shadow: 0 -8px 32px rgba(15, 23, 42, 0.14);
           }
 
           .data-viewer-tables-col.data-viewer-tables-col--mobile-open {

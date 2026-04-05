@@ -7,10 +7,12 @@ from apps.health.models import SleepLog, HealthMetricsLog
 
 
 class WeightLogSerializer(serializers.ModelSerializer):
+    date_time = serializers.DateTimeField(required=False, allow_null=True)
+
     class Meta:
         model = WeightLog
         fields = [
-            'weight_log_id', 'user', 'weight', 'weight_unit', 'created_at'
+            'weight_log_id', 'user', 'weight', 'weight_unit', 'date_time', 'created_at'
         ]
         read_only_fields = ['weight_log_id', 'user', 'created_at']
 
@@ -27,11 +29,13 @@ class WeightLogSerializer(serializers.ModelSerializer):
 
 
 class BodyMeasurementLogSerializer(serializers.ModelSerializer):
+    date_time = serializers.DateTimeField(required=False, allow_null=True)
+
     class Meta:
         model = BodyMeasurementLog
         fields = [
-            'measurement_id', 'user', 'upper_arm', 'lower_arm', 
-            'waist', 'shoulder', 'leg', 'calf', 'created_at'
+            'measurement_id', 'user', 'upper_arm', 'lower_arm',
+            'waist', 'shoulder', 'leg', 'calf', 'date_time', 'created_at'
         ]
         read_only_fields = ['measurement_id', 'user', 'created_at']
 

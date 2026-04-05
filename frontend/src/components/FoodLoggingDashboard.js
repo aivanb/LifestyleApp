@@ -476,16 +476,12 @@ const FoodLoggingDashboard = () => {
 
   const updateFoodLogTime = async (logId, newTime) => {
     try {
-      // Parse the new time and create a new datetime in UTC
       const [hours, minutes] = newTime.split(':');
-      
-      // Parse the selected date
       const [year, month, day] = selectedDate.split('-').map(Number);
-      
-      // Create new date with UTC time to avoid timezone issues
-      const logDate = new Date(Date.UTC(year, month - 1, day, parseInt(hours), parseInt(minutes), 0, 0));
-      
-      // Update the food log with new time
+      const h = parseInt(hours, 10) || 0;
+      const min = parseInt(minutes, 10) || 0;
+      const logDate = new Date(year, month - 1, day, h, min, 0, 0);
+
       await api.updateFoodLog(logId, {
         date_time: logDate.toISOString()
       });
@@ -500,17 +496,15 @@ const FoodLoggingDashboard = () => {
 
   const formatTime = (dateString) => {
     const date = new Date(dateString);
-    // Use UTC methods to avoid timezone conversion
-    const hours = String(date.getUTCHours()).padStart(2, '0');
-    const minutes = String(date.getUTCMinutes()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
     return `${hours}:${minutes}`;
   };
 
   const getTimeForInput = (dateString) => {
     const date = new Date(dateString);
-    // Use UTC methods to avoid timezone conversion
-    const hours = String(date.getUTCHours()).padStart(2, '0');
-    const minutes = String(date.getUTCMinutes()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
     return `${hours}:${minutes}`;
   };
 
@@ -3358,6 +3352,7 @@ const FoodLoggingDashboard = () => {
                   onFoodLogged={handleFoodLogged}
                   onClose={closeFoodLogger}
                   showAsPanel={false}
+                  selectedDate={selectedDate}
                 />
               </div>
             </div>
@@ -3373,6 +3368,7 @@ const FoodLoggingDashboard = () => {
                 aria-label="Create food"
               >
                 <FoodCreator
+                  selectedDate={selectedDate}
                   onFoodCreated={handleFoodCreated}
                   onClose={() => setShowFoodCreator(false)}
                 />
@@ -3587,6 +3583,7 @@ const FoodLoggingDashboard = () => {
                 aria-label="Create food"
               >
                 <FoodCreator
+                  selectedDate={selectedDate}
                   onFoodCreated={handleFoodCreated}
                   onClose={() => setShowFoodCreator(false)}
                 />

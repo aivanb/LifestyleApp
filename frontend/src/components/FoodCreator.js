@@ -1,6 +1,27 @@
 import React, { useState } from 'react';
 import api from '../services/api';
 
+function formatYmdLocal(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function localYmdTimeToIso(ymd, hhmm) {
+  const day = ymd && `${ymd}`.trim() !== '' ? ymd : formatYmdLocal(new Date());
+  const [y, mo, d] = day.split('-').map((n) => parseInt(n, 10));
+  if (!y || !mo || !d) {
+    return new Date().toISOString();
+  }
+  const parts = `${hhmm || '12:00'}`.split(':');
+  const h = parseInt(parts[0], 10);
+  const min = parseInt(parts[1], 10);
+  const hh = Number.isFinite(h) ? h : 0;
+  const mm = Number.isFinite(min) ? min : 0;
+  return new Date(y, mo - 1, d, hh, mm, 0, 0).toISOString();
+}
+
 /**
  * FoodCreator Component
  * 
@@ -11,7 +32,7 @@ import api from '../services/api';
  * - Option to mark as public
  * - Option to log immediately after creation
  */
-const FoodCreator = ({ onFoodCreated, onClose }) => {
+const FoodCreator = ({ onFoodCreated, onClose, selectedDate = null }) => {
   const [formData, setFormData] = useState({
     food_name: '',
     serving_size: '',
@@ -127,25 +148,24 @@ const FoodCreator = ({ onFoodCreated, onClose }) => {
     }
 
     try {
-      const response = await api.createFood(formData);
-      
+      const now = new Date();
+      const hh = String(now.getHours()).padStart(2, '0');
+      const mm = String(now.getMinutes()).padStart(2, '0');
+      const payload = { ...formData };
+      if (payload.create_and_log) {
+        payload.log_date_time = localYmdTimeToIso(
+          selectedDate || formatYmdLocal(new Date()),
+          `${hh}:${mm}`
+        );
+      }
+
+      const response = await api.createFood(payload);
+
       if (response.data.data) {
         if (onFoodCreated) {
           onFoodCreated(response.data.data);
         }
-        
-        // If create_and_log is true, log the food immediately
-        if (formData.create_and_log) {
-          const logData = {
-            food: response.data.data.food_id,
-            servings: formData.servings,
-            measurement: formData.unit,
-            date_time: new Date().toISOString()
-          };
-          
-          await api.createFoodLog(logData);
-        }
-        
+
         // Reset form
         setFormData({
           food_name: '',

@@ -145,7 +145,7 @@ TrackingApp/
 #### OpenAI Service (`/api/openai/`)
 - `POST /api/openai/prompt/` - Send prompt to OpenAI
 - `GET /api/openai/usage/` - Get usage statistics
-- `POST /api/openai/parse-food/` - Parse food from natural language
+- `POST /api/openai/parse-food/` - Parse food from natural language (splits input into items; creates foods from stated fields + defaults, no DB matching)
 - `POST /api/openai/generate-metadata/` - Generate food metadata
 - `POST /api/openai/transcribe/` - Transcribe audio
 - `GET /api/openai/transcription-status/` - Check Vosk status
@@ -200,6 +200,12 @@ OR
 - **MUST** use `DataAccessService` for any database viewing/access
 - Provides: SQL injection prevention, XSS protection, access control, audit logging
 - See `backend/apps/data_viewer/README.md` for integration
+
+### Food logging, trackers, and parsing (maintenance notes)
+- Food log timestamps: the dashboard passes `selectedDate` into `FoodLogger` / `FoodCreator`. Client builds `date_time` from **local** calendar day + time, then `toISOString()` for the API. Avoid mixing `Date.UTC(...)` with a user-selected local date when editing log times.
+- `POST /api/foods/` with `create_and_log` accepts optional `log_date_time` (write-only); the server logs at that instant instead of always using `now`.
+- `WeightLogSerializer` / `BodyMeasurementLogSerializer` expose `date_time` on create; views default missing values to `timezone.now()`. Steps and cardio create views default `date_time` the same way. Health metrics create defaults `date_time` to `timezone.localdate()` when omitted.
+- `POST /api/openai/parse-food/` pipeline creates **new** `Food` rows from the parse JSON only: user-provided metadata keys are merged with numeric defaults; there is **no** database food matching or OpenAI backfill in that path (the separate `generate-metadata` endpoint still uses the model).
 
 ## Frontend Architecture
 

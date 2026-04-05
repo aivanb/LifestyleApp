@@ -3,6 +3,28 @@ import api from '../services/api';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 import FoodMetadataModal from './FoodMetadataModal';
 
+function formatYmdLocal(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+/** Local calendar YYYY-MM-DD + HH:mm → ISO instant for the API. */
+function localYmdTimeToIso(ymd, hhmm) {
+  const day = ymd && `${ymd}`.trim() !== '' ? ymd : formatYmdLocal(new Date());
+  const [y, mo, d] = day.split('-').map((n) => parseInt(n, 10));
+  if (!y || !mo || !d) {
+    return new Date().toISOString();
+  }
+  const parts = `${hhmm || '12:00'}`.split(':');
+  const h = parseInt(parts[0], 10);
+  const min = parseInt(parts[1], 10);
+  const hh = Number.isFinite(h) ? h : 0;
+  const mm = Number.isFinite(min) ? min : 0;
+  return new Date(y, mo - 1, d, hh, mm, 0, 0).toISOString();
+}
+
 // FoodEditForm Component
 const FoodEditForm = ({ food, onSave, onCancel, showHeader = true }) => {
   const getFoodData = () => {
@@ -459,6 +481,7 @@ const FoodLogger = ({ onFoodLogged, onClose, showAsPanel = false, selectedDate =
   const [searchTerm, setSearchTerm] = useState('');
   const [foods, setFoods] = useState([]);
   const [recentFoods, setRecentFoods] = useState([]);
+  const [meals, setMeals] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [foodServings, setFoodServings] = useState({});
@@ -483,6 +506,17 @@ const FoodLogger = ({ onFoodLogged, onClose, showAsPanel = false, selectedDate =
       setError('Failed to load recent foods');
     } finally {
       setLoading(false);
+    }
+  }, []);
+
+  const loadMeals = useCallback(async () => {
+    try {
+      const response = await api.getMeals();
+      const list = response.data?.data?.meals;
+      setMeals(Array.isArray(list) ? list : []);
+    } catch (err) {
+      console.error('Failed to load meals:', err);
+      setMeals([]);
     }
   }, []);
 
@@ -515,10 +549,11 @@ const FoodLogger = ({ onFoodLogged, onClose, showAsPanel = false, selectedDate =
   useEffect(() => {
     if (!searchTerm) {
       loadRecentFoods();
+      loadMeals();
     } else {
       searchFoods();
     }
-  }, [searchTerm, loadRecentFoods, searchFoods]);
+  }, [searchTerm, loadRecentFoods, searchFoods, loadMeals]);
 
   const updateServings = (foodId, servings) => {
     setFoodServings(prev => ({
@@ -562,23 +597,7 @@ const FoodLogger = ({ onFoodLogged, onClose, showAsPanel = false, selectedDate =
     try {
       setLoading(true);
       setError(''); // Clear any previous errors
-      let dateTime;
-      
-      const [hours, minutes] = timeToUse.split(':');
-      
-      // Always use the current day (today) regardless of calendar selection
-      const baseDate = new Date();
-      
-      // Create a new date with today's date and the specified time in UTC
-      const year = baseDate.getUTCFullYear();
-      const month = baseDate.getUTCMonth();
-      const day = baseDate.getUTCDate();
-      
-      // Create new date with UTC time to avoid timezone issues
-      const logDate = new Date(Date.UTC(year, month, day, parseInt(hours), parseInt(minutes), 0, 0));
-      
-      // Convert to ISO string for backend (UTC)
-      dateTime = logDate.toISOString();
+      const dateTime = localYmdTimeToIso(selectedDate, timeToUse);
       
       // Format servings to ensure proper decimal precision (max 2 decimal places)
       // This prevents floating point precision errors like '1.4000000000000004'
@@ -613,6 +632,46 @@ const FoodLogger = ({ onFoodLogged, onClose, showAsPanel = false, selectedDate =
     }
   };
 
+  const logMeal = async (meal) => {
+    const rowKey = `meal-${meal.meal_id}`;
+    const mult = foodServings[rowKey] || 1;
+    const timeToUse = getDefaultTime(rowKey);
+    const dateTime = localYmdTimeToIso(selectedDate, timeToUse);
+    const items = meal.foods || [];
+
+    if (items.length === 0) {
+      setError('This meal has no foods to log');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError('');
+      for (let i = 0; i < items.length; i += 1) {
+        const row = items[i];
+        const fd = row.food_details || {};
+        const fid = fd.food_id ?? row.food;
+        if (fid == null) continue;
+        const baseServ = parseFloat(row.servings) || 1;
+        const formattedServings = (baseServ * mult).toFixed(2);
+        await api.createFoodLog({
+          food: fid,
+          meal: meal.meal_id,
+          servings: formattedServings,
+          measurement: fd.unit || 'g',
+          date_time: dateTime,
+        });
+      }
+      setFoodServings((prev) => ({ ...prev, [rowKey]: 1 }));
+      if (onFoodLogged) onFoodLogged();
+    } catch (err) {
+      console.error('Failed to log meal:', err);
+      setError(err.response?.data?.error?.message || 'Failed to log meal');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const calculateMacros = (food, servings) => {
     const multiplier = servings || 1;
     return {
@@ -620,6 +679,17 @@ const FoodLogger = ({ onFoodLogged, onClose, showAsPanel = false, selectedDate =
       protein: Math.round(((food.protein || 0) * multiplier) * 10) / 10,
       fat: Math.round(((food.fat || 0) * multiplier) * 10) / 10,
       carbohydrates: Math.round(((food.carbohydrates || 0) * multiplier) * 10) / 10
+    };
+  };
+
+  const calculateMealMacros = (meal, servingsMult) => {
+    const m = meal.macro_preview || {};
+    const x = servingsMult || 1;
+    return {
+      calories: Math.round((m.calories || 0) * x),
+      protein: Math.round(((m.protein || 0) * x) * 10) / 10,
+      fat: Math.round(((m.fat || 0) * x) * 10) / 10,
+      carbohydrates: Math.round(((m.carbohydrates || 0) * x) * 10) / 10,
     };
   };
 
@@ -636,25 +706,35 @@ const FoodLogger = ({ onFoodLogged, onClose, showAsPanel = false, selectedDate =
   };
 
   const sortFoods = (foodsList) => {
+    const macro = (x, field) => {
+      const mp = x.macro_preview || {};
+      if (field === 'calories') return x.calories ?? mp.calories ?? 0;
+      if (field === 'protein') return x.protein ?? mp.protein ?? 0;
+      if (field === 'carbohydrates') return x.carbohydrates ?? mp.carbohydrates ?? 0;
+      if (field === 'fat') return x.fat ?? mp.fat ?? 0;
+      return 0;
+    };
+
     const sorted = [...foodsList].sort((a, b) => {
-      let aValue, bValue;
-      
+      let aValue;
+      let bValue;
+
       switch (sortBy) {
         case 'calories':
-          aValue = a.calories || 0;
-          bValue = b.calories || 0;
+          aValue = macro(a, 'calories');
+          bValue = macro(b, 'calories');
           break;
         case 'protein':
-          aValue = a.protein || 0;
-          bValue = b.protein || 0;
+          aValue = macro(a, 'protein');
+          bValue = macro(b, 'protein');
           break;
         case 'carbohydrates':
-          aValue = a.carbohydrates || 0;
-          bValue = b.carbohydrates || 0;
+          aValue = macro(a, 'carbohydrates');
+          bValue = macro(b, 'carbohydrates');
           break;
         case 'fat':
-          aValue = a.fat || 0;
-          bValue = b.fat || 0;
+          aValue = macro(a, 'fat');
+          bValue = macro(b, 'fat');
           break;
         case 'frequency':
         default:
@@ -662,14 +742,15 @@ const FoodLogger = ({ onFoodLogged, onClose, showAsPanel = false, selectedDate =
           bValue = b.log_count || b.frequency || b.count || 0;
           break;
       }
-      
+
       return sortOrder === 'asc' ? aValue - bValue : bValue - aValue;
     });
-    
+
     return sorted;
   };
 
-  const displayFoods = sortFoods(searchTerm ? foods : recentFoods);
+  const mealRows = meals.map((m) => ({ ...m, __meal: true }));
+  const displayFoods = sortFoods(searchTerm ? foods : [...mealRows, ...recentFoods]);
 
   const clearLoggerOverlay = () => setLoggerOverlay(null);
 
@@ -872,20 +953,31 @@ const FoodLogger = ({ onFoodLogged, onClose, showAsPanel = false, selectedDate =
         ) : (
           <div className="food-list">
             
-            {displayFoods.map(food => {
-              const servings = foodServings[food.food_id] || 1;
-              const macros = calculateMacros(food, servings);
-              
+            {displayFoods.map((food) => {
+              const isMeal = !!food.__meal;
+              const rowKey = isMeal ? `meal-${food.meal_id}` : food.food_id;
+              const servings = foodServings[rowKey] || 1;
+              const macros = isMeal ? calculateMealMacros(food, servings) : calculateMacros(food, servings);
+
               return (
-                <div key={food.food_id} className="food-card">
+                <div key={rowKey} className={`food-card${isMeal ? ' food-card--meal' : ''}`}>
                   <div className="food-card-title-row">
                     <div className="food-icon">
-                      {getFoodGroupIcon(food.food_group)}
+                      {isMeal ? '🍱' : getFoodGroupIcon(food.food_group)}
                     </div>
                     <div className="food-title-line">
-                      <span className="food-name">{food.food_name}</span>
+                      <div className="food-title-text-block">
+                        <span className="food-name">{isMeal ? food.meal_name : food.food_name}</span>
+                        {!isMeal && food.brand ? (
+                          <span className="food-brand-sub">{food.brand}</span>
+                        ) : null}
+                      </div>
                       <span className="food-title-sep" aria-hidden="true">·</span>
-                      <span className="food-serving-inline">{food.serving_size} {food.unit}</span>
+                      <span className="food-serving-inline">
+                        {isMeal
+                          ? `${(food.foods && food.foods.length) || 0} items · × meal`
+                          : `${food.serving_size} ${food.unit}`}
+                      </span>
                     </div>
                   </div>
 
@@ -898,46 +990,50 @@ const FoodLogger = ({ onFoodLogged, onClose, showAsPanel = false, selectedDate =
 
                   <div className="food-card-actions-block">
                     <div className="food-card-buttons-rail">
-                      <button
-                        type="button"
-                        className="btn-icon-small"
-                        onClick={() => {
-                          setLoggerOverlay({ type: 'analytics', food });
-                          loadFoodAnalytics(food.food_id);
-                        }}
-                        title="View analytics"
-                      >
-                        <svg className="icon icon-sm" viewBox="0 0 20 20" fill="currentColor">
-                          <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" />
-                        </svg>
-                      </button>
-                      <button
-                        type="button"
-                        className="btn-icon-small"
-                        onClick={() => setLoggerOverlay({ type: 'metadata', food })}
-                        title="View metadata"
-                      >
-                        <svg className="icon icon-sm" viewBox="0 0 20 20" fill="currentColor">
-                          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                        </svg>
-                      </button>
-                      <button
-                        type="button"
-                        className="btn-icon-small"
-                        onClick={() => setLoggerOverlay({ type: 'edit', food })}
-                        title="Edit food"
-                      >
-                        <svg className="icon icon-sm" viewBox="0 0 20 20" fill="currentColor">
-                          <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-                        </svg>
-                      </button>
+                      {!isMeal && (
+                        <>
+                          <button
+                            type="button"
+                            className="btn-icon-small"
+                            onClick={() => {
+                              setLoggerOverlay({ type: 'analytics', food });
+                              loadFoodAnalytics(food.food_id);
+                            }}
+                            title="View analytics"
+                          >
+                            <svg className="icon icon-sm" viewBox="0 0 20 20" fill="currentColor">
+                              <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" />
+                            </svg>
+                          </button>
+                          <button
+                            type="button"
+                            className="btn-icon-small"
+                            onClick={() => setLoggerOverlay({ type: 'metadata', food })}
+                            title="View metadata"
+                          >
+                            <svg className="icon icon-sm" viewBox="0 0 20 20" fill="currentColor">
+                              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                            </svg>
+                          </button>
+                          <button
+                            type="button"
+                            className="btn-icon-small"
+                            onClick={() => setLoggerOverlay({ type: 'edit', food })}
+                            title="Edit food"
+                          >
+                            <svg className="icon icon-sm" viewBox="0 0 20 20" fill="currentColor">
+                              <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                            </svg>
+                          </button>
+                        </>
+                      )}
                     </div>
                     <div className="servings-row">
                       <div className="servings-control servings-control--plain">
                         <button
                           type="button"
                           className="btn-icon btn-servings"
-                          onClick={() => decrementServings(food.food_id)}
+                          onClick={() => decrementServings(rowKey)}
                           disabled={servings <= 0.1}
                         >
                           <svg className="icon icon-lg" viewBox="0 0 20 20" fill="currentColor">
@@ -948,15 +1044,15 @@ const FoodLogger = ({ onFoodLogged, onClose, showAsPanel = false, selectedDate =
                           type="number"
                           className="servings-input"
                           value={Math.round(servings * 10) / 10}
-                          onChange={(e) => updateServings(food.food_id, e.target.value)}
+                          onChange={(e) => updateServings(rowKey, e.target.value)}
                           step="0.1"
                           min="0.1"
-                          aria-label="Servings"
+                          aria-label={isMeal ? 'Meal multiplier' : 'Servings'}
                         />
                         <button
                           type="button"
                           className="btn-icon btn-servings"
-                          onClick={() => incrementServings(food.food_id)}
+                          onClick={() => incrementServings(rowKey)}
                         >
                           <svg className="icon icon-lg" viewBox="0 0 20 20" fill="currentColor">
                             <path fillRule="evenodd" d="M10 3a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V4a1 1 0 011-1z" clipRule="evenodd" />
@@ -969,8 +1065,8 @@ const FoodLogger = ({ onFoodLogged, onClose, showAsPanel = false, selectedDate =
                         <input
                           type="time"
                           className="time-input"
-                          value={getDefaultTime(food.food_id)}
-                          onChange={(e) => updateTime(food.food_id, e.target.value)}
+                          value={getDefaultTime(rowKey)}
+                          onChange={(e) => updateTime(rowKey, e.target.value)}
                           aria-label="Time"
                         />
                       </div>
@@ -978,14 +1074,14 @@ const FoodLogger = ({ onFoodLogged, onClose, showAsPanel = false, selectedDate =
                         <button
                           type="button"
                           className="btn btn-primary btn-log btn-log-food-header"
-                          onClick={() => logFood(food)}
+                          onClick={() => (isMeal ? logMeal(food) : logFood(food))}
                           disabled={loading}
-                          aria-label="Add food to log"
+                          aria-label={isMeal ? 'Log meal' : 'Add food to log'}
                         >
                           <svg className="icon icon-sm" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                           </svg>
-                          <span className="btn-log-label">Add</span>
+                          <span className="btn-log-label">{isMeal ? 'Log meal' : 'Add'}</span>
                         </button>
                       </div>
                     </div>
@@ -1195,6 +1291,33 @@ const FoodLogger = ({ onFoodLogged, onClose, showAsPanel = false, selectedDate =
           box-sizing: border-box;
         }
 
+        .food-card--meal {
+          background: rgba(59, 130, 246, 0.12);
+          border: none !important;
+          box-shadow: none;
+        }
+
+        [data-theme="light"] .food-card--meal {
+          background: rgba(37, 99, 235, 0.08);
+          border: none !important;
+          box-shadow: none;
+        }
+
+        .food-title-text-block {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 2px;
+          min-width: 0;
+        }
+
+        .food-brand-sub {
+          font-size: var(--text-xs);
+          color: var(--text-tertiary);
+          font-weight: var(--font-weight-medium);
+          line-height: 1.2;
+        }
+
         .food-card-title-row {
           display: flex;
           align-items: center;
@@ -1226,7 +1349,7 @@ const FoodLogger = ({ onFoodLogged, onClose, showAsPanel = false, selectedDate =
           line-height: 1.15;
         }
 
-        .food-title-line .food-name {
+        .food-title-line .food-title-text-block {
           margin-right: var(--space-3);
         }
 

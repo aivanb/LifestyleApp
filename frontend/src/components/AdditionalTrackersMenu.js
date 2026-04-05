@@ -11,6 +11,80 @@ import {
 import api from '../services/api';
 import { useTheme } from '../contexts/ThemeContext';
 
+/** `datetime-local` value in the user's local timezone (not `toISOString().slice`, which is UTC). */
+function formatDatetimeLocal(d = new Date()) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  const h = String(d.getHours()).padStart(2, '0');
+  const min = String(d.getMinutes()).padStart(2, '0');
+  return `${y}-${m}-${day}T${h}:${min}`;
+}
+
+function formatYmdLocal(d = new Date()) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function parseSleepClockToMinutes(t) {
+  if (t == null || t === '') return null;
+  const s = String(t).trim();
+  if (!s) return null;
+  const parts = s.split(':');
+  const h = parseInt(parts[0], 10);
+  const m = parseInt(parts[1], 10);
+  if (!Number.isFinite(h) || !Number.isFinite(m)) return null;
+  const sec = parts[2] != null && parts[2] !== '' ? parseInt(parts[2], 10) : 0;
+  return h * 60 + m + (Number.isFinite(sec) ? sec / 60 : 0);
+}
+
+function overnightMinuteDiff(startMin, endMin) {
+  if (startMin == null || endMin == null) return null;
+  let d = endMin - startMin;
+  if (d < 0) d += 24 * 60;
+  return d;
+}
+
+/** From bed / fell asleep / wake times: total asleep and time in bed before sleep (minutes). */
+function sleepTimeDerivedFromEntry(entry) {
+  const bed = parseSleepClockToMinutes(entry.time_went_to_bed);
+  const fell = parseSleepClockToMinutes(entry.time_fell_asleep);
+  const out = parseSleepClockToMinutes(entry.time_got_out_of_bed);
+  if (fell == null || out == null) {
+    return { total_sleep_minutes: null, laying_before_sleep_minutes: null };
+  }
+  const totalSleep = overnightMinuteDiff(fell, out);
+  let laying = null;
+  if (bed != null) {
+    laying = overnightMinuteDiff(bed, fell);
+  }
+  return {
+    total_sleep_minutes: totalSleep,
+    laying_before_sleep_minutes: laying,
+  };
+}
+
+function formatTrackerMetricLabel(trackerId, metricKey) {
+  if (trackerId === 'sleep') {
+    if (metricKey === 'total_sleep_minutes') return 'Total sleep (min)';
+    if (metricKey === 'laying_before_sleep_minutes') return 'In bed before sleep (min)';
+  }
+  return metricKey.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
+}
+
+const HEALTH_HEATMAP_METRICS = [
+  'resting_heart_rate',
+  'blood_pressure_systolic',
+  'blood_pressure_diastolic',
+  'morning_energy',
+  'stress_level',
+  'mood',
+  'soreness',
+  'illness_level',
+];
+
 const AdditionalTrackersMenu = () => {
   const { theme } = useTheme();
   const [streaks, setStreaks] = useState({});
@@ -134,7 +208,15 @@ const AdditionalTrackersMenu = () => {
       
       // For sleep, hide all except first
       if (graphData.sleep && graphData.sleep.dates) {
-        const sleepFields = ['time_in_light_sleep', 'time_in_deep_sleep', 'time_in_rem_sleep', 'number_of_times_woke_up', 'resting_heart_rate'];
+        const sleepFields = [
+          'time_in_light_sleep',
+          'time_in_deep_sleep',
+          'time_in_rem_sleep',
+          'number_of_times_woke_up',
+          'resting_heart_rate',
+          'total_sleep_minutes',
+          'laying_before_sleep_minutes',
+        ];
         const fieldsWithData = sleepFields.filter(field => 
           graphData.sleep[field]?.some(v => v != null && v > 0)
         );
@@ -284,8 +366,8 @@ const AdditionalTrackersMenu = () => {
           { data: stepsDataForHeatmap.data.results || [], key: 'steps' },
           { data: cardioDataForHeatmap.data.results || [], key: 'cardio' },
           { data: sleepDataForHeatmap.data.results || [], key: 'sleep' },
-          { data: healthDataForHeatmap.data.results || [], key: 'health_metrics' }
-        ].forEach(({ data, key }) => {
+          { data: healthDataForHeatmap.data.results || [], key: 'health_metrics', perMetric: true }
+        ].forEach(({ data, key, perMetric }) => {
           data.forEach(entry => {
             const rawDate = entry.date_time || entry.created_at;
             let dateStr = todayStr;
@@ -305,7 +387,16 @@ const AdditionalTrackersMenu = () => {
             if (!allDataByDate[dateStr]) {
               allDataByDate[dateStr] = new Set();
             }
-            allDataByDate[dateStr].add(key);
+            if (perMetric) {
+              HEALTH_HEATMAP_METRICS.forEach((mk) => {
+                const v = entry[mk];
+                if (v != null && v !== '') {
+                  allDataByDate[dateStr].add(`${key}:${mk}`);
+                }
+              });
+            } else {
+              allDataByDate[dateStr].add(key);
+            }
           });
         });
 
@@ -605,7 +696,16 @@ const AdditionalTrackersMenu = () => {
       currentDate.setDate(currentDate.getDate() + 1);
     }
 
-    const metrics = ['time_in_light_sleep', 'time_in_deep_sleep', 'time_in_rem_sleep', 'number_of_times_woke_up', 'resting_heart_rate'];
+    const metrics = [
+      'time_in_light_sleep',
+      'time_in_deep_sleep',
+      'time_in_rem_sleep',
+      'number_of_times_woke_up',
+      'resting_heart_rate',
+      'total_sleep_minutes',
+      'laying_before_sleep_minutes',
+    ];
+    const derivedMetrics = new Set(['total_sleep_minutes', 'laying_before_sleep_minutes']);
     
     // Group data by date
     const dataByDate = {};
@@ -633,7 +733,12 @@ const AdditionalTrackersMenu = () => {
           dataByDate[entryDate].push(entry);
         } else if (entryDate < startDateStr) {
           metrics.forEach(metric => {
-            if (entry[metric] != null) {
+            if (derivedMetrics.has(metric)) {
+              const d = sleepTimeDerivedFromEntry(entry)[metric];
+              if (d != null && d >= 0) {
+                previousValues[metric] = d;
+              }
+            } else if (entry[metric] != null) {
               previousValues[metric] = parseFloat(entry[metric]);
             }
           });
@@ -648,7 +753,14 @@ const AdditionalTrackersMenu = () => {
         const entries = dataByDate[date];
         if (!entries || entries.length === 0) return null;
         
-        // Sum all entries for this date
+        if (derivedMetrics.has(metric)) {
+          const values = entries
+            .map((e) => sleepTimeDerivedFromEntry(e)[metric])
+            .filter((val) => val != null && val >= 0);
+          if (values.length === 0) return null;
+          return values.reduce((sum, v) => sum + v, 0);
+        }
+
         const values = entries
           .map(entry => entry[metric])
           .filter(val => val != null)
@@ -740,8 +852,8 @@ const AdditionalTrackersMenu = () => {
   };
 
   const getInitialFormData = (trackerId) => {
-    const today = new Date().toISOString().split('T')[0];
-    const now = new Date().toISOString().slice(0, 16); // datetime-local format
+    const today = formatYmdLocal(new Date());
+    const now = formatDatetimeLocal(new Date());
     switch(trackerId) {
       case 'weight':
         return { weight: '', weight_unit: 'lbs', date_time: now };
@@ -794,16 +906,59 @@ const AdditionalTrackersMenu = () => {
     
     try {
       let logData = { ...formData };
-      
-      // Convert date_time to ISO format if present
-      if (logData.date_time) {
+
+      Object.keys(logData).forEach((key) => {
+        if (logData[key] === '') {
+          delete logData[key];
+        }
+      });
+
+      const isPlainYmd =
+        typeof logData.date_time === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(logData.date_time);
+
+      // Sleep & health use DateField — keep calendar date as YYYY-MM-DD (avoid UTC shift from toISOString).
+      if (logData.date_time && (activeModal === 'sleep' || activeModal === 'health_metrics')) {
+        if (!isPlainYmd) {
+          const d = new Date(logData.date_time);
+          if (!Number.isNaN(d.getTime())) {
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            logData.date_time = `${y}-${m}-${day}`;
+          }
+        }
+      } else if (logData.date_time) {
         logData.date_time = new Date(logData.date_time).toISOString();
       }
-      
-      // Convert numeric fields (but not date_time)
-      Object.keys(logData).forEach(key => {
-        if (key !== 'date_time' && typeof logData[key] === 'string' && logData[key] !== '' && !isNaN(logData[key])) {
-          logData[key] = parseFloat(logData[key]);
+
+      const healthIntFields = new Set([
+        'resting_heart_rate',
+        'blood_pressure_systolic',
+        'blood_pressure_diastolic',
+        'morning_energy',
+        'stress_level',
+        'mood',
+        'soreness',
+        'illness_level',
+      ]);
+      const sleepIntFields = new Set([
+        'time_in_light_sleep',
+        'time_in_deep_sleep',
+        'time_in_rem_sleep',
+        'number_of_times_woke_up',
+        'resting_heart_rate',
+      ]);
+
+      Object.keys(logData).forEach((key) => {
+        if (key === 'date_time') return;
+        const v = logData[key];
+        if (typeof v !== 'string' || v === '' || Number.isNaN(Number(v))) return;
+        if (activeModal === 'health_metrics' && healthIntFields.has(key)) {
+          logData[key] = parseInt(v, 10);
+        } else if (activeModal === 'sleep' && sleepIntFields.has(key)) {
+          logData[key] = parseInt(v, 10);
+        } else {
+          logData[key] = parseFloat(v);
         }
       });
 
@@ -857,9 +1012,16 @@ const AdditionalTrackersMenu = () => {
       3: '#facc15',
       4: '#4ade80',
       5: '#60a5fa',
-      6: '#c084fc'
+      6: '#c084fc',
+      7: '#a78bfa',
+      8: '#818cf8',
+      9: '#6366f1',
+      10: '#4f46e5',
+      11: '#4338ca',
+      12: '#3730a3'
     };
-    return colors[count] || colors[0];
+    const k = Math.min(Math.max(0, count), 12);
+    return colors[k] || colors[12];
   };
 
   useEffect(() => {
@@ -918,7 +1080,7 @@ const AdditionalTrackersMenu = () => {
   };
 
   const renderLineGraph = (trackerId, graphDataForTracker, dateRangeForTracker) => {
-    const colors = ['#3b82f6', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899', '#84cc16'];
+    const colors = ['#3b82f6', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899', '#84cc16', '#f97316', '#14b8a6'];
     
     // Get all metric keys for this tracker - must match the fields in the database models
     let metricKeys = [];
@@ -931,7 +1093,15 @@ const AdditionalTrackersMenu = () => {
     } else if (trackerId === 'cardio') {
       metricKeys = ['duration', 'calories_burned', 'heart_rate'];
     } else if (trackerId === 'sleep') {
-      metricKeys = ['time_in_light_sleep', 'time_in_deep_sleep', 'time_in_rem_sleep', 'number_of_times_woke_up', 'resting_heart_rate'];
+      metricKeys = [
+        'time_in_light_sleep',
+        'time_in_deep_sleep',
+        'time_in_rem_sleep',
+        'number_of_times_woke_up',
+        'resting_heart_rate',
+        'total_sleep_minutes',
+        'laying_before_sleep_minutes',
+      ];
     } else if (trackerId === 'health_metrics') {
       metricKeys = ['resting_heart_rate', 'blood_pressure_systolic', 'blood_pressure_diastolic', 'morning_energy', 'stress_level', 'mood', 'soreness', 'illness_level'];
     }
@@ -1241,7 +1411,7 @@ const AdditionalTrackersMenu = () => {
               >
                 <div style={{ width: '12px', height: '12px', background: color, borderRadius: '2px' }} />
                 <span style={{ color: 'var(--text-secondary)', fontFamily: 'var(--font-primary)' }}>
-                  {metricKey.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                  {formatTrackerMetricLabel(trackerId, metricKey)}
                 </span>
               </div>
             );
@@ -1292,7 +1462,7 @@ const AdditionalTrackersMenu = () => {
                               opacity: hiddenFields[trackerId]?.includes(metricKey) ? 0.3 : 1
                             }}
                           >
-                            {metricKey.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                            {formatTrackerMetricLabel(trackerId, metricKey)}
                           </th>
                         );
                       })}
@@ -1631,6 +1801,17 @@ const AdditionalTrackersMenu = () => {
                     />
                   </div>
                   <div className="form-group">
+                    <label htmlFor="time_fell_asleep">Time Fell Asleep</label>
+                    <input
+                      type="time"
+                      id="time_fell_asleep"
+                      name="time_fell_asleep"
+                      value={formData.time_fell_asleep}
+                      onChange={handleInputChange}
+                      className="form-input"
+                    />
+                  </div>
+                  <div className="form-group">
                     <label htmlFor="time_got_out_of_bed">Got Out of Bed</label>
                     <input
                       type="time"
@@ -1639,17 +1820,6 @@ const AdditionalTrackersMenu = () => {
                       value={formData.time_got_out_of_bed}
                       onChange={handleInputChange}
                       required
-                      className="form-input"
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label htmlFor="time_fell_asleep">Time Fell Asleep</label>
-                    <input
-                      type="time"
-                      id="time_fell_asleep"
-                      name="time_fell_asleep"
-                      value={formData.time_fell_asleep}
-                      onChange={handleInputChange}
                       className="form-input"
                     />
                   </div>

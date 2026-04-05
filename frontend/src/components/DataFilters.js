@@ -255,7 +255,7 @@ const DataFilters = ({ schema, onFilterChange, onSearchChange, onApply, onClear 
           display: inline-flex;
           align-items: center;
           background-color: var(--accent-primary-alpha);
-          border: 1px solid rgba(90, 166, 255, 0.45);
+          border: 1px solid rgba(var(--accent-primary-rgb), 0.38);
           border-radius: 4px;
           padding: 8px 12px;
           margin-right: 10px;
@@ -263,13 +263,14 @@ const DataFilters = ({ schema, onFilterChange, onSearchChange, onApply, onClear 
           font-size: var(--text-sm);
           color: var(--accent-primary);
           font-weight: var(--font-weight-semibold);
+          opacity: 1;
         }
 
         .filter-remove {
           margin-left: 10px;
           background: none;
           border: none;
-          color: #dc3545;
+          color: var(--accent-danger);
           font-size: 20px;
           font-weight: bold;
           cursor: pointer;
@@ -278,7 +279,7 @@ const DataFilters = ({ schema, onFilterChange, onSearchChange, onApply, onClear 
         }
 
         .filter-remove:hover {
-          color: #c82333;
+          opacity: 0.75;
         }
 
         .filter-add-button:not(:disabled) {

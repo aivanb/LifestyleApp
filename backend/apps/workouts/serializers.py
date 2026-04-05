@@ -261,6 +261,32 @@ class SplitCreateSerializer(serializers.ModelSerializer):
         
         return split
 
+    def update(self, instance, validated_data):
+        """Update split and replace nested days/targets when split_days is sent."""
+        split_days_data = validated_data.pop('split_days', None)
+        split = super().update(instance, validated_data)
+
+        if split_days_data is not None:
+            split.splitday_set.all().delete()
+            for idx, day_data in enumerate(split_days_data):
+                dd = dict(day_data)
+                targets_data = list(dd.pop('targets', []) or [])
+                day_order = dd.get('day_order', idx + 1)
+                day_name = dd.get('day_name') or f'Day {day_order}'
+                split_day = SplitDay.objects.create(
+                    split=split,
+                    day_name=day_name,
+                    day_order=day_order,
+                )
+                for target_data in targets_data:
+                    SplitDayTarget.objects.create(
+                        split_day=split_day,
+                        muscle_id=target_data['muscle'],
+                        target_activation=target_data['target_activation'],
+                    )
+
+        return split
+
 
 class WorkoutStatsSerializer(serializers.Serializer):
     """Serializer for workout statistics"""

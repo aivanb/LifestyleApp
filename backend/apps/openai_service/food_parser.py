@@ -2,12 +2,12 @@
 Food Parsing Service using OpenAI API
 
 This service handles intelligent food parsing from natural language input,
-including metadata generation, database validation, and automatic logging.
+including metadata generation and automatic logging.
 
 Key Features:
 - Parse multiple foods from single input string
-- Check existing meals and foods in database
-- Generate missing nutritional metadata via OpenAI
+- For each parsed food, fill nutrition via the same OpenAI metadata path as Food Creator
+  (``generate_missing_metadata`` / ``METADATA_GENERATION_PROMPT``), preserving user-stated fields
 - Handle duplicate foods with different metadata
 - Automatic food log creation
 - Optional meal creation from parsed foods
@@ -15,11 +15,11 @@ Key Features:
 
 import json
 import logging
+import re
 from typing import List, Dict, Any, Optional
 from decimal import Decimal
 from datetime import datetime
 from django.utils import timezone
-from django.db.models import Q
 from apps.foods.models import Food, Meal, MealFood
 from apps.logging.models import FoodLog
 from .services import OpenAIService
@@ -47,12 +47,13 @@ Input: "{input_text}"
 CRITICAL INSTRUCTIONS:
 1. Return ONLY a JSON array. No explanations, no markdown code blocks, just raw JSON.
 2. Extract each food/meal mentioned
-3. For metadata, include ONLY fields the user clearly stated (no guessing macros):
+3. For metadata, include ONLY fields the user clearly stated — never invent or estimate values:
    - "brand": string if a brand is mentioned
-   - "cost": number (USD, e.g. 4.99) if the user gives a price ("$3", "5 dollars", "about 2 bucks")
-   - "servings": number if an explicit quantity is given for that item (e.g. "2 apples" → servings 2)
-4. Do NOT include calories, protein, or other full nutrition in metadata (those are filled by a separate step)
-5. Nutritional data will be looked up or generated separately
+   - "cost": JSON number in USD (e.g. 4.5) if the user gives a price — never a string
+   - "servings": number if an explicit quantity is given for that item
+   - If the user states macros or serving details, include them using Food model field names, e.g.
+     "calories", "protein", "fat", "carbohydrates", "serving_size", "unit", "food_group"
+4. Do NOT query, look up, or infer missing nutrition — omit keys you are not sure about
 
 Required JSON format:
 [
@@ -309,200 +310,123 @@ Return ONLY the JSON object, nothing else.
             logger.error(f"Response was: {response['response'][:500]}")
             return []
     
+    def _coerce_cost_value(self, value: Any) -> Optional[Any]:
+        if value is None:
+            return None
+        if isinstance(value, (int, float, Decimal)):
+            return value
+        if isinstance(value, str):
+            s = value.strip()
+            if not s:
+                return None
+            m = re.search(r'[\d.]+', s.replace(',', ''))
+            if not m:
+                return None
+            try:
+                return float(m.group(0))
+            except ValueError:
+                return None
+        return None
+
+    def _normalize_parsed_metadata(self, metadata: Any) -> Dict:
+        """Lower-case keys, map price→cost, and coerce cost from strings like \"$4.50\"."""
+        if not isinstance(metadata, dict):
+            return {}
+        normalized: Dict[str, Any] = {}
+        for k, v in metadata.items():
+            if not isinstance(k, str):
+                continue
+            normalized[k.strip().lower()] = v
+        if 'cost' not in normalized and 'price' in normalized:
+            normalized['cost'] = normalized.get('price')
+        coerced = self._coerce_cost_value(normalized.get('cost'))
+        if coerced is not None:
+            normalized['cost'] = coerced
+        elif 'cost' in normalized:
+            normalized.pop('cost', None)
+        return normalized
+
     def _process_single_food(self, food_data: Dict) -> Dict:
         """
-        Process a single parsed food item.
-        
-        Logic:
-        1. Check if exists in user's meals
-        2. Check if exists in foods database
-        3. Handle metadata matching/generation
-        4. Create new food if needed
-        
-        Args:
-            food_data: Dict with 'name' and 'metadata' keys
-            
-        Returns:
-            Dict with processing results
+        Create a Food row: merge user-stated parse metadata with OpenAI-generated nutrition
+        (same pipeline as Food Creator → /openai/generate-metadata/).
         """
         name = food_data.get('name', '').strip()
-        metadata = food_data.get('metadata', {})
-        servings = Decimal(str(metadata.get('servings', '1')))
-        
+        metadata = self._normalize_parsed_metadata(food_data.get('metadata', {}) or {})
+
+        try:
+            servings = Decimal(str(metadata.get('servings', '1')))
+        except Exception:
+            servings = Decimal('1')
+
         result = {
             'name': name,
             'metadata': metadata,
             'servings': servings,
-            'source': None,  # 'meal', 'food_exact', 'food_duplicate', 'food_new'
+            'source': 'food_new',
             'food_object': None,
-            'error': None
+            'error': None,
         }
-        
-        # Step 1: Check user's meals
+
+        if not name:
+            result['error'] = 'Missing food name'
+            return result
+
         try:
-            meal = Meal.objects.get(user=self.user, meal_name__iexact=name)
-            result['source'] = 'meal'
-            result['meal_object'] = meal
-            # For meals, we don't create a single food object
-            # The meal contains multiple foods
-            return result
-        except Meal.DoesNotExist:
-            pass
-        
-        # Step 2: Check foods database
-        try:
-            existing_food = Food.objects.get(food_name__iexact=name)
-            
-            # Check if metadata matches
-            if self._metadata_matches(existing_food, metadata):
-                result['source'] = 'food_exact'
-                result['food_object'] = existing_food
-            else:
-                # Metadata doesn't match - create duplicate
-                result['source'] = 'food_duplicate'
-                result['food_object'] = self._create_food_duplicate(existing_food, metadata)
-            
-            return result
-            
-        except Food.DoesNotExist:
-            pass
-        except Food.MultipleObjectsReturned:
-            # If multiple foods with same name, use first one
-            existing_food = Food.objects.filter(food_name__iexact=name).first()
-            result['source'] = 'food_exact'
-            result['food_object'] = existing_food
-            return result
-        
-        # Step 3: Food not found - create new with metadata generation
-        result['source'] = 'food_new'
-        result['food_object'] = self._create_new_food(name, metadata)
-        
+            meta_for_ai = dict(metadata)
+            meta_for_ai.pop('servings', None)
+            try:
+                complete = self.generate_missing_metadata(name, meta_for_ai)
+                result['food_object'] = self._persist_food_row(name, complete)
+            except Exception as gen_err:
+                logger.warning(
+                    'OpenAI metadata generation failed for parsed food %r (%s); using defaults only',
+                    name,
+                    gen_err,
+                )
+                result['food_object'] = self._create_new_food(name, metadata)
+        except Exception as e:
+            logger.exception('Failed to create food from parse step')
+            result['error'] = str(e)
+
         return result
-    
-    def _metadata_matches(self, food: Food, metadata: Dict) -> bool:
+
+    def _persist_food_row(self, base_name: str, complete_metadata: Dict) -> Food:
         """
-        Check if provided metadata matches existing food.
-        
-        Args:
-            food: Existing Food object
-            metadata: Provided metadata dict
-            
-        Returns:
-            True if metadata matches or is empty
+        Insert a Food row from a full metadata dict (already merged / ensured).
+        Uniquifies ``food_name`` on collision.
         """
-        if not metadata or len(metadata) == 0:
-            return True  # No metadata provided, use existing
-        
-        # Check key nutritional fields
-        if 'calories' in metadata:
-            if abs(float(food.calories) - float(metadata['calories'])) > 10:
-                return False
-        
-        if 'protein' in metadata:
-            if abs(float(food.protein) - float(metadata['protein'])) > 2:
-                return False
-        
-        # Check brand field - if provided, it must match exactly
-        if 'brand' in metadata and metadata['brand']:
-            # If existing food has empty brand and only brand metadata is provided, use existing food
-            if not food.brand and len(metadata) == 1:
-                return True
-            # Otherwise, brand must match exactly
-            if food.brand != metadata['brand']:
-                return False
-        
-        # Check serving size and unit - if provided, they must match
-        if 'serving_size' in metadata:
-            if abs(float(food.serving_size) - float(metadata['serving_size'])) > 0.1:
-                return False
-        
-        if 'unit' in metadata:
-            if food.unit != metadata['unit']:
-                return False
-        
-        return True
-    
-    def _create_food_duplicate(self, original_food: Food, metadata: Dict) -> Food:
-        """
-        Create a duplicate food entry with different metadata.
-        
-        Args:
-            original_food: Original Food object
-            metadata: New metadata to apply
-            
-        Returns:
-            New Food object
-        """
-        # Create new food name with variant indicator
-        new_name = f"{original_food.food_name} (variant)"
-        counter = 1
-        
-        while Food.objects.filter(food_name=new_name).exists():
-            counter += 1
-            new_name = f"{original_food.food_name} (variant {counter})"
-        
-        # Copy all fields from original
-        food_data = {
-            'food_name': new_name,
-            'serving_size': original_food.serving_size,
-            'unit': original_food.unit,
-            'calories': original_food.calories,
-            'protein': original_food.protein,
-            'fat': original_food.fat,
-            'carbohydrates': original_food.carbohydrates,
-            'fiber': original_food.fiber,
-            'sodium': original_food.sodium,
-            'sugar': original_food.sugar,
-            'saturated_fat': original_food.saturated_fat,
-            'trans_fat': original_food.trans_fat,
-            'calcium': original_food.calcium,
-            'iron': original_food.iron,
-            'magnesium': original_food.magnesium,
-            'cholesterol': original_food.cholesterol,
-            'vitamin_a': original_food.vitamin_a,
-            'vitamin_c': original_food.vitamin_c,
-            'vitamin_d': original_food.vitamin_d,
-            'caffeine': original_food.caffeine,
-            'food_group': original_food.food_group,
-            'brand': original_food.brand,
-            'cost': original_food.cost,
-            'make_public': False
-        }
-        
-        # Override with provided metadata (only valid fields)
-        valid_fields = set(food_data.keys())
-        for key, value in metadata.items():
-            if key in valid_fields and value:
-                food_data[key] = value
-        
-        return Food.objects.create(**food_data)
-    
-    def _create_new_food(self, name: str, metadata: Dict) -> Food:
-        """
-        Create new food entry with metadata generation for missing fields.
-        
-        Args:
-            name: Food name
-            metadata: Partially provided metadata
-            
-        Returns:
-            New Food object
-        """
-        # Generate missing metadata via OpenAI
-        complete_metadata = self._generate_metadata(name, metadata)
-        
-        # Create food with unique name handling
-        food_name = name
+        complete_metadata = self._ensure_complete_metadata(dict(complete_metadata))
+        food_name = base_name.strip()
         if Food.objects.filter(food_name=food_name).exists():
             counter = 1
-            while Food.objects.filter(food_name=f"{name} ({counter})").exists():
+            while Food.objects.filter(food_name=f"{base_name.strip()} ({counter})").exists():
                 counter += 1
-            food_name = f"{name} ({counter})"
-        
+            food_name = f"{base_name.strip()} ({counter})"
+
         complete_metadata['food_name'] = food_name
-        complete_metadata['make_public'] = True  # New AI-generated foods are public by default
-        
+        complete_metadata['make_public'] = False
+
+        numeric_fields = (
+            'serving_size', 'calories', 'protein', 'fat', 'carbohydrates', 'fiber', 'sodium', 'sugar',
+            'saturated_fat', 'trans_fat', 'calcium', 'iron', 'magnesium', 'cholesterol',
+            'vitamin_a', 'vitamin_c', 'vitamin_d', 'caffeine',
+        )
+        for field in numeric_fields:
+            if field in complete_metadata and complete_metadata[field] is not None:
+                complete_metadata[field] = Decimal(str(complete_metadata[field]))
+        if complete_metadata.get('cost') is not None:
+            complete_metadata['cost'] = Decimal(str(complete_metadata['cost']))
+
         return Food.objects.create(**complete_metadata)
+
+    def _create_new_food(self, name: str, metadata: Dict) -> Food:
+        """
+        Persist a food using only parse metadata merged with numeric defaults (zeros / other).
+        Does not call OpenAI. Uniquifies ``food_name`` on collision.
+        """
+        complete_metadata = self._ensure_complete_metadata(self._get_default_metadata(metadata or {}))
+        return self._persist_food_row(name, complete_metadata)
     
     def _generate_metadata(self, food_name: str, existing_metadata: Dict) -> Dict:
         """
@@ -639,11 +563,15 @@ Return ONLY the JSON object, nothing else.
             if key in valid_fields:
                 valid_metadata[key] = value
         
-        # Fill in any missing fields with defaults
+        # Fill in any missing fields with defaults (treat blank strings as missing except brand)
         for key, default_value in defaults.items():
-            if key not in valid_metadata or valid_metadata[key] is None:
+            cur = valid_metadata.get(key, None)
+            missing = key not in valid_metadata or cur is None
+            if isinstance(cur, str) and cur.strip() == '' and key != 'brand':
+                missing = True
+            if missing:
                 valid_metadata[key] = default_value
-        
+
         return valid_metadata
     
     def _create_food_log(self, food: Food, servings: Decimal, metadata: Dict) -> FoodLog:

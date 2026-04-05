@@ -4,6 +4,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import api_view, permission_classes
 from django.shortcuts import get_object_or_404
 from django.db.models import Q
+from django.utils import timezone
 from datetime import date, timedelta
 
 from apps.logging.models import (
@@ -58,7 +59,8 @@ class WeightLogListCreateView(generics.ListCreateAPIView):
         return queryset
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        dt = serializer.validated_data.get('date_time')
+        serializer.save(user=self.request.user, date_time=dt or timezone.now())
 
 
 class WeightLogRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
@@ -128,7 +130,8 @@ class BodyMeasurementLogListCreateView(generics.ListCreateAPIView):
         return queryset
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        dt = serializer.validated_data.get('date_time')
+        serializer.save(user=self.request.user, date_time=dt or timezone.now())
 
 
 class BodyMeasurementLogRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
@@ -255,7 +258,8 @@ class StepsLogListCreateView(generics.ListCreateAPIView):
         return queryset
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        dt = serializer.validated_data.get('date_time')
+        serializer.save(user=self.request.user, date_time=dt or timezone.now())
 
 
 class StepsLogRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
@@ -325,7 +329,8 @@ class CardioLogListCreateView(generics.ListCreateAPIView):
         return queryset
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        dt = serializer.validated_data.get('date_time')
+        serializer.save(user=self.request.user, date_time=dt or timezone.now())
 
 
 class CardioLogRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):

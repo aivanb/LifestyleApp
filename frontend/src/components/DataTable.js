@@ -38,7 +38,7 @@ const DataTable = ({
 
   const formatValue = (value, field) => {
     if (value === null || value === undefined) {
-      return <span style={{ color: '#999', fontStyle: 'italic' }}>null</span>;
+      return <span style={{ color: 'var(--text-tertiary)', fontStyle: 'italic' }}>null</span>;
     }
 
     if (typeof value === 'boolean') {
@@ -77,7 +77,7 @@ const DataTable = ({
   if (data.length === 0) {
     return (
       <div className="card">
-        <p style={{ textAlign: 'center', color: '#666' }}>
+        <p style={{ textAlign: 'center', color: 'var(--text-tertiary)' }}>
           No data to display
         </p>
       </div>

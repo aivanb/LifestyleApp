@@ -31,6 +31,7 @@ class FoodCreateSerializer(serializers.ModelSerializer):
     """Serializer for creating new food entries"""
     create_and_log = serializers.BooleanField(write_only=True, required=False, default=False)
     servings = serializers.DecimalField(max_digits=8, decimal_places=2, write_only=True, required=False, default=1)
+    log_date_time = serializers.DateTimeField(write_only=True, required=False, allow_null=True)
     
     class Meta:
         model = Food
@@ -41,23 +42,24 @@ class FoodCreateSerializer(serializers.ModelSerializer):
         """Create food and optionally log it immediately"""
         create_and_log = validated_data.pop('create_and_log', False)
         servings = validated_data.pop('servings', Decimal('1'))
-        
+        log_date_time = validated_data.pop('log_date_time', None)
+
         # Create the food
         food = Food.objects.create(**validated_data)
-        
+
         # Optionally create food log entry
         if create_and_log:
             user = self.context.get('user')
             if user:
-                from datetime import datetime
+                from django.utils import timezone as dj_tz
                 FoodLog.objects.create(
                     user=user,
                     food=food,
                     servings=servings,
                     measurement=food.unit,
-                    date_time=datetime.now()
+                    date_time=log_date_time or dj_tz.now()
                 )
-        
+
         return food
 
 
@@ -157,14 +159,14 @@ class MealCreateSerializer(serializers.Serializer):
                 
                 # Optionally create food log entries
                 if create_and_log:
-                    from datetime import datetime
+                    from django.utils import timezone as dj_tz
                     FoodLog.objects.create(
                         user=user,
                         food=food,
                         meal=meal,
                         servings=servings,
                         measurement=food.unit,
-                        date_time=datetime.now()
+                        date_time=dj_tz.now()
                     )
             except Food.DoesNotExist:
                 raise serializers.ValidationError(f"Food with id {food_id} does not exist")

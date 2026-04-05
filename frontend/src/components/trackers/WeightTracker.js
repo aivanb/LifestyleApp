@@ -18,7 +18,13 @@ const WeightTracker = () => {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingLog, setEditingLog] = useState(null);
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [selectedDate, setSelectedDate] = useState(() => {
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  });
   
   const [formData, setFormData] = useState({
     weight: '',
@@ -55,7 +61,8 @@ const WeightTracker = () => {
     try {
       const logData = {
         weight: parseFloat(formData.weight),
-        weight_unit: formData.weight_unit
+        weight_unit: formData.weight_unit,
+        date_time: new Date(`${selectedDate}T12:00:00`).toISOString()
       };
 
       if (editingLog) {
@@ -74,6 +81,13 @@ const WeightTracker = () => {
 
   const handleEdit = (log) => {
     setEditingLog(log);
+    if (log.date_time) {
+      const d = new Date(log.date_time);
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      setSelectedDate(`${y}-${m}-${day}`);
+    }
     setFormData({
       weight: log.weight.toString(),
       weight_unit: log.weight_unit
