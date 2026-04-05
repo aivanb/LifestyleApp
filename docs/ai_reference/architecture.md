@@ -52,7 +52,7 @@ Django==4.2.7
 djangorestframework==3.14.0
 
 # Authentication
-djangorestframework-simplejwt==5.3.0
+djangorestframework-simplejwt==5.4.0
 
 # Database
 mysqlclient==2.2.0
