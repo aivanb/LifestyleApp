@@ -8,7 +8,8 @@ coverage/
 .env.development.local
 .env.test.local
 .env.production.local
-notes/users.txt
+notes/
+.cursor/
 /backend/models/vosk-model-small-en-us-0.15
 
 /build
@@ -32,6 +33,7 @@ ENV/
 
 .env
 .env.*
+!.env.example
 openai_api.log
 *.jsonl
 

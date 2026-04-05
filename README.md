@@ -78,7 +78,7 @@ The app will be available at:
 
 ### Docker
 
-**Architecture (Compose):** a **MySQL 8.4** service persists data in a named volume; the **Django** API runs in one container (Gunicorn in production, `runserver` in development); the **React** app is either a dev server with hot reload or a static build served by **nginx**, which reverse-proxies `/api`, `/admin`, and `/static` to Django. Only the web entrypoint publishes a host port in production (`WEB_PUBLISH_PORT`, default `80`).
+**Architecture (Compose):** **MySQL 8.4** (persistent volume); **Django** on **8000** (Gunicorn in production, `runserver` in dev); **React** as a dev server on **3000** in development, or a static build behind **nginx** in production. Production publishes **nginx on 80 and 3000** (same app and proxy on both host ports), **Django on 8000** for direct API access, and leaves MySQL internal only. Tune `WEB_PUBLISH_PORT`, `FRONTEND_PUBLISH_PORT`, and `BACKEND_PUBLISH_PORT` in `.env` if needed.
 
 1. Install [Docker Engine](https://docs.docker.com/engine/install/) and [Docker Compose](https://docs.docker.com/compose/install/) (Compose V2 is included with Docker Desktop).
 2. Copy `.env.example` to `.env`. For Compose, set **`DB_USER`**, **`DB_PASSWORD`**, and **`MYSQL_ROOT_PASSWORD`**. The MySQL image creates `DB_NAME` and grants the app user automatically; **`DB_USER` / `DB_PASSWORD` must match** `MYSQL_USER` / `MYSQL_PASSWORD` in the compose file (defaults align with `.env.example`).
@@ -87,14 +87,14 @@ The app will be available at:
    docker compose up --build
    ```
    Open http://localhost:3000 (frontend dev server proxies `/api` to the backend container). Backend: http://localhost:8000.
-4. **Production** (optimized images, nginx on port 80):
+4. **Production** (optimized images, hardened nginx on **80**, same UI via **3000**, API on **8000**):
    ```bash
    docker compose -f docker-compose.prod.yml up --build -d
    ```
-   Open http://localhost . Set `DEBUG=False`, a strong `SECRET_KEY`, and `ALLOWED_HOSTS` (and `CORS_ALLOWED_ORIGINS` / `CSRF_TRUSTED_ORIGINS` if you use a real hostname or HTTPS).
+   Use http://localhost (port 80) or http://localhost:3000 for the SPA (both go through nginx). API: http://localhost:8000/api/… . Set `DEBUG=False`, a strong `SECRET_KEY`, and `ALLOWED_HOSTS` (and `CORS_ALLOWED_ORIGINS` / `CSRF_TRUSTED_ORIGINS` if you use a real hostname or HTTPS).
 5. **First-time database content** (invite keys, reference data): after the stack is up, either set `RUN_SETUP_REQUIRED=1` in `.env` for **one** production bring-up (the backend entrypoint runs `setup_database --required`), or run manually:
    ```bash
-   docker compose exec backend python manage.py setup_database --required
+   docker compose -f docker-compose.prod.yml exec backend python manage.py setup_database --required
    ```
 
 **Commands reference**

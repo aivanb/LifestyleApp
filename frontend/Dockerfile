@@ -26,4 +26,5 @@ RUN npm run build
 FROM nginx:1.27-alpine AS production
 COPY --from=build /app/build /usr/share/nginx/html
 COPY docker/nginx-frontend.conf /etc/nginx/conf.d/default.conf
+# Compose maps host :80 and :3000 to this listener (see docker-compose.prod.yml).
 EXPOSE 80

@@ -1,6 +1,7 @@
 .git
 .github
 **/.git
+.cursor
 **/node_modules
 **/__pycache__
 **/.venv

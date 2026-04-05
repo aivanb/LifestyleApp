@@ -21,3 +21,7 @@ htmlcov
 *.md
 Dockerfile*
 .dockerignore
+# Tests and dev-only scripts are not needed in production images
+tests/
+**/tests.py
+**/test_*.py
