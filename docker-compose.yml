@@ -1,8 +1,7 @@
 # Development stack: hot reload, bind mounts, MySQL data persisted.
 # Usage: docker compose up --build
 # Copy .env.example to .env and set secrets first.
-
-name: trackingapp
+# Project name: set COMPOSE_PROJECT_NAME in .env (e.g. trackingapp) if desired; top-level `name:` is omitted for older Compose clients.
 
 services:
   db:

@@ -2,8 +2,7 @@
 # Published ports (defaults): web 80 + 3000 (same UI), backend 8000 (API direct).
 # Usage: docker compose -f docker-compose.prod.yml up --build -d
 # Set strong secrets in .env; see .env.example.
-
-name: trackingapp
+# Project name: set COMPOSE_PROJECT_NAME in .env if desired (avoids top-level `name:` for older Compose).
 
 services:
   db:
