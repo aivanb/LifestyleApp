@@ -21,6 +21,8 @@ ENV REACT_APP_API_URL=${REACT_APP_API_URL} \
 COPY package.json package-lock.json ./
 RUN npm ci
 COPY . .
+# react-scripts/webpack needs a larger heap on small build hosts; pair with swap on low-RAM VPS.
+ENV NODE_OPTIONS=--max-old-space-size=1536
 RUN npm run build
 
 FROM nginx:1.27-alpine AS production
