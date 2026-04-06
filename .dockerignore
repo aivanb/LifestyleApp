@@ -1,0 +1,15 @@
+.git
+.github
+**/.git
+**/node_modules
+**/__pycache__
+**/.venv
+**/venv
+**/*.pyc
+.env
+.env.*
+!.env.example
+notes
+tests
+*.md
+!README.md
