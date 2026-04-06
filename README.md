@@ -81,7 +81,7 @@ The app will be available at:
 **Architecture (Compose):** a **MySQL 8.4** service persists data in a named volume; the **Django** API runs in one container (Gunicorn in production, `runserver` in development); the **React** app is either a dev server with hot reload or a static build served by **nginx**, which reverse-proxies `/api`, `/admin`, and `/static` to Django. Only the web entrypoint publishes a host port in production (`WEB_PUBLISH_PORT`, default `80`).
 
 1. Install [Docker Engine](https://docs.docker.com/engine/install/) and [Docker Compose](https://docs.docker.com/compose/install/) (Compose V2 is included with Docker Desktop).
-2. Copy `env.example` to `.env`. For Compose, set **`DB_USER`**, **`DB_PASSWORD`**, and **`MYSQL_ROOT_PASSWORD`**. The MySQL image creates `DB_NAME` and grants the app user automatically; **`DB_USER` / `DB_PASSWORD` must match** `MYSQL_USER` / `MYSQL_PASSWORD` in the compose file. Do **not** use a random `DB_PASSWORD` for `DB_USER=root` — it must equal **`MYSQL_ROOT_PASSWORD`**. Prefer **`DB_USER=tracking`** (see `env.example`).
+2. Copy `.env.example` to `.env`. For Compose, set **`DB_USER`**, **`DB_PASSWORD`**, and **`MYSQL_ROOT_PASSWORD`**. The MySQL image creates `DB_NAME` and grants the app user automatically; **`DB_USER` / `DB_PASSWORD` must match** `MYSQL_USER` / `MYSQL_PASSWORD` in the compose file (defaults align with `.env.example`).
 3. **Development** (hot reload, source bind mounts):
    ```bash
    docker compose up --build
@@ -111,9 +111,6 @@ Helper scripts: `scripts/docker/*.sh` (Git Bash / macOS / Linux) and `scripts/do
 
 **Troubleshooting (Docker)**
 
-- **504 Gateway Timeout on `/api/` (production compose):** nginx’s default upstream read timeout is 60s while Gunicorn allows 120s. Slow API calls can hit 504 in the browser even though Django is still working. `frontend/docker/nginx-frontend.conf` aligns proxy timeouts with Gunicorn; rebuild the `web` image after changing either side.
-- **`dependency failed to start` / “backend has no healthcheck configured”:** `frontend` / `web` use `depends_on: backend: condition: service_healthy`. The `backend` service defines a TCP healthcheck on port 8000 (`docker-compose.yml` and `docker-compose.prod.yml`). If the API never listens (crash loop), the healthcheck fails—check `docker compose logs backend`.
-- **MySQL `1045` / `Access denied for user 'root'` (backend entrypoint retrying):** Django and `wait_for_mysql.py` use `DB_USER` / `DB_PASSWORD` from `.env`. If `DB_USER=root`, `DB_PASSWORD` must be **identical** to `MYSQL_ROOT_PASSWORD`. Prefer `DB_USER=tracking` with a strong `DB_PASSWORD` (see `env.example`). If you changed passwords after the DB volume was created, MySQL still has the old passwords—use `docker compose down -v` (wipes data) or revert `.env` to the original secrets.
 - **MySQL “connection refused” / backend restarts:** wait for the DB healthcheck (first start can take a minute). Check logs: `docker compose logs -f db backend`.
 - **`DB_PASSWORD` / `MYSQL_ROOT_PASSWORD` errors on `up`:** Compose requires these variables; they must be set in `.env`.
 - **CORS errors in the browser:** set `CORS_ALLOWED_ORIGINS` to your exact frontend origin (comma-separated), or use the production stack so the UI and API share one origin (`/api`).
