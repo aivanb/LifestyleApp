@@ -471,7 +471,7 @@ const FoodAnalyticsView = ({ foodId, foodName, analyticsData, loading, onClose, 
  * Handles food logging with search and serving selection.
  * Features:
  * - Search via GET /api/foods/?search= (matches food name and brand)
- * - Toggle public foods visibility
+ * - Toggle whether to include public foods in the catalog (`include_public`)
  * - Sort by most frequently logged
  * - Adjustable servings with up/down arrows
  * - Real-time macro calculation
@@ -480,7 +480,7 @@ const FoodAnalyticsView = ({ foodId, foodName, analyticsData, loading, onClose, 
 const FoodLogger = ({ onFoodLogged, onClose, showAsPanel = false, selectedDate = null }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [foods, setFoods] = useState([]);
-  const [recentFoods, setRecentFoods] = useState([]);
+  const [showPublicFoods, setShowPublicFoods] = useState(true);
   const [meals, setMeals] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -493,21 +493,28 @@ const FoodLogger = ({ onFoodLogged, onClose, showAsPanel = false, selectedDate =
   const [analyticsData, setAnalyticsData] = useState({});
   const [loadingAnalytics, setLoadingAnalytics] = useState({});
 
-  const loadRecentFoods = useCallback(async () => {
+  const loadFoodList = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await api.getRecentlyLoggedFoods(30);
+      const params = {
+        page_size: 500,
+        include_public: showPublicFoods,
+      };
+      const trimmed = searchTerm.trim();
+      if (trimmed) {
+        params.search = trimmed;
+      }
+      const response = await api.getFoods(params);
       if (response.data.data && response.data.data.foods) {
-        setRecentFoods(response.data.data.foods);
-        setFoods([]);
+        setFoods(response.data.data.foods);
       }
     } catch (err) {
-      console.error('Failed to load recent foods:', err);
-      setError('Failed to load recent foods');
+      console.error('Failed to load foods:', err);
+      setError('Failed to load foods');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [searchTerm, showPublicFoods]);
 
   const loadMeals = useCallback(async () => {
     try {
@@ -520,40 +527,14 @@ const FoodLogger = ({ onFoodLogged, onClose, showAsPanel = false, selectedDate =
     }
   }, []);
 
-  const searchFoods = useCallback(async () => {
-    if (!searchTerm.trim()) {
-      loadRecentFoods();
-      return;
-    }
-
-    try {
-      setLoading(true);
-      const params = {
-        search: searchTerm,
-        page_size: 50
-      };
-
-      const response = await api.getFoods(params);
-      if (response.data.data && response.data.data.foods) {
-        setFoods(response.data.data.foods);
-        setRecentFoods([]);
-      }
-    } catch (err) {
-      console.error('Failed to search foods:', err);
-      setError('Failed to search foods');
-    } finally {
-      setLoading(false);
-    }
-  }, [searchTerm, loadRecentFoods]);
+  useEffect(() => {
+    setError('');
+    loadFoodList();
+  }, [loadFoodList]);
 
   useEffect(() => {
-    if (!searchTerm) {
-      loadRecentFoods();
-      loadMeals();
-    } else {
-      searchFoods();
-    }
-  }, [searchTerm, loadRecentFoods, searchFoods, loadMeals]);
+    loadMeals();
+  }, [loadMeals]);
 
   const updateServings = (foodId, servings) => {
     setFoodServings(prev => ({
@@ -750,7 +731,7 @@ const FoodLogger = ({ onFoodLogged, onClose, showAsPanel = false, selectedDate =
   };
 
   const mealRows = meals.map((m) => ({ ...m, __meal: true }));
-  const displayFoods = sortFoods(searchTerm ? foods : [...mealRows, ...recentFoods]);
+  const displayFoods = sortFoods(searchTerm.trim() ? foods : [...mealRows, ...foods]);
 
   const clearLoggerOverlay = () => setLoggerOverlay(null);
 
@@ -794,12 +775,7 @@ const FoodLogger = ({ onFoodLogged, onClose, showAsPanel = false, selectedDate =
         updated_at: new Date().toISOString()
       });
       
-      // Refresh the foods list
-      if (searchTerm) {
-        await searchFoods();
-      } else {
-        await loadRecentFoods();
-      }
+      await loadFoodList();
       
       setLoggerOverlay(null);
       setError('');
@@ -931,6 +907,14 @@ const FoodLogger = ({ onFoodLogged, onClose, showAsPanel = false, selectedDate =
             onChange={(e) => setSearchTerm(e.target.value)}
             aria-label="Search foods by name or brand"
           />
+          <label className="checkbox-inline food-logger-show-public">
+            <input
+              type="checkbox"
+              checked={showPublicFoods}
+              onChange={(e) => setShowPublicFoods(e.target.checked)}
+            />
+            <span>Show public foods</span>
+          </label>
         </div>
       </div>
 
@@ -947,7 +931,7 @@ const FoodLogger = ({ onFoodLogged, onClose, showAsPanel = false, selectedDate =
               <path fillRule="evenodd" d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11.707 4.707a1 1 0 00-1.414-1.414L10 9.586 8.707 8.293a1 1 0 00-1.414 0l-2 2a1 1 0 101.414 1.414L8 10.414l1.293 1.293a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
             </svg>
             <p className="text-tertiary">
-              {searchTerm ? 'No foods found' : 'No recent foods'}
+              {searchTerm.trim() ? 'No foods found' : 'No foods available'}
             </p>
           </div>
         ) : (
@@ -1250,6 +1234,12 @@ const FoodLogger = ({ onFoodLogged, onClose, showAsPanel = false, selectedDate =
           padding: var(--space-3);
           border-bottom: 1px solid var(--border-primary);
           width: 100%;
+        }
+
+        .food-logger-show-public {
+          margin-top: var(--space-2);
+          font-size: var(--text-sm);
+          color: var(--text-secondary);
         }
 
         .food-list-section {

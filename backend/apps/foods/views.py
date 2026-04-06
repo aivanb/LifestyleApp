@@ -31,6 +31,22 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+def _food_visible_to_user(food, user):
+    """Public foods, foods the user created, or foods they have logged."""
+    if food.make_public:
+        return True
+    if getattr(food, 'created_by_id', None) and food.created_by_id == user.id:
+        return True
+    return FoodLog.objects.filter(user=user, food_id=food.food_id).exists()
+
+
+def _user_may_edit_food(food, user):
+    """Only the creator may edit/delete when creator is set; legacy rows (no creator) stay editable."""
+    if food.created_by_id is None:
+        return True
+    return food.created_by_id == user.id
+
+
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated])
 def food_list_create(request):
@@ -47,13 +63,13 @@ def food_list_create(request):
         min_protein = request.GET.get('min_protein')
         max_protein = request.GET.get('max_protein')
         
-        # Base queryset: public foods + foods the user has logged
-        # Get foods user has logged
+        # Visible foods: created by this user, previously logged, and optionally public catalog
         user_logged_food_ids = FoodLog.objects.filter(user=request.user).values_list('food_id', flat=True).distinct()
-        # Combine with public foods
-        queryset = Food.objects.filter(
-            Q(make_public=True) | Q(food_id__in=user_logged_food_ids)
-        )
+        include_public = request.GET.get('include_public', 'true').lower() in ('1', 'true', 'yes')
+        visibility = Q(created_by=request.user) | Q(food_id__in=user_logged_food_ids)
+        if include_public:
+            visibility |= Q(make_public=True)
+        queryset = Food.objects.filter(visibility)
         
         # Apply search
         if search:
@@ -128,10 +144,7 @@ def food_detail(request, food_id):
     try:
         food = Food.objects.get(food_id=food_id)
         
-        # Check access: public foods or foods the user has logged
-        # Note: Foods don't have user_id field - they're shared database
-        user_has_logged = FoodLog.objects.filter(user=request.user, food_id=food_id).exists()
-        if not food.make_public and not user_has_logged:
+        if not _food_visible_to_user(food, request.user):
             return Response({
                 'error': {'message': 'Access denied - food is not public and you have not logged this food'}
             }, status=status.HTTP_403_FORBIDDEN)
@@ -148,9 +161,11 @@ def food_detail(request, food_id):
         })
     
     elif request.method == 'PUT':
-        # Food updates allowed (no owner concept for shared food database)
-        # In future, could add user field and restrict updates
-        
+        if not _user_may_edit_food(food, request.user):
+            return Response({
+                'error': {'message': 'Only the user who created this food can edit it'}
+            }, status=status.HTTP_403_FORBIDDEN)
+
         serializer = FoodSerializer(food, data=request.data, partial=True)
         
         if serializer.is_valid():
@@ -164,8 +179,11 @@ def food_detail(request, food_id):
         }, status=status.HTTP_400_BAD_REQUEST)
     
     elif request.method == 'DELETE':
-        # Food deletions allowed (no owner concept for shared food database)
-        # In future, could add user field and restrict deletions
+        if not _user_may_edit_food(food, request.user):
+            return Response({
+                'error': {'message': 'Only the user who created this food can delete it'}
+            }, status=status.HTTP_403_FORBIDDEN)
+
         food.delete()
         return Response({
             'data': {'message': 'Food deleted successfully'}
@@ -188,6 +206,11 @@ def food_analytics(request, food_id):
         return Response({
             'error': {'message': 'Food not found'}
         }, status=status.HTTP_404_NOT_FOUND)
+
+    if not _food_visible_to_user(food, request.user):
+        return Response({
+            'error': {'message': 'Access denied - food is not public and you have not logged this food'}
+        }, status=status.HTTP_403_FORBIDDEN)
     
     # Get time range parameter
     time_range = request.GET.get('time_range', '1week')

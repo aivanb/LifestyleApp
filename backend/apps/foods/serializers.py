@@ -10,7 +10,7 @@ class FoodSerializer(serializers.ModelSerializer):
     class Meta:
         model = Food
         fields = '__all__'
-        read_only_fields = ('food_id', 'created_at', 'updated_at')
+        read_only_fields = ('food_id', 'created_at', 'updated_at', 'created_by')
     
     def to_representation(self, instance):
         """Add computed macro preview"""
@@ -36,13 +36,17 @@ class FoodCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Food
         fields = '__all__'
-        read_only_fields = ('food_id', 'created_at', 'updated_at')
+        read_only_fields = ('food_id', 'created_at', 'updated_at', 'created_by')
     
     def create(self, validated_data):
         """Create food and optionally log it immediately"""
         create_and_log = validated_data.pop('create_and_log', False)
         servings = validated_data.pop('servings', Decimal('1'))
         log_date_time = validated_data.pop('log_date_time', None)
+
+        user = self.context.get('user')
+        if user:
+            validated_data['created_by'] = user
 
         # Create the food
         food = Food.objects.create(**validated_data)

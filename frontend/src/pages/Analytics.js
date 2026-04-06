@@ -8,7 +8,6 @@ import FoodMetadataProgressChart from '../components/analytics/FoodMetadataProgr
 import FoodTimingChart from '../components/analytics/FoodTimingChart';
 import MacroSplitChart from '../components/analytics/MacroSplitChart';
 import FoodFrequencyChart from '../components/analytics/FoodFrequencyChart';
-import FoodCostChart from '../components/analytics/FoodCostChart';
 
 const DEFAULT_RANGE = '2weeks';
 
@@ -133,9 +132,6 @@ const Analytics = () => {
                 </div>
                 <div className="analytics-chart-card">
                   <FoodFrequencyChart dateRangeParams={foodParams} />
-                </div>
-                <div className="analytics-chart-card">
-                  <FoodCostChart dateRangeParams={foodParams} />
                 </div>
               </div>
             </div>

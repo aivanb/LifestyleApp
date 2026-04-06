@@ -394,18 +394,13 @@ Return ONLY the JSON object, nothing else.
     def _persist_food_row(self, base_name: str, complete_metadata: Dict) -> Food:
         """
         Insert a Food row from a full metadata dict (already merged / ensured).
-        Uniquifies ``food_name`` on collision.
         """
         complete_metadata = self._ensure_complete_metadata(dict(complete_metadata))
         food_name = base_name.strip()
-        if Food.objects.filter(food_name=food_name).exists():
-            counter = 1
-            while Food.objects.filter(food_name=f"{base_name.strip()} ({counter})").exists():
-                counter += 1
-            food_name = f"{base_name.strip()} ({counter})"
 
         complete_metadata['food_name'] = food_name
         complete_metadata['make_public'] = False
+        complete_metadata['created_by'] = self.user
 
         numeric_fields = (
             'serving_size', 'calories', 'protein', 'fat', 'carbohydrates', 'fiber', 'sodium', 'sugar',
@@ -423,7 +418,7 @@ Return ONLY the JSON object, nothing else.
     def _create_new_food(self, name: str, metadata: Dict) -> Food:
         """
         Persist a food using only parse metadata merged with numeric defaults (zeros / other).
-        Does not call OpenAI. Uniquifies ``food_name`` on collision.
+        Does not call OpenAI.
         """
         complete_metadata = self._ensure_complete_metadata(self._get_default_metadata(metadata or {}))
         return self._persist_food_row(name, complete_metadata)

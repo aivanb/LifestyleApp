@@ -6,7 +6,7 @@ const { createProxyMiddleware } = require('http-proxy-middleware');
 module.exports = function setupProxy(app) {
   const target = process.env.DOCKER_API_PROXY || 'http://127.0.0.1:8000';
   app.use(
-    ['/api', '/admin', '/static'],
+    ['/api', '/admin'],
     createProxyMiddleware({
       target,
       changeOrigin: true,

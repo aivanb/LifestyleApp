@@ -5,6 +5,8 @@ django-cors-headers==4.3.1
 mysqlclient==2.2.0
 python-dotenv==1.0.0
 openai==1.3.0
+# openai 1.3.x passes `proxies` into httpx; httpx 0.28 removed that kwarg — pin below or upgrade openai.
+httpx>=0.23.0,<0.28
 Pillow==10.1.0
 django-extensions==3.2.3
 vosk==0.3.45

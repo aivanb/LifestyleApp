@@ -22,16 +22,22 @@ const MealCreator = ({ onMealCreated, onClose }) => {
   const [error, setError] = useState('');
   const [sortBy, setSortBy] = useState('frequency');
   const [sortOrder, setSortOrder] = useState('desc');
+  const [showPublicFoods, setShowPublicFoods] = useState(true);
 
   useEffect(() => {
     loadFoods();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchTerm, sortBy, sortOrder]);
+  }, [searchTerm, sortBy, sortOrder, showPublicFoods]);
 
   const loadFoods = async () => {
     try {
       setLoadingFoods(true);
-      const response = await api.getFoods({ search: searchTerm, page_size: 50 });
+      const params = { page_size: 500, include_public: showPublicFoods };
+      const trimmed = searchTerm.trim();
+      if (trimmed) {
+        params.search = trimmed;
+      }
+      const response = await api.getFoods(params);
       
       if (response.data.data && response.data.data.foods) {
         const sortedFoods = sortFoods(response.data.data.foods);
@@ -229,6 +235,16 @@ const MealCreator = ({ onMealCreated, onClose }) => {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
+              <label className="checkbox-container meal-creator-show-public">
+                <input
+                  type="checkbox"
+                  checked={showPublicFoods}
+                  onChange={(e) => setShowPublicFoods(e.target.checked)}
+                  className="checkbox-input"
+                />
+                <span className="checkbox-custom"></span>
+                <span className="checkbox-label">Show public foods</span>
+              </label>
             </div>
 
             <div className="form-group sorting-controls-group meal-creator-sort-rail">
@@ -505,6 +521,10 @@ const MealCreator = ({ onMealCreated, onClose }) => {
           display: flex;
           flex-direction: column;
           gap: var(--space-4);
+        }
+
+        .meal-creator-show-public {
+          margin-top: var(--space-2);
         }
 
         .meal-creator-right {

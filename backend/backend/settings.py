@@ -6,11 +6,12 @@ import os
 from pathlib import Path
 from dotenv import load_dotenv
 
-# Load environment variables
-load_dotenv()
-
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Load environment variables: repo root `.env` (typical) and `backend/.env` (optional override)
+load_dotenv(BASE_DIR.parent / '.env')
+load_dotenv(BASE_DIR / '.env')
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv('SECRET_KEY')
@@ -207,8 +208,9 @@ else:
 
 CORS_ALLOW_CREDENTIALS = True
 
-# OpenAI Configuration
-OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
+# OpenAI Configuration (strip key to avoid subtle failures from pasted whitespace/newlines)
+_openai_key = os.getenv('OPENAI_API_KEY')
+OPENAI_API_KEY = _openai_key.strip() if _openai_key else None
 OPENAI_MODEL = os.getenv('OPENAI_MODEL', 'gpt-3.5-turbo')
 
 # Logging Configuration

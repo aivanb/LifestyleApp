@@ -1,10 +1,11 @@
+from django.conf import settings
 from django.db import models
 
 
 class Food(models.Model):
     """Nutritional information for food items (master food database)"""
     food_id = models.AutoField(primary_key=True)
-    food_name = models.CharField(max_length=200, unique=True)
+    food_name = models.CharField(max_length=200)
     serving_size = models.DecimalField(max_digits=8, decimal_places=2)
     unit = models.CharField(max_length=20)
     calories = models.DecimalField(max_digits=8, decimal_places=2)
@@ -35,6 +36,13 @@ class Food(models.Model):
     brand = models.CharField(max_length=100, null=True, blank=True)
     cost = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
     make_public = models.BooleanField(default=False)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='created_foods',
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
